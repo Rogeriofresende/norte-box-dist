@@ -1,0 +1,18 @@
+{
+  "name": "norte-box",
+  "description": "Marketplace fechado da Norte (por convite) - o jeito Norte de usar IA",
+  "owner": {
+    "name": "Norte (Metodologia Startup LTDA)"
+  },
+  "plugins": [
+    {
+      "name": "norte-box",
+      "description": "Freios (secret-guard, confirmar-antes) + memoria (continuar/retomar) + metodo de projeto grande + resposta HTML local + MEDIDOR de uso (numeros por padrao, conteudo so por opt-in com previa)",
+      "version": "0.2.4",
+      "source": "./plugins/norte-box",
+      "author": {
+        "name": "Norte"
+      }
+    }
+  ]
+}
