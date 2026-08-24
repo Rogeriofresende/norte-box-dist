@@ -49,15 +49,16 @@ if [ -z "$ROOT" ]; then
 fi
 
 # --- pre-requisitos locais ---
-command -v node >/dev/null 2>&1 || { echo "CONVITE_ERRO: node ausente (rode o bootstrap)."; exit 0; }
-command -v jq   >/dev/null 2>&1 || { echo "CONVITE_ERRO: jq ausente (rode o bootstrap)."; exit 0; }
+command -v node >/dev/null 2>&1 || { echo "CONVITE_ERRO: node ausente — instale o Node.js e tente de novo."; exit 0; }
+command -v jq   >/dev/null 2>&1 || { echo "CONVITE_ERRO: jq ausente — instale o jq e tente de novo."; exit 0; }
 
 # --- .env: a URL do coletor tem que estar em ~/.norte-box/.env. Esta copia PUBLICA do plugin NAO
-# embute o endereco do coletor (pra nao publicar infra da Norte no GitHub). Quem instala configura
-# o endereco localmente (o bootstrap cria, ou 1 linha no .env). O endereco NAO e segredo — so nao
-# vive dentro do codigo publico. ---
+# embute o endereco do coletor (pra nao publicar infra da Norte no GitHub) e NAO cria o .env
+# sozinha. Quem instala configura o endereco localmente: pede a URL a quem convidou e adiciona 1
+# linha NORTE_BOX_TELEMETRY_URL=... ao .env. O endereco NAO e segredo — so nao vive no codigo
+# publico. ---
 if [ ! -f "$STATE/.env" ] || ! grep -q '^NORTE_BOX_TELEMETRY_URL=' "$STATE/.env" 2>/dev/null; then
-  echo "CONVITE_ERRO: falta o endereco do coletor em ~/.norte-box/.env (NORTE_BOX_TELEMETRY_URL). Rode o bootstrap ou configure o .env."
+  echo "CONVITE_ERRO: falta o endereco do coletor em ~/.norte-box/.env. Peca a URL a quem te convidou e adicione a linha NORTE_BOX_TELEMETRY_URL=https://<url>/ingest ao arquivo ~/.norte-box/.env, depois rode o convite de novo."
   exit 0
 fi
 
@@ -66,7 +67,7 @@ fi
 URL_BASE="$(awk -F= '/^NORTE_BOX_TELEMETRY_URL=/{sub(/^NORTE_BOX_TELEMETRY_URL=/,""); gsub(/["'\'']/,""); print; exit}' "$STATE/.env" 2>/dev/null)"
 BASE="${URL_BASE%/ingest}"
 if [ -z "$BASE" ]; then
-  echo "CONVITE_ERRO: nao consegui determinar o endereco do coletor (.env ilegivel). Rode o bootstrap."
+  echo "CONVITE_ERRO: nao consegui determinar o endereco do coletor (a linha NORTE_BOX_TELEMETRY_URL em ~/.norte-box/.env esta ilegivel). Corrija a linha (formato NORTE_BOX_TELEMETRY_URL=https://<url>/ingest) e rode o convite de novo."
   exit 0
 fi
 
