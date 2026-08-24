@@ -1,0 +1,198 @@
+name: win-instala
+
+# Prova, numa maquina Windows x64 REAL da GitHub (windows-latest = Windows Server), que a
+# INSTALACAO PUBLICA da norte-box funciona de ponta a ponta E que as travas de seguranca
+# continuam DISPARANDO no Windows.
+#
+# ONDE ISTO MORA: no repo PUBLICO Rogeriofresende/norte-box-dist (Actions em repo publico e
+#                 gratis/ilimitado; em repo privado o windows custa 2x minutos).
+# QUANDO RODA:    a cada push na main da dist (= a cada VERSAO publicada) + em PR + manual.
+#
+# O QUE ISTO PROVA (por fato, sem token/secret nenhum):
+#   1. `claude plugin marketplace add <dist>` funciona SEM login (repo publico, clone HTTPS).
+#   2. `claude plugin install norte-box@norte-box -y` funciona SEM login (exit 0, num Windows real).
+#   3. Os arquivos do plugin realmente aterrissam no disco (hooks.json + hooks/*.sh).
+#   4. hooks.json tem "shell":"bash" em TODOS os comandos (a regressao de 24/08 que sumiu com as
+#      travas no Windows teria falhado AQUI).
+#   5. Todo hook .sh referenciado existe e passa `bash -n` (sintaxe).
+#   6. A TRAVA dispara de verdade: secret-guard.sh barra um token FALSO (exit 2) e deixa passar o
+#      prompt normal (exit 0), rodando no Git Bash do Windows real.
+#
+# O QUE ISTO NAO PROVA: nao roda o Claude Code em si (nao ha login/cota em CI publica). Mas a doc
+#   oficial confirma que "shell":"bash" no hooks.json forca o Git Bash — e este teste roda os
+#   hooks pelo MESMO Git Bash. Fase-2 (rodar o Claude Code de verdade com token) so no repo
+#   PRIVADO, nunca aqui (token NUNCA em repo publico — regra da Val).
+#
+# SEGURANCA: este workflow NAO le nenhum segredo do repo (nenhuma interpolacao de secret, nenhum
+#   header com credencial). O gate check_release_dist.sh (passo 7/7) reprova a publicacao se algum
+#   workflow da dist ler/usar um segredo. Token de teste = montado em RUNTIME (ghp_ + 36 'A'), falso.
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+# permissoes minimas: nada alem de ler o proprio repo publico.
+permissions:
+  contents: read
+
+jobs:
+  instala-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Provar que estamos num Windows real
+        shell: bash
+        run: |
+          echo "OS=$OSTYPE"
+          echo "uname=$(uname -a)"
+          echo "bash=$BASH_VERSION"
+          echo "arch=$(uname -m)"
+
+      - name: Node LTS (para o npm fallback do Claude Code)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: jq presente (SEM jq o secret-guard faz fail-open e o teste seria FALSO-VERDE)
+        shell: bash
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "jq ausente — instalando via choco"
+            choco install jq -y >/dev/null 2>&1 || true
+          fi
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq AUSENTE no runner Windows — secret-guard fail-open, teste invalido. Abortando VERMELHO."
+            exit 1
+          fi
+          echo "jq OK: $(jq --version)"
+
+      - name: Instalar Claude Code (npm)
+        shell: bash
+        run: |
+          set -uo pipefail
+          # via publica dos 7: o instalador oficial e o npm. Sem token, sem login.
+          npm install -g @anthropic-ai/claude-code
+          # garante que o 'claude' esta no PATH do Git Bash
+          if ! command -v claude >/dev/null 2>&1; then
+            echo "::error::claude nao ficou no PATH apos npm install -g"
+            exit 1
+          fi
+          echo "claude versao: $(claude --version)"
+
+      - name: E2E — marketplace add + install -y (SEM login, repo publico)
+        shell: bash
+        run: |
+          set -uo pipefail
+          # zera qualquer credencial herdada -> prova que install NAO precisa de login (scrub, nao uso)
+          unset ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN || true
+          echo "== add do marketplace publico (a partir do proprio repo em checkout local) =="
+          # usa o proprio checkout do repo publico como fonte do marketplace (path local = mesma
+          # arvore que sera publicada). Assim o teste prova ESTA versao, nao a que ja esta no ar.
+          # (marketplace add aceita URL, path OU 'owner/repo' — aqui usamos o path do runner.)
+          set +e
+          claude plugin marketplace add "$GITHUB_WORKSPACE" >/tmp/mkt.txt 2>&1
+          MKT=$?
+          set -e
+          cat /tmp/mkt.txt
+          if [ "$MKT" -ne 0 ]; then
+            echo "::error::marketplace add falhou (exit $MKT) num Windows real, SEM login"
+            exit 1
+          fi
+
+          echo "== install -y (SEM login) =="
+          set +e
+          claude plugin install norte-box@norte-box -y >/tmp/inst.txt 2>&1
+          INS=$?
+          set -e
+          cat /tmp/inst.txt
+          if [ "$INS" -ne 0 ]; then
+            echo "::error::install -y falhou (exit $INS) num Windows real, SEM login"
+            exit 1
+          fi
+          echo "OK: marketplace add + install -y = exit 0 no Windows, sem token."
+
+      - name: "ASSERT — plugin no disco + hooks.json + shell bash em todo comando + hooks existem + bash -n"
+        shell: bash
+        run: |
+          set -uo pipefail
+          # localiza o hooks.json instalado no cache do Claude Code (HOME do runner)
+          HOOKS="$(find "$HOME/.claude/plugins" -path '*norte-box*/hooks/hooks.json' 2>/dev/null | head -n1)"
+          if [ -z "$HOOKS" ] || [ ! -f "$HOOKS" ]; then
+            echo "::error::hooks.json NAO encontrado apos install (plugin nao aterrissou no disco)"
+            find "$HOME/.claude/plugins" -maxdepth 6 -type f 2>/dev/null | head -40
+            exit 1
+          fi
+          echo "hooks.json instalado em: $HOOKS"
+          PLUGIN_DIR="$(cd "$(dirname "$HOOKS")/.." && pwd)"
+
+          echo "== JSON valido =="
+          jq empty "$HOOKS" || { echo "::error::hooks.json invalido"; exit 1; }
+
+          echo "== shell:bash em TODO comando (a regressao 0.2.5 falharia AQUI) =="
+          N_CMD="$(jq '[.hooks[][].hooks[] | select(.type=="command")] | length' "$HOOKS")"
+          N_BASH="$(jq '[.hooks[][].hooks[] | select(.type=="command") | select(.shell=="bash")] | length' "$HOOKS")"
+          echo "comandos=$N_CMD  com shell:bash=$N_BASH"
+          if [ "$N_CMD" -lt 1 ]; then
+            echo "::error::hooks.json sem comandos"; exit 1
+          fi
+          if [ "$N_BASH" -ne "$N_CMD" ]; then
+            echo "::error::hooks.json: $N_BASH de $N_CMD comandos com shell:bash. No Windows, comando sem shell:bash = trava MORTA (regressao tipo 0.2.5)."
+            exit 1
+          fi
+
+          echo "== todo hook .sh referenciado existe e passa bash -n =="
+          # extrai os caminhos hooks/<script>.sh referenciados e checa existencia + sintaxe
+          jq -r '[.hooks[][].hooks[].command] | .[]' "$HOOKS" \
+            | grep -oE 'hooks/[a-zA-Z0-9._-]+\.sh' | sort -u | while read -r rel; do
+              f="$PLUGIN_DIR/$rel"
+              if [ ! -f "$f" ]; then
+                echo "::error::hook referenciado ausente: $rel"; exit 1
+              fi
+              bash -n "$f" || { echo "::error::sintaxe ruim em $rel"; exit 1; }
+              echo "  ok: $rel"
+            done
+
+      - name: "ASSERT — a TRAVA dispara (secret-guard barra token falso exit 2, passa o normal exit 0)"
+        shell: bash
+        run: |
+          set -uo pipefail
+          GUARD="$(find "$HOME/.claude/plugins" -path '*norte-box*/hooks/secret-guard.sh' 2>/dev/null | head -n1)"
+          if [ -z "$GUARD" ] || [ ! -f "$GUARD" ]; then
+            echo "::error::secret-guard.sh nao encontrado no plugin instalado"; exit 1
+          fi
+          echo "guard: $GUARD"
+
+          # token FALSO montado em runtime (36 'A' -> ghp_ + 36 = 40 chars). NUNCA um segredo real.
+          FAKE="ghp_$(printf '%036d' 0 | tr '0' 'A')"
+          if [ "${#FAKE}" -ne 40 ]; then echo "::error::token de teste malformado"; exit 1; fi
+
+          echo "== token FALSO deve ser BARRADO (exit 2) =="
+          EVENT="$(jq -nc --arg p "aqui vai um segredo: $FAKE" '{prompt:$p}')"
+          set +e; printf '%s' "$EVENT" | bash "$GUARD" >/dev/null 2>/tmp/g1.txt; C1=$?; set -e
+          echo "EXIT=$C1 (esperado 2)"; cat /tmp/g1.txt || true
+          if [ "$C1" -ne 2 ]; then echo "::error::secret-guard NAO barrou o token no Windows (exit $C1, esperado 2)"; exit 1; fi
+
+          echo "== prompt NORMAL deve PASSAR (exit 0) =="
+          EVENT="$(jq -nc '{prompt:"oi, cria um post pra Viviane sobre ortodontia"}')"
+          set +e; printf '%s' "$EVENT" | bash "$GUARD" >/dev/null 2>/tmp/g2.txt; C2=$?; set -e
+          echo "EXIT=$C2 (esperado 0)"
+          if [ "$C2" -ne 0 ]; then echo "::error::secret-guard barrou prompt normal no Windows (exit $C2)"; cat /tmp/g2.txt; exit 1; fi
+
+          echo "== bypass [no-secret-check] deve PASSAR mesmo com token (exit 0) =="
+          EVENT="$(jq -nc --arg p "[no-secret-check] exemplo de regex: $FAKE" '{prompt:$p}')"
+          set +e; printf '%s' "$EVENT" | bash "$GUARD" >/dev/null 2>/tmp/g3.txt; C3=$?; set -e
+          echo "EXIT=$C3 (esperado 0)"
+          if [ "$C3" -ne 0 ]; then echo "::error::bypass [no-secret-check] nao respeitado no Windows (exit $C3)"; exit 1; fi
+
+          echo "OK: trava viva no Windows (barra token=2, passa normal=0, respeita bypass=0)."
+
+      - name: Resumo
+        shell: bash
+        run: |
+          echo "== norte-box provada no windows-latest (x64), via publica, SEM token =="
+          echo "  marketplace add + install -y ....... exit 0"
+          echo "  plugin no disco (hooks.json) ....... OK"
+          echo "  hooks.json shell:bash em todo cmd .. OK (mata a regressao 0.2.5)"
+          echo "  hooks .sh existem + bash -n ........ OK"
+          echo "  secret-guard barra token / passa .. OK (trava viva)"
