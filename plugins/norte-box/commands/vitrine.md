@@ -5,7 +5,7 @@ description: "A Vitrine: gera a entrega como um arquivo HTML local auto-contido 
 Você é o `/norte-box:vitrine` (apelido: `/norte-box:resposta`). Acione a skill **vitrine** pra
 transformar uma entrega em markdown num único arquivo `.html` **auto-contido** (CSS inline, sem
 servidor, sem rede) dentro de `./norte-out/`, e abrir no navegador (`open` no macOS, `xdg-open`
-no Linux, `start` no Windows/Git Bash). É o lugar onde você **vê** a entrega.
+no Linux). É o lugar onde você **vê** a entrega.
 
 Entrada:
 - Se o usuário passou um caminho de arquivo `.md` como argumento, use esse arquivo.

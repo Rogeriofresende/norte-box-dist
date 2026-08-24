@@ -63,6 +63,13 @@ if [ -f "$CONSENT_FILE" ]; then
   fi
 fi
 
+# PACOTE DE ATRITO (NRT-_990210): a pessoa esbarrou no aviso de consent -> deixa 1 breadcrumb
+# SO-ROTULO ("consent-gate"). Nunca a mensagem, nunca o prompt. Fail-open (nao segura o trabalho).
+_AG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+if [ -n "${_AG_DIR:-}" ] && [ -f "${_AG_DIR}/_atrito.sh" ]; then
+  . "${_AG_DIR}/_atrito.sh" 2>/dev/null && _atrito_breadcrumb "consent-gate" 2>/dev/null || true
+fi
+
 # Ainda nao aceitou (ou versao velha), em modo compartilhavel -> AVISA (sem travar).
 # additionalContext via stdout JSON (o Claude Code injeta isso no contexto do turno); a mensagem
 # humana vai pro stderr. exit 0 SEMPRE (fail-open — nunca segura o trabalho).

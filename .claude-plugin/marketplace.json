@@ -8,7 +8,7 @@
     {
       "name": "norte-box",
       "description": "Freios (secret-guard, confirmar-antes) + memoria (continuar/retomar) + metodo de projeto grande + resposta HTML local + MEDIDOR de uso (numeros por padrao, conteudo so por opt-in com previa)",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "source": "./plugins/norte-box",
       "author": {
         "name": "Norte"

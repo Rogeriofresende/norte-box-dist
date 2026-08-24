@@ -25,6 +25,12 @@ PATTERNS='(^[[:space:]]*([a-z]{4} ){3}[a-z]{4}[[:space:]]*$)|([A-Z_]*APP_PASSWOR
 if printf '%s' "$PROMPT" | grep -qE "$PATTERNS"; then
   # NUNCA logar o prompt - so o evento, e so se der (fail-open no log tambem)
   echo "[secret-guard] BLOCKED $(date -u +%FT%TZ)" >> "${HOME}/.norte-box/secret-guard.log" 2>/dev/null || true
+  # PACOTE DE ATRITO (NRT-_990210): deixa 1 breadcrumb SO-ROTULO ("secret-guard") pra a Norte
+  # saber que UM gate barrou — nunca a mensagem, nunca o prompt. Fail-open (nao quebra o gate).
+  _AG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+  if [ -n "${_AG_DIR:-}" ] && [ -f "${_AG_DIR}/_atrito.sh" ]; then
+    . "${_AG_DIR}/_atrito.sh" 2>/dev/null && _atrito_breadcrumb "secret-guard" 2>/dev/null || true
+  fi
   cat >&2 <<'MSG'
 (bloqueio) secret-guard (norte-box): parece que voce colou um secret (senha/token/chave) no chat.
 
