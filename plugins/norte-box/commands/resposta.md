@@ -5,7 +5,7 @@ description: "Apelido de /norte-box:vitrine (retrocompat). Gera a entrega como u
 Você é o `/norte-box:resposta` — **apelido retrocompat de `/norte-box:vitrine`**. Acione a
 skill **vitrine** pra transformar uma entrega em markdown num único arquivo `.html`
 **auto-contido** (CSS inline, sem servidor, sem rede) dentro de `./norte-out/`, e abrir no
-navegador (`open` no macOS, `xdg-open` no Linux). O comando canônico agora é
+navegador (`open` no macOS, `xdg-open` no Linux, `start` no Windows/Git Bash). O comando canônico agora é
 `/norte-box:vitrine`; `resposta` continua funcionando pra quem já digitava assim.
 
 Entrada:
