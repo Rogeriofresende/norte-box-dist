@@ -58,8 +58,8 @@ _redact() {
     -e 's#[Bb]earer[[:space:]]+[A-Za-z0-9._~+/=-]{12,}#Bearer [REDACTED-TOKEN]#g' \
     -e 's#([a-zA-Z][a-zA-Z0-9+.-]*://)[^:@/[:space:]]+:[^@/[:space:]]+@#\1[REDACTED-CREDENTIAL]@#g' \
     -e 's/-----BEGIN [A-Z ]*PRIVATE KEY-----/[REDACTED-PRIVATE-KEY]/g' \
-    -e 's/([A-Za-z0-9_]*(KEY|SECRET|TOKEN|PASSWORD|PASSWD|PASS|PWD|AUTH|CREDENTIAL)[A-Za-z0-9_]*[[:space:]]*=[[:space:]]*)[^[:space:]"'"'"']{6,}/\1[REDACTED]/g' \
-    -e 's/("?[A-Za-z0-9_]*(key|secret|token|password|passwd|pass|pwd|auth|credential)[A-Za-z0-9_]*"?[[:space:]]*[:=][[:space:]]*"?)[^[:space:],}"'"'"']{6,}/\1[REDACTED]/g' \
+    -e 's/([A-Za-z0-9_]*(KEY|SECRET|TOKEN|PASSWORD|PASSWD|PASS|PWD|AUTH|CREDENTIAL|SENHA|SEGREDO)[A-Za-z0-9_]*[[:space:]]*=[[:space:]]*)[^[:space:]"'"'"']{6,}/\1[REDACTED]/g' \
+    -e 's/("?[A-Za-z0-9_]*(key|secret|token|password|passwd|pass|pwd|auth|credential|senha|segredo)[A-Za-z0-9_]*"?[[:space:]]*[:=][[:space:]]*"?)[^[:space:],}"'"'"']{6,}/\1[REDACTED]/g' \
     -e 's/[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}/[REDACTED-CPF]/g' \
     -e 's/[0-9]{2}\.[0-9]{3}\.[0-9]{3}\/[0-9]{4}-[0-9]{2}/[REDACTED-CNPJ]/g' \
     -e 's#([A-Za-z]:\\[^[:space:]"'"'"',:;]*\\[^\\/[:space:]"'"'"',:;]*)\.([A-Za-z0-9]{1,8})#[arquivo:.\2]#g' \

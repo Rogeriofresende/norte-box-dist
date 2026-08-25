@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# nb-provar — helper de linha de comando do MOTOR DE PROVA (Val de bolso) do norte-box.
+# Roda UMA entrega do tipo suportado (script .py/.js/.sh) num sandbox contido, CAPTURA a prova num
+# arquivo LOCAL sob $HOME/.norte-box/provas/<sessao>/, e — se a entrega rodou (exit 0) — marca a
+# fichinha (situacao.json) como provado:true apontando essa prova (o UNICO caminho pro selo 🟢).
+#
+# USO:  nb-provar <arquivo> [sessao]
+#   <arquivo> = o script que a caixa criou (a "entrega"). So .py, .js ou .sh nesta fatia fina.
+#   [sessao]  = rotulo curto pra separar as provas por sessao (opcional; default "sessao").
+#
+# SAIDA (stdout, humano de padaria):
+#   ✅ provei assim: ... exit 0 ... (+ a saida do script)   -> exit 0  (PROVOU; fichinha virou verde)
+#   🟡 ainda nao provei: falhou aqui: ...                    -> exit 1  (NAO provou; fichinha continua amarela)
+#   🟡 nao consegui provar: <motivo>                         -> exit 2  (tipo nao-suportado / faltou runtime / etc)
+# A prova completa (exit + stdout/stderr) fica no arquivo; a linha NB_PROVA_ARTEFATO=<caminho> diz
+# qual e, pra a caixa citar sem inventar. A prova NUNCA sai da maquina (privado por padrao).
+#
+# LEIS: fail-honest (verde so com exit 0 real), privado (so disco local), sandbox (timeout + dir
+# temporario descartavel + rede cortada quando o SO deixa). set -u; nao usa dado como comando.
+set -u
+
+_arq="${1:-}"
+_sess="${2:-sessao}"
+
+if [ -z "$_arq" ]; then
+  echo "🟡 nao consegui provar: diga qual arquivo eu rodo (uso: nb-provar <arquivo> [sessao])."
+  exit 2
+fi
+
+# Carrega a lib do motor (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_provar.sh" ]; then
+  _lib="${_self_dir}/../hooks/_provar.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_provar.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_provar.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🟡 nao consegui provar: nao achei o motor de prova nesta instalacao."
+  exit 2
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+# O _provar.sh reusa a lib da fichinha pra ler/escrever o selo; carrega se estiver ao lado.
+if [ -f "${_self_dir}/../hooks/_situacao.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_situacao.sh" 2>/dev/null || true
+fi
+
+command -v _norte_provar_rodar >/dev/null 2>&1 || { echo "🟡 nao consegui provar: motor incompleto."; exit 2; }
+
+_norte_provar_rodar "$_arq" "$_sess"
+exit $?

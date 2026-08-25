@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# nb-aplicar — helper do PORTAO APLICAR (NRT-_990212 passo 9 fatia 2) do norte-box.
+# APLICA de verdade, no arquivo real, a mudanca que o ENSAIO (SOMBRA) mostrou — mas SO se o arquivo nao
+# mudou desde o ensaio, e SEMPRE com um backup provado antes de escrever. Le TUDO do RECIBO que o ensaio
+# gerou (nunca aceita alvo/hash por argumento). Re-mede o disco na hora: se algo mudou, recusa em
+# vermelho e nao escreve nada.
+#
+# USO:  nb-aplicar <recibo>
+#   <recibo> = o caminho de um .recibo DENTRO de $HOME/.norte-box/sombra/ (o que o ensaio da SOMBRA gera).
+#
+# SAIDA (stdout, humano de padaria):
+#   🟢 APLICADO — provado por hash (X -> Y)   + linha NB_APLICAR_RECIBO=<caminho pro desfazer>  -> exit 0
+#   🔴 vermelho honesto (mudou desde o ensaio / recibo adulterado / alvo recusado / escrita falhou) -> exit 1
+#   🟡 inerte (kill-switch NORTE_APLICAR=0/NORTE_SOMBRA=0) / recibo ausente                          -> exit 2
+#
+# LEIS: le SO o recibo do disco (nunca alvo/hash por arg), re-checa symlink/fora-do-HOME na hora, gate do
+# sha desde o ensaio, anti-forja por re-medida (sem segredo), backup provado antes da 1a escrita, restaura
+# se a escrita nao bater. LOCAL, zero-rede. set -u.
+set -u
+
+_rec="${1:-}"
+
+if [ -z "$_rec" ]; then
+  echo "🟡 diga qual recibo eu aplico (uso: nb-aplicar <recibo>) — e o .recibo que o ensaio da sombra gerou."
+  exit 2
+fi
+
+# Carrega a lib do portao (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_aplicar.sh" ]; then
+  _lib="${_self_dir}/../hooks/_aplicar.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_aplicar.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_aplicar.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🟡 nao consegui aplicar: nao achei o portao aplicar nesta instalacao."
+  exit 2
+fi
+
+# O redator compartilhado (opcional): se estiver ao lado, o alvo mostrado sai redigido (nunca vaza nome).
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_redact.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_redact.sh" 2>/dev/null || true
+fi
+# a lib do sombra (helpers sha/realpath/raiz) — o _aplicar.sh tenta sourcear sozinho, mas se estiver ao
+# lado a gente garante aqui tambem.
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_sombra.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_sombra.sh" 2>/dev/null || true
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_aplicar >/dev/null 2>&1 || { echo "🟡 nao consegui aplicar: portao incompleto."; exit 2; }
+
+_norte_aplicar "$_rec"
+exit $?

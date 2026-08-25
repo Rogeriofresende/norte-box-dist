@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# nb-freio — helper de linha de comando do FREIO (NRT-_990212 passo 9) do norte-box.
+# O FREIO DE MAO da caixa: puxa e a caixa NAO MEXE EM NADA (nenhuma acao ensaia/aplica/desfaz enquanto
+# puxado); solta e volta ao normal. Tudo-ou-nada. O estado e' o ARQUIVO $HOME/.norte-box/freio — sua
+# PRESENCA JA significa puxado (o conteudo e' so um carimbo humano, nunca parseado pra decidir).
+#
+# USO:  nb-freio [puxar|soltar|status]
+#   puxar   -> grava o arquivo + carimbo de data e RE-LE pra confirmar no disco. So diz "puxado" se provou.
+#   soltar  -> apaga o arquivo e RE-LE. So diz "solto" se sumiu de verdade.
+#   status  -> (default, sem arg) diz se esta puxado (desde quando) ou solto.
+#
+# SAIDA (stdout, humano de padaria):
+#   🛑 Freio puxado ...        (puxar OK)        -> exit 0
+#   🟢 Freio solto ...         (soltar OK)       -> exit 0
+#   🛑 puxado desde <data> / 🟢 solto ...  (status)  -> exit 0
+#   🔴 nao consegui puxar/soltar ... (disco/permissao — NUNCA finge)  -> exit 1
+#
+# LEIS: grava-e-prova-no-disco (nunca finge que puxou/soltou), honesto por padrao. LOCAL, zero-rede. set -u.
+set -u
+
+_acao="${1:-status}"
+
+# Carrega a lib do freio (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_freio.sh" ]; then
+  _lib="${_self_dir}/../hooks/_freio.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_freio.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_freio.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🔴 nao achei o freio nesta instalacao (nao consigo mexer no freio com seguranca)."
+  exit 1
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_freio_arquivo >/dev/null 2>&1 || { echo "🔴 freio incompleto nesta instalacao."; exit 1; }
+
+_ARQ="$(_norte_freio_arquivo)"
+_PASTA="$(_norte_freio_pasta)"
+
+# le o carimbo de data do arquivo (1a linha "puxado em <...>") pra o status; vazio se nao houver.
+_carimbo() {
+  [ -f "$_ARQ" ] || return 1
+  local _l
+  while IFS= read -r _l || [ -n "$_l" ]; do
+    case "$_l" in puxado\ em\ *) printf '%s' "${_l#puxado em }"; return 0 ;; esac
+  done < "$_ARQ" 2>/dev/null
+  return 1
+}
+
+_status() {
+  if [ -e "$_ARQ" ]; then
+    local _c; _c="$(_carimbo 2>/dev/null)"
+    if [ -n "$_c" ]; then
+      printf '🛑 puxado desde %s\n' "$_c"
+    else
+      printf '🛑 puxado\n'
+    fi
+  else
+    printf '🟢 solto — a caixa pode agir quando voce mandar\n'
+  fi
+}
+
+case "$_acao" in
+  puxar)
+    mkdir -p "$_PASTA" 2>/dev/null
+    _ts="$(date '+%Y-%m-%d %H:%M' 2>/dev/null || echo agora)"
+    # o proprio shell imprime "line NN: <path>: Permission denied" (path cru) quando o redirect ABRE e
+    # falha — silencia num sub-shell (a msg 🔴 abaixo ja cobre o caso honestamente, sem vazar o caminho).
+    ( printf 'puxado em %s\n' "$_ts" > "$_ARQ" ) 2>/dev/null
+    # PROVA NO DISCO: re-le. So diz "puxado" se o arquivo REALMENTE existe agora.
+    if [ -e "$_ARQ" ]; then
+      printf '🛑 Freio puxado. A caixa nao mexe em NADA ate voce soltar. Pra soltar: /norte-box:freio soltar\n'
+      exit 0
+    fi
+    printf '🔴 nao consegui puxar o freio (disco/permissao) — a caixa ainda pode agir\n'
+    exit 1
+    ;;
+  soltar)
+    rm -f "$_ARQ" 2>/dev/null
+    # PROVA NO DISCO: re-le. So diz "solto" se o arquivo REALMENTE sumiu.
+    if [ ! -e "$_ARQ" ]; then
+      printf '🟢 Freio solto. A caixa volta ao normal.\n'
+      exit 0
+    fi
+    printf '🔴 nao consegui soltar o freio — a caixa continua parada\n'
+    exit 1
+    ;;
+  status|"")
+    _status
+    exit 0
+    ;;
+  *)
+    # arg desconhecido: mostra o status (comportamento seguro/util) e explica o uso.
+    _status
+    printf '   (uso: nb-freio [puxar|soltar|status])\n'
+    exit 0
+    ;;
+esac

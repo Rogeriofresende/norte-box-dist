@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# nb-kits — o CATALOGO dos kits do norte-box (NRT-_990380, passo 11 do plano).
+#
+# Lista CADA kit que a caixa ja sabe repetir: nome, tipo, quando, origem (🟢/🟡) e USOS. Os usos sao
+# DERIVADOS do dado real (conta os registros de entrega com rotulo kit-<nome>) — nao ha contador proprio.
+# READ-ONLY: le e mostra, NUNCA escreve.
+#
+# USO:  nb-kits
+#
+# KILL-SWITCH: NORTE_KITS=0 desliga (ecoa amarelo, exit 2). Nada sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, read-only, sem rede, nao usa dado como comando.
+set -u
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kits.sh" ]; then
+  echo "🟡 nao consegui abrir o catalogo: nao achei os kits nesta instalacao."
+  exit 2
+fi
+
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"
+
+command -v _norte_kits_catalogo >/dev/null 2>&1 || { echo "🟡 nao consegui abrir o catalogo: motor incompleto."; exit 2; }
+
+_norte_kits_catalogo
+exit $?

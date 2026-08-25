@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# nb-kit-rodar — VIRAR ROTINA: roda a conferencia de um KIT num documento NOVO (NRT-_990380, passo 11).
+#
+# Resolve o checklist guardado no kit, re-hasheia e compara com o hash da criacao: se o checklist foi
+# ALTERADO ou SUMIU -> RECUSA 🟡 (o kit e imutavel). Batendo, roda a conferencia pela ESTEIRA REAL
+# (a mesma da estreia) contra o documento novo. O selo, o registro e a assinatura HMAC saem do MOTOR REAL —
+# 🟢 SO quando a conferencia fecha. NUNCA "verde porque e kit". O run cai no rotulo kit-<nome> (aparece no
+# nb-tarefas).
+#
+# USO:  nb-kit-rodar <nome> <novo-doc>
+#   <nome>     = o kit ja criado (veja os que existem com: nb-kits).
+#   <novo-doc> = o documento novo a conferir contra o checklist do kit.
+#
+# SAIDA (stdout, humano de padaria) — espelha a estreia:
+#   🟢 ENTREGA PROVADA ... -> exit 0  (a conferencia fechou)
+#   🟡 ENTREGA NAO-PROVADA ... -> exit 1  (faltou item / contradicao)
+#   🟡 nao consegui rodar / checklist alterado / kit ausente -> exit 2 (pre-condicao / kill-switch)
+#
+# KILL-SWITCH: NORTE_KITS=0 desliga (recusa, exit 2). Nada sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, nao usa dado como comando (o <nome> e validado como slug antes de virar caminho).
+set -u
+
+_nome="${1:-}"
+_doc="${2:-}"
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kits.sh" ]; then
+  echo "🟡 nao consegui rodar o kit: nao achei os kits nesta instalacao."
+  exit 2
+fi
+
+# a esteira real que o kit-rodar invoca: precisa de _situacao/_provar/_contrato_doc/_estreia carregados.
+# shellcheck source=/dev/null
+. "${_hooks}/_situacao.sh"     2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_provar.sh"       2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_contrato_doc.sh" 2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_estreia.sh"      2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"
+
+command -v _norte_kit_rodar >/dev/null 2>&1 || { echo "🟡 nao consegui rodar o kit: motor incompleto."; exit 2; }
+
+_norte_kit_rodar "$_nome" "$_doc"
+exit $?

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# nb-sombra — helper de linha de comando do PORTAO SOMBRA (NRT-_990212 passo 9) do norte-box.
+# ENSAIA uma edicao (substituicao <de> -> <para>) num arquivo real EXISTENTE — mas SO numa COPIA (a
+# "sombra"), numa caixa-de-areia LOCAL descartavel. O arquivo REAL NUNCA e' tocado; o motor prova isso
+# medindo o sha256 do real antes e depois (tem que ser identico) e conferindo que o diff mostrado bate
+# com a mudanca real da sombra (anti-diff-fabricado).
+#
+# USO:  nb-sombra <arquivo-real> <de> <para> [sessao]
+#   <arquivo-real> = o arquivo que JA existe e que a caixa vai ENSAIAR editar (nunca aplica de verdade).
+#   <de>           = o trecho a trocar.
+#   <para>         = o que entra no lugar (na sombra).
+#   [sessao]       = rotulo curto pra separar as sombras por sessao (opcional; default "sessao").
+#
+# SAIDA (stdout, humano de padaria):
+#   🟢 ENSAIO OK — arquivo real intocado ... (+ o diff antes->depois da sombra)  -> exit 0
+#   🔴 vermelho honesto (real mudou / diff fabricado / alvo recusado)            -> exit 1
+#   🟡 nao consegui ensaiar / inerte (kill-switch)                               -> exit 2
+# A linha NB_SOMBRA_ARQUIVO=<caminho> diz onde ficou a sombra editada (LOCAL). Nada sai da maquina.
+#
+# LEIS: fail-CLOSED no caminho de escrita (so a sombra e' escrita; na duvida nao escreve nem a sombra),
+# copia por CONTEUDO (nunca symlink/hardlink), recusa symlink e alvo fora do HOME, zero-rede. set -u.
+set -u
+
+_real="${1:-}"
+_de="${2:-}"
+_para="${3:-}"
+_sess="${4:-sessao}"
+
+if [ -z "$_real" ]; then
+  echo "🟡 nao consegui ensaiar: diga qual arquivo eu ensaio (uso: nb-sombra <arquivo> <de> <para> [sessao])."
+  exit 2
+fi
+
+# Carrega a lib do portao (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_sombra.sh" ]; then
+  _lib="${_self_dir}/../hooks/_sombra.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_sombra.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_sombra.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🟡 nao consegui ensaiar: nao achei o portao sombra nesta instalacao."
+  exit 2
+fi
+
+# O redator compartilhado (opcional): se estiver ao lado, o alvo mostrado sai redigido (nunca vaza nome).
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_redact.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_redact.sh" 2>/dev/null || true
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_sombra_ensaiar >/dev/null 2>&1 || { echo "🟡 nao consegui ensaiar: portao incompleto."; exit 2; }
+
+_norte_sombra_ensaiar "$_real" "$_de" "$_para" "$_sess"
+exit $?

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# nb-desfazer — helper do PORTAO DESFAZER (NRT-_990212 passo 9 fatia 2) do norte-box.
+# DESFAZ um aplicar: restaura o backup do original no arquivo real — mas SO se o arquivo esta como o
+# aplicar deixou (ninguem editou depois) E o backup esta integro. Le TUDO do RECIBO-DE-APLICACAO que o
+# nb-aplicar gerou. Re-mede o disco na hora: desfazer cego apagaria trabalho novo, entao recusa.
+#
+# USO:  nb-desfazer <recibo-aplic>
+#   <recibo-aplic> = o .recibo-aplic que o nb-aplicar imprimiu na linha NB_APLICAR_RECIBO=.
+#
+# SAIDA (stdout, humano de padaria):
+#   🟢 DESFEITO — de volta pro X (provado por hash)                                  -> exit 0
+#   🔴 vermelho honesto (arquivo mudou depois do aplicar / backup corrompido / alvo recusado) -> exit 1
+#   🟡 inerte (kill-switch NORTE_APLICAR=0/NORTE_SOMBRA=0) / recibo ausente                    -> exit 2
+#
+# LEIS: le SO o recibo do disco, re-checa symlink/fora-do-HOME na hora, gate "alvo == sha_depois" (nao
+# desfaz se editaram depois), backup integro (== sha_antes) antes de restaurar. LOCAL, zero-rede. set -u.
+set -u
+
+_rec="${1:-}"
+
+if [ -z "$_rec" ]; then
+  echo "🟡 diga qual recibo-de-aplicacao eu desfaco (uso: nb-desfazer <recibo-aplic>) — o .recibo-aplic do aplicar."
+  exit 2
+fi
+
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_aplicar.sh" ]; then
+  _lib="${_self_dir}/../hooks/_aplicar.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_aplicar.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_aplicar.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🟡 nao consegui desfazer: nao achei o portao aplicar/desfazer nesta instalacao."
+  exit 2
+fi
+
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_redact.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_redact.sh" 2>/dev/null || true
+fi
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_sombra.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_sombra.sh" 2>/dev/null || true
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_desfazer >/dev/null 2>&1 || { echo "🟡 nao consegui desfazer: portao incompleto."; exit 2; }
+
+_norte_desfazer "$_rec"
+exit $?

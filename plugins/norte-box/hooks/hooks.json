@@ -5,33 +5,39 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/secret-guard.sh\"",
-            "async": false
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/secret-guard.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/confirmar-antes.sh\"",
-            "async": false
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/confirmar-antes.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/consent-gate.sh\"",
-            "async": false
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/consent-gate.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/deriva-perguntar.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
+            "async": true,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
+            "async": true,
+            "shell": "bash"
           }
         ]
       }
@@ -41,15 +47,15 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
+            "async": true,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
+            "async": true,
+            "shell": "bash"
           }
         ]
       }
@@ -59,27 +65,39 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/modo-selo.sh\"",
-            "async": false
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/situacao-abrir.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/time-apresentar.sh\"",
-            "async": false
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/modo-selo.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/time-apresentar.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/voz-norte-regra.sh\"",
+            "async": false,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
+            "async": true,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
+            "async": true,
+            "shell": "bash"
           }
         ]
       }
@@ -89,21 +107,33 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-stop.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/situacao-gravar.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/diario-gravar.sh\"",
+            "async": false,
+            "shell": "bash"
           },
           {
             "type": "command",
-            "shell": "bash",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
-            "async": true
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-stop.sh\"",
+            "async": true,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
+            "async": true,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
+            "async": true,
+            "shell": "bash"
           }
         ]
       }

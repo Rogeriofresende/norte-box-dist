@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# nb-contrato-doc — helper do PORTAO "documento→checklist" (tipo juridico) do norte-box.
+# ADITIVO ao nb-provar (codigo roda) e ao nb-provar-planilha (planilha confere): aqui a entrega e um PAR
+# de TEXTO — um DOCUMENTO + um CHECKLIST. O motor confere ITEM A ITEM (cobertura + anti-alucinacao), SEM
+# rodar codigo do cliente; exit 0 = o documento cobre o checklist inteiro -> selo 🟢. exit!=0 = algum item
+# ficou orfao ou o checklist contradiz a fonte -> continua 🟡 com o motivo real.
+#
+# USO:  nb-contrato-doc <documento> <checklist> [sessao]
+#   <documento> = o texto a conferir (qualquer arquivo de texto).
+#   <checklist> = a lista de itens (uma por linha; "descricao :: ancora"; "NAO: ..." afirma ausencia).
+#   [sessao]    = rotulo curto (opcional; default "sessao").
+#
+# SAIDA (stdout, humano de padaria):
+#   ✅ conferi assim: ... TODOS conferiram  -> exit 0  (PROVOU; fichinha virou verde)
+#   🟡 ainda nao provei: ... o que falhou   -> exit 1  (algum item orfao / contradicao)
+#   🟡 nao consegui provar / portao desligado-> exit 2  (pre-condicao / kill-switch)
+#
+# KILL-SWITCH: NORTE_CONTRATO_DOC=0 desliga o portao (volta ao comportamento de hoje). A prova NUNCA sai
+# da maquina (privado por padrao). LEIS: fail-honest, set -u, nao usa dado como comando.
+set -u
+
+_doc="${1:-}"
+_chk="${2:-}"
+_sess="${3:-sessao}"
+
+if [ -z "$_doc" ] || [ -z "$_chk" ]; then
+  echo "🟡 nao consegui provar: diga qual documento e qual checklist (uso: nb-contrato-doc <documento> <checklist> [sessao])."
+  exit 2
+fi
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_contrato_doc.sh" ]; then
+  echo "🟡 nao consegui provar: nao achei o portao documento->checklist nesta instalacao."
+  exit 2
+fi
+# _situacao.sh (hash A3 + fichinha) e _provar.sh (raiz das provas + marcador do selo) sao a base reusada.
+[ -f "${_hooks}/_situacao.sh" ] && { . "${_hooks}/_situacao.sh" 2>/dev/null || true; }
+[ -f "${_hooks}/_provar.sh" ]   && { . "${_hooks}/_provar.sh"   2>/dev/null || true; }
+# shellcheck source=/dev/null
+. "${_hooks}/_contrato_doc.sh"
+
+command -v _norte_contrato_doc_provar >/dev/null 2>&1 || { echo "🟡 nao consegui provar: motor incompleto (portao documento->checklist ausente)."; exit 2; }
+
+_norte_contrato_doc_provar "$_doc" "$_chk" "$_sess"
+exit $?

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# nb-exportar-pacote — o PACOTE EXPORTAVEL do norte-box (NRT-_990341, empilhado na estreia).
+# Aponta pra UM registro de entrega JA SELADO (o entrega-*.txt que a estreia gravou) e gera uma PASTA
+# pronta pra o cliente — pacote-cliente-<id>/ — com 4 partes: artefato + prova/ + LEIA-ME + RISCOS.
+# So EMPACOTA e LIMPA; NAO reconfere nada (nao roda o motor de novo). REUSA o selo que a estreia gravou.
+#
+# O GUARDA (o principal): so vira pacote 🟢 uma entrega REALMENTE provada (carimbo 🟢 E a evidencia do
+# proprio registro nao contradiz). Registro 🟡, ou carimbo virado 🟢 na mao sobre evidencia reprovada
+# (adulterado), sao RECUSADOS — nunca um pacote com cara de provado sem ser.
+#
+# USO:  nb-exportar-pacote <registro-de-entrega> [destino]
+#   <registro-de-entrega> = o entrega-*.txt que a estreia gravou (em $HOME/.norte-box/entregas/).
+#   [destino]             = a pasta onde criar o pacote (default: diretorio atual).
+#
+# SAIDA:
+#   🟢 pacote pronto ...                         -> exit 0  (gerou o pacote)
+#   🛑 NAO EXPORTEI: entrega nao provada ...      -> exit 2  (guarda barrou)
+#   🟡 nao consegui exportar ...                  -> exit 2  (pre-condicao / kill-switch)
+#
+# KILL-SWITCH: NORTE_EXPORTAR=0 desliga. O pacote NUNCA usa rede (privado por padrao). LEIS: fail-honest,
+# set -u, nao usa dado como comando.
+set -u
+
+_reg="${1:-}"
+_dest="${2:-.}"
+
+if [ -z "$_reg" ]; then
+  echo "🟡 nao consegui exportar: diga qual registro de entrega (uso: nb-exportar-pacote <registro-de-entrega> [destino])."
+  exit 2
+fi
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_exportar.sh" ]; then
+  echo "🟡 nao consegui exportar: nao achei o exportador nesta instalacao."
+  exit 2
+fi
+# shellcheck source=/dev/null
+. "${_hooks}/_exportar.sh"
+
+command -v _norte_exportar_pacote >/dev/null 2>&1 || { echo "🟡 nao consegui exportar: motor incompleto (exportador ausente)."; exit 2; }
+
+_norte_exportar_pacote "$_reg" "$_dest"
+exit $?

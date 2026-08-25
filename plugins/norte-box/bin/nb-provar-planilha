@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# nb-provar-planilha — helper do PORTAO "planilha→confere" (NRT-_990212 passo 5) do norte-box.
+# ADITIVO ao nb-provar (que prova "codigo roda"): aqui a entrega e um PAR — um CHECKER (script
+# .py/.js/.sh que ASSERTA sobre valores) + um arquivo de DADOS (.csv/.json). O motor copia OS DOIS
+# pro MESMO sandbox contido e roda o checker com os dados em ./dados.<ext>; exit 0 do checker = a
+# planilha CONFERIU -> selo 🟢. exit!=0 = a planilha nao passou -> continua 🟡 com o erro real.
+#
+# USO:  nb-provar-planilha <checker> <dados> [sessao]
+#   <checker> = o conferidor (.py/.js/.sh) que a caixa criou (ou o template planilha_confere.py).
+#   <dados>   = a planilha (.csv/.json).
+#   [sessao]  = rotulo curto (opcional; default "sessao").
+#
+# SAIDA (stdout, humano de padaria):
+#   ✅ conferi assim: ... exit 0 ...  (+ os numeros conferidos)  -> exit 0  (CONFERIU; fichinha virou verde)
+#   🟡 ainda nao provei: ... falhou aqui: ...                    -> exit 1  (a planilha nao passou)
+#   🟡 nao consegui provar / portao desligado                    -> exit 2  (pre-condicao / kill-switch)
+#
+# KILL-SWITCH: NORTE_PLANILHA=0 desliga o portao (volta ao comportamento de hoje). A prova NUNCA sai da
+# maquina (privado por padrao). LEIS: fail-honest, sandbox contido, set -u, nao usa dado como comando.
+set -u
+
+_chk="${1:-}"
+_dados="${2:-}"
+_sess="${3:-sessao}"
+
+if [ -z "$_chk" ] || [ -z "$_dados" ]; then
+  echo "🟡 nao consegui provar: diga qual conferidor e qual planilha (uso: nb-provar-planilha <checker> <dados> [sessao])."
+  exit 2
+fi
+
+# Carrega a lib do motor (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_provar.sh" ]; then
+  _lib="${_self_dir}/../hooks/_provar.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_provar.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_provar.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🟡 nao consegui provar: nao achei o motor de prova nesta instalacao."
+  exit 2
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+# O _provar.sh reusa a lib da fichinha pra ler/escrever o selo; carrega se estiver ao lado.
+if [ -f "${_self_dir}/../hooks/_situacao.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${_self_dir}/../hooks/_situacao.sh" 2>/dev/null || true
+fi
+
+command -v _norte_provar_planilha >/dev/null 2>&1 || { echo "🟡 nao consegui provar: motor incompleto (portao planilha ausente)."; exit 2; }
+
+_norte_provar_planilha "$_chk" "$_dados" "$_sess"
+exit $?

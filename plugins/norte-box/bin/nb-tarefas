@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# nb-tarefas — a PAGINA VIVA POR TAREFA do norte-box (NRT-_990380, ultima peca do passo 10).
+# Mostra CADA tarefa que a caixa ja fez como um cartao vivo (status / prova / decisao / historico), lido
+# dos REGISTROS SELADOS de entrega ($HOME/.norte-box/entregas/). E READ-ONLY: le e mostra, NUNCA escreve.
+#
+# O status vem do RC do verificador de selo (_norte_estreia_verificar, da estreia/Ponta B) — "o pior
+# vence" pelo RC, NUNCA pelo texto do carimbo: um flip 🟡->🟢 a mao aparece 🔴 (o HMAC do corpo quebra).
+#
+# USO:
+#   nb-tarefas            -> a LISTA: 1 linha por tarefa (status · rotulo · N runs · ultimo: quando).
+#   nb-tarefas <rotulo>   -> o CARTAO daquela tarefa: status · prova · decisao · historico.
+#
+# KILL-SWITCH: NORTE_TAREFAS=0 desliga (ecoa amarelo, exit 2). Nada sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, read-only, sem rede, nao usa dado como comando.
+set -u
+
+_rot="${1:-}"
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_tarefas.sh" ]; then
+  echo "🟡 nao consegui abrir a pagina de tarefas: nao achei a lib nesta instalacao."
+  exit 2
+fi
+# reusa o CORACAO do status: _estreia.sh traz _norte_estreia_verificar (o RC 0/1/2 do selo). Sem ele,
+# o motor recusa (amarelo). Carrega tambem _situacao.sh/_provar.sh por seguranca (irmas), sem travar.
+[ -f "${_hooks}/_situacao.sh" ] && { . "${_hooks}/_situacao.sh" 2>/dev/null || true; }
+[ -f "${_hooks}/_provar.sh" ]   && { . "${_hooks}/_provar.sh"   2>/dev/null || true; }
+if [ ! -f "${_hooks}/_estreia.sh" ]; then
+  echo "🟡 nao consegui abrir a pagina de tarefas: o verificador de selo (estreia) nao esta nesta instalacao."
+  exit 2
+fi
+# shellcheck source=/dev/null
+. "${_hooks}/_estreia.sh"
+# shellcheck source=/dev/null
+. "${_hooks}/_tarefas.sh"
+
+command -v _norte_tarefas >/dev/null 2>&1 || { echo "🟡 nao consegui abrir a pagina de tarefas: motor incompleto."; exit 2; }
+
+_norte_tarefas "$_rot"
+exit $?
