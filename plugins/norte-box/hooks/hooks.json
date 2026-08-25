@@ -89,6 +89,12 @@
           },
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/vigia-doctor.sh\"",
+            "async": false,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
             "async": true,
             "shell": "bash"

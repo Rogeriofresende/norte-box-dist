@@ -86,6 +86,35 @@ else
   emit "Freios (5 hooks)" "NAO_VERIFICADO" "CLAUDE_PLUGIN_ROOT/hooks/hooks.json nao acessivel"
 fi
 
+# 3b/3c/3d — ITENS NOVOS (NRT-_990419): red-team (Peca 1), /objetivo (Peca 2), freio de mao. Regra dura
+# herdada: OK so' se checou DE FATO. Ausencia com RAIZ RESOLVIDA = FALHA (esta versao do doctor-check
+# mora na MESMA arvore que devia ter o item; faltar = instalacao quebrada, com conserto). Raiz nao
+# resolvida = NAO_VERIFICADO (nao afirmamos nada).
+if [ -n "$ROOT" ]; then
+  if [ -x "$ROOT/bin/nb-red-team" ]; then emit "Red-team" "OK" "bin/nb-red-team presente e executavel"
+  elif [ -f "$ROOT/bin/nb-red-team" ]; then emit "Red-team" "FALHA" "sem +x (rode: chmod +x bin/nb-red-team)"
+  else emit "Red-team" "FALHA" "bin/nb-red-team ausente (reinstale/atualize o plugin)"; fi
+else emit "Red-team" "NAO_VERIFICADO" "raiz do plugin nao acessivel"; fi
+
+if [ -n "$ROOT" ]; then
+  _oc=""; _of=""
+  [ -f "$ROOT/commands/objetivo.md" ] && _oc=1
+  grep -q '_norte_objetivo_definir()' "$ROOT/hooks/_situacao.sh" 2>/dev/null && _of=1
+  if [ -n "$_oc" ] && [ -n "$_of" ]; then emit "Objetivo" "OK" "commands/objetivo.md + funcoes em _situacao.sh"
+  else
+    _falta=""
+    [ -z "$_oc" ] && _falta="$_falta commands/objetivo.md"
+    [ -z "$_of" ] && _falta="$_falta _norte_objetivo_definir"
+    emit "Objetivo" "FALHA" "faltando:$_falta (reinstale/atualize o plugin)"
+  fi
+else emit "Objetivo" "NAO_VERIFICADO" "raiz do plugin nao acessivel"; fi
+
+if [ -n "$ROOT" ]; then
+  if [ -x "$ROOT/bin/nb-freio" ]; then emit "Freio de mao" "OK" "bin/nb-freio presente e executavel"
+  elif [ -f "$ROOT/bin/nb-freio" ]; then emit "Freio de mao" "FALHA" "sem +x (rode: chmod +x bin/nb-freio)"
+  else emit "Freio de mao" "FALHA" "bin/nb-freio ausente (reinstale/atualize o plugin)"; fi
+else emit "Freio de mao" "NAO_VERIFICADO" "raiz do plugin nao acessivel"; fi
+
 # 4. Estado gravavel
 if mkdir -p "$HOME/.norte-box" ./norte-out >/dev/null 2>&1 && touch ./norte-out/.probe >/dev/null 2>&1; then
   rm -f ./norte-out/.probe >/dev/null 2>&1

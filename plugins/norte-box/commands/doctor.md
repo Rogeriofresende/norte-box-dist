@@ -18,8 +18,8 @@ Ele imprime uma linha por item no formato `ITEM|STATUS|DETALHE`, onde STATUS e u
 
 Os itens se dividem em DOIS grupos, e voce PRECISA deixar essa diferenca clara pra pessoa:
 
-- **Instalado (a casca):** `Prova de vida`, `Superpowers`, `Freios (5 hooks)`, `Estado gravavel`,
-  `git`. Diz que o pacote CARREGOU na maquina.
+- **Instalado (a casca):** `Prova de vida`, `Superpowers`, `Freios (5 hooks)`, `Red-team`, `Objetivo`,
+  `Freio de mao`, `Estado gravavel`, `git`. Diz que o pacote CARREGOU na maquina.
 - **Onboarding (o que liga de verdade):** `Convite validado`, `Telemetria ligada`, `Modo`. Diz se a
   pessoa JA validou o convite e aceitou o termo — ou seja, se o Norte-box esta LIGADO, nao so
   instalado. Um plugin instalado com onboarding PENDENTE **nao esta funcionando ainda**. O item
