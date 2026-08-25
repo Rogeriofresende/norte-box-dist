@@ -66,17 +66,20 @@ _norte_exportar_sanitiza() {
 #   Este e o detector AUTO-CONTIDO do exportador: ele funciona MESMO num cliente onde o gate oficial
 #   secret_pii.sh nao foi instalado (o plugin instalado leva so plugins/norte-box/, NAO leva build/gates/).
 #   E o unico ponto que ve o ROTULO (que vira nome de pasta/stdout e o gate nunca escaneia) e o e-mail cru.
-# Os padroes sao construidos por PEDACOS (variaveis _p*/_d/_ip) pra este ARQUIVO-FONTE nao carregar um
-# secret/CPF/IP-interno literal completo — senao a propria portaria do repo (secret_pii.sh) tropecaria nele.
+# Os prefixos de SECRET sao construidos por PEDACOS (variaveis _p*) pra este ARQUIVO-FONTE nao carregar um
+# literal de secret (sk-/ghp_/AKIA) que a portaria do repo (secret_pii.sh) marcaria. Ja o IP/host interno
+# NAO e mais embutido: virou padrao generico (qualquer IPv4 / *.ts.net / caminho de servidor), sem literal.
 # 100% local, sem rede. grep -qE. Retorna "0" se limpo.
 _norte_exportar_sensivel() {
   local _t="${1:-}"
   local _d='[0-9]' _p1='sk' _p2='ghp' _p3='AKIA'
-  # IPs/hosts internos da Norte, montados por pedacos com "" no meio (o "" quebra o literal — assim ESTE
-  # arquivo-fonte NAO carrega o IP/host completo e a portaria do repo (secret_pii.sh secao 4) nao tropeca).
-  local _ipA="178\\.104""\\.23\\.111" _ipB="163\\.176""\\.212\\.114" _hostV="vela-""norte\\.tail" _rootN="/root""/(agentes|luna)"
+  # Infra de servidor NUNCA vai pro cliente. Em vez de EMBUTIR os IPs/hosts internos da Norte (o que faria
+  # ESTE arquivo publico carregar o literal — o furo que o Val red-team achou, NRT-_990380), o detector barra
+  # a FORMA generica: qualquer IPv4, qualquer host Tailscale (*.ts.net) e qualquer caminho de servidor
+  # (/root/... , /home/...). Cobre os IPs internos SEM guardar o valor deles no arquivo-fonte.
+  local _anyip='([0-9]{1,3}\.){3}[0-9]{1,3}' _anyts='[A-Za-z0-9_-]+\.ts\.net' _anyroot='/(root|home)/[A-Za-z0-9_./-]+'
   printf '%s' "$_t" | grep -qE \
-    "${_p1}-[A-Za-z0-9_-]{6,}|${_p2}_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|${_p3}[A-Z0-9]{16}|aact_[A-Za-z0-9_-]{10,}|xox[bporas]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|-----BEGIN [A-Z ]*PRIVATE KEY|${_d}{3}\.${_d}{3}\.${_d}{3}-${_d}{2}|${_d}{2}\.${_d}{3}\.${_d}{3}/${_d}{4}-${_d}{2}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|${_ipA}|${_ipB}|${_hostV}|${_rootN}|luna-""claude" \
+    "${_p1}-[A-Za-z0-9_-]{6,}|${_p2}_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|${_p3}[A-Z0-9]{16}|aact_[A-Za-z0-9_-]{10,}|xox[bporas]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|-----BEGIN [A-Z ]*PRIVATE KEY|${_d}{3}\.${_d}{3}\.${_d}{3}-${_d}{2}|${_d}{2}\.${_d}{3}\.${_d}{3}/${_d}{4}-${_d}{2}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|${_anyip}|${_anyts}|${_anyroot}" \
     && { printf '1'; return 0; }
   printf '0'
 }
