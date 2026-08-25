@@ -55,7 +55,13 @@ command -v _norte_situacao_tem >/dev/null 2>&1 || exit 0
 
 # Sem fichinha (ninguem declarou objetivo ainda) -> nada de que derivar. Silencio.
 _norte_situacao_tem || exit 0
-_obj="$(_norte_situacao_campo objetivo 2>/dev/null)"
+# MEMORIA DO OBJETIVO (NRT-_990419): le pelo leitor unico (declarado tem prioridade; herda o
+# kill-switch NORTE_OBJETIVO=0). Fallback pro leitor antigo se a lib nova nao estiver carregada.
+if command -v _norte_objetivo_atual >/dev/null 2>&1; then
+  _obj="$(_norte_objetivo_atual 2>/dev/null)"
+else
+  _obj="$(_norte_situacao_campo objetivo 2>/dev/null)"
+fi
 [ -n "$_obj" ] || exit 0
 
 # O prompt novo da pessoa (dado NAO-confiavel; so comparamos texto, nunca executamos).
@@ -127,7 +133,8 @@ Regras (nao-negociaveis):
 - Repita o objetivo COM AS PALAVRAS DELA (o texto acima), sem parafrasear.
 - Se ela escolher "continuar no objetivo": traga o pedido novo de volta pro rumo, ou registre como
   nota lateral — mas o objetivo guardado NAO muda.
-- Se ela escolher "mudar de rumo": ok, siga o novo pedido (o objetivo so muda porque ELA disse).
+- Se ela escolher "mudar de rumo": ok, siga o novo pedido (o objetivo so muda porque ELA disse). E,
+  se ela quiser CRAVAR o novo objetivo com as palavras dela, convide numa linha: use /norte-box:objetivo.
 - Uma linha, tom de padaria, sem jargao. NAO trave o trabalho — e uma pergunta, nao um bloqueio.
 === fim ===
 EOF

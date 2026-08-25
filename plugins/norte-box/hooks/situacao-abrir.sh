@@ -60,7 +60,13 @@ command -v _norte_situacao_tem >/dev/null 2>&1 || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
 
 if _norte_situacao_tem; then
-  _obj="$(_norte_situacao_campo objetivo)"
+  # MEMORIA DO OBJETIVO (NRT-_990419): le pelo leitor unico (declarado tem prioridade; herda o
+  # kill-switch NORTE_OBJETIVO=0). Fallback pro leitor antigo se a lib nova nao estiver carregada.
+  if command -v _norte_objetivo_atual >/dev/null 2>&1; then
+    _obj="$(_norte_objetivo_atual 2>/dev/null)"
+  else
+    _obj="$(_norte_situacao_campo objetivo)"
+  fi
   _ent="$(_norte_situacao_campo entregou)"
   _selo="$(_norte_situacao_selo)"
 

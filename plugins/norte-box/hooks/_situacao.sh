@@ -448,6 +448,59 @@ _norte_perfil_definir() {
   return 0
 }
 
+# --- MEMORIA DO OBJETIVO (NRT-_990419 Camada 3): a caixa lembra do objetivo ENTRE conversas. -------
+# O objetivo tem DUAS origens: (1) DECLARADO por ato explicito (/norte-box:objetivo "<palavras cruas>")
+# -> .objetivo_declarado:true, o Stop NUNCA sobrescreve (soberania: so a pessoa reescreve); (2) rotulo
+# AUTO da 1a fala (o que _norte_situacao_gravar ja fazia) -> .objetivo_declarado:false, fraco, so um
+# lembrete. O leitor unico abaixo entrega o texto atual (declarado tem prioridade porque .objetivo ja
+# carrega o texto certo) e carrega o KILL-SWITCH: NORTE_OBJETIVO=0 -> a memoria do objetivo fica muda.
+
+# _norte_objetivo_definir <texto> — grava o objetivo VERBATIM (ato explicito). Marca declarado:true pra
+# o Stop preservar. Preserva os demais campos se a fichinha existe; senao cria uma nova. Clona o padrao
+# de _norte_perfil_definir (verbatim jq --arg, tmp+mv atomico). Sem jq / sem texto -> 1 (fail-open).
+_norte_objetivo_definir() {
+  local _o="${1:-}"
+  [ -n "$_o" ] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  local _dir="${HOME}/.norte-box" _f _tmp _ts
+  _f="$(_norte_situacao_path)"; mkdir -p "$_dir" 2>/dev/null || return 1
+  _ts="$(date -u +%FT%TZ 2>/dev/null || echo unknown)"; _tmp="${_f}.tmp.$$"
+  if [ -f "$_f" ] && jq -e . "$_f" >/dev/null 2>&1; then
+    jq --arg o "$_o" --arg ts "$_ts" '.objetivo=$o | .objetivo_em=$ts | .objetivo_declarado=true | .ultima_atualizacao=$ts' "$_f" > "$_tmp" 2>/dev/null \
+      || { rm -f "$_tmp" 2>/dev/null; return 1; }
+  else
+    jq -cn --arg o "$_o" --arg ts "$_ts" \
+      '{objetivo:$o, objetivo_em:$ts, objetivo_declarado:true, entregou:"", proximo:"", tipo_pedido:"", perfil:"", perfil_em:"", provado:false, prova:{artefato:"",entrega:""}, ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null \
+      || { rm -f "$_tmp" 2>/dev/null; return 1; }
+  fi
+  mv -f "$_tmp" "$_f" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
+  return 0
+}
+
+# _norte_objetivo_atual — ecoa o objetivo atual (declarado OU rotulo auto — o .objetivo ja tem o certo).
+# KILL-SWITCH DENTRO: NORTE_OBJETIVO=0 -> ecoa nada (return 1). Sem fichinha -> nada. Usado pelo abrir
+# e pela deriva (os dois herdam o kill-switch de graca).
+_norte_objetivo_atual() {
+  [ "${NORTE_OBJETIVO:-1}" = "0" ] && return 1
+  local _f; _f="$(_norte_situacao_path)"
+  _norte_situacao_tem || return 1
+  jq -r '.objetivo // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null
+}
+
+# _norte_objetivo_declarado — 0 (SIM) se o objetivo foi DECLARADO por ato explicito; 1 caso contrario.
+_norte_objetivo_declarado() {
+  local _f; _f="$(_norte_situacao_path)"
+  _norte_situacao_tem || return 1
+  jq -e '.objetivo_declarado == true' "$_f" >/dev/null 2>&1
+}
+
+# _norte_objetivo_em — ecoa a data (ISO) em que o objetivo foi DECLARADO (vazio se ausente/nao-declarado).
+_norte_objetivo_em() {
+  local _f; _f="$(_norte_situacao_path)"
+  _norte_situacao_tem || return 1
+  jq -r '.objetivo_em // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null
+}
+
 # _norte_situacao_gravar — escreve/atualiza a fichinha (fim de sessao). Recebe por variaveis de
 # ambiente pra nao brigar com aspas: NB_SIT_OBJETIVO, NB_SIT_ENTREGOU, NB_SIT_PROXIMO.
 #
@@ -484,11 +537,24 @@ _norte_situacao_gravar() {
     _keep_perfil_em="$(jq -r '.perfil_em // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
   fi
 
+  # MEMORIA DO OBJETIVO (NRT-_990419): se foi DECLARADO por ato explicito (/objetivo), o Stop PRESERVA
+  # o texto+data e mantem declarado:true — a 1a fala NUNCA sobrescreve (soberania). Sem declaracao, o
+  # objetivo = rotulo AUTO da 1a fala (NB_SIT_OBJETIVO), declarado:false (fraco). Mesma keep-list nas
+  # DUAS branches abaixo (o risco que o juiz apontou: divergir aqui rebaixa o objetivo declarado calado).
+  local _use_obj="${NB_SIT_OBJETIVO:-}" _use_obj_em="" _use_obj_decl="false"
+  if [ -f "$_f" ] && jq -e '.objetivo_declarado == true' "$_f" >/dev/null 2>&1; then
+    _use_obj="$(jq -r '.objetivo // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+    _use_obj_em="$(jq -r '.objetivo_em // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+    _use_obj_decl="true"
+  fi
+
   if [ -n "$_keep_art" ]; then
     # PRESERVA o verde legitimo do motor. Objetivo/entregou/proximo sao atualizados (o Stop conhece a
     # 1a fala); provado/prova ficam como o motor deixou; tipo_pedido + perfil (manuais) preservados.
     jq -cn \
-      --arg objetivo  "${NB_SIT_OBJETIVO:-}" \
+      --arg objetivo  "$_use_obj" \
+      --arg objem     "$_use_obj_em" \
+      --arg objdecl   "$_use_obj_decl" \
       --arg entregou  "${NB_SIT_ENTREGOU:-}" \
       --arg proximo   "${NB_SIT_PROXIMO:-}" \
       --arg tipo      "$_keep_tipo" \
@@ -497,21 +563,25 @@ _norte_situacao_gravar() {
       --arg art       "$_keep_art" \
       --arg ent       "$_keep_ent" \
       --arg ts        "$_ts" \
-      '{objetivo:$objetivo, entregou:$entregou, proximo:$proximo, tipo_pedido:$tipo,
+      '{objetivo:$objetivo, objetivo_em:$objem, objetivo_declarado:($objdecl=="true"),
+        entregou:$entregou, proximo:$proximo, tipo_pedido:$tipo,
         perfil:$perfil, perfil_em:$perfilem,
         provado:true, prova:{artefato:$art, entrega:$ent}, ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
   else
     # Default HONESTO: sem prova valida do motor -> provado:false, prova vazia. Conteudo do trabalho NAO
     # entra: so o rotulo do objetivo; tipo_pedido + perfil (manuais) preservados.
     jq -cn \
-      --arg objetivo  "${NB_SIT_OBJETIVO:-}" \
+      --arg objetivo  "$_use_obj" \
+      --arg objem     "$_use_obj_em" \
+      --arg objdecl   "$_use_obj_decl" \
       --arg entregou  "${NB_SIT_ENTREGOU:-}" \
       --arg proximo   "${NB_SIT_PROXIMO:-}" \
       --arg tipo      "$_keep_tipo" \
       --arg perfil    "$_keep_perfil" \
       --arg perfilem  "$_keep_perfil_em" \
       --arg ts        "$_ts" \
-      '{objetivo:$objetivo, entregou:$entregou, proximo:$proximo, tipo_pedido:$tipo,
+      '{objetivo:$objetivo, objetivo_em:$objem, objetivo_declarado:($objdecl=="true"),
+        entregou:$entregou, proximo:$proximo, tipo_pedido:$tipo,
         perfil:$perfil, perfil_em:$perfilem,
         provado:false, prova:{artefato:"", entrega:""}, ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
   fi
