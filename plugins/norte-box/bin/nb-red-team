@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# nb-red-team — helper de linha de comando do RED-TEAM LEVE (Camada 2) do norte-box.
+# Roda a bateria adversarial DEPOIS do motor: pega a MESMA entrega (.py/.js/.sh) e tenta QUEBRA-LA na
+# MESMA caixa-de-areia (rede cortada + timeout + dir descartavel), com entradas ruins no stdin
+# (vazia, lixo/binario, gigante). Se algum ataque trava/estoura o tempo OU vaza algo com cara de
+# segredo na saida -> rebaixa o selo pra 🟡 com o motivo na fichinha (situacao.json). Se passa tudo,
+# nao mexe no selo do motor.
+#
+# USO:  nb-red-team <arquivo> [sessao]
+#   <arquivo> = a MESMA entrega que o motor provou (o script .py/.js/.sh).
+#   [sessao]  = rotulo curto pra separar por sessao (opcional; default "sessao").
+#
+# SAIDA (stdout, humano de padaria):
+#   ✅ red-team passou: ...                    -> exit 0  (nenhum ataque quebrou/vazou; selo intacto)
+#   🟡 red-team achou: <o que>                 -> exit 1  (rebaixou 🟢 -> 🟡 com o motivo)
+#   ℹ️  red-team nao rodou: <motivo>            -> exit 2  (kill-switch / sem runner / sem sandbox — fail-open)
+#
+# LEIS: LOCAL/ZERO-REDE (reusa a cerca do motor; NAO faz POST/telemetria). KILL-SWITCH NORTE_RED_TEAM=0.
+# FAIL-OPEN (sem sandbox -> nao trava, nao rebaixa). Reusa a infra do motor (_provar.sh) — nao reescreve.
+set -u
+
+_arq="${1:-}"
+_sess="${2:-sessao}"
+
+if [ -z "$_arq" ]; then
+  echo "ℹ️  red-team nao rodou: diga qual arquivo eu ataco (uso: nb-red-team <arquivo> [sessao])."
+  exit 2
+fi
+
+# --- localiza as libs (bin/ e hooks/ sao irmaos sob plugins/norte-box/) ---
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks_dir=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks_dir="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks_dir="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks_dir" ]; then
+  echo "ℹ️  red-team nao rodou: nao achei os hooks nesta instalacao."
+  exit 2
+fi
+
+# motor (tipo/runner/timeout/cerca/arvore de provas) — FONTE UNICA da infra que reusamos.
+if [ -f "${_hooks_dir}/_provar.sh" ]; then . "${_hooks_dir}/_provar.sh"; fi
+# helpers de fichinha/realpath (o motor usa; carrega se ao lado).
+if [ -f "${_hooks_dir}/_situacao.sh" ]; then . "${_hooks_dir}/_situacao.sh" 2>/dev/null || true; fi
+# redator compartilhado (detector de vazamento).
+if [ -f "${_hooks_dir}/_redact.sh" ]; then . "${_hooks_dir}/_redact.sh" 2>/dev/null || true; fi
+# a lib do red-team.
+if [ -f "${_hooks_dir}/_red-team.sh" ]; then . "${_hooks_dir}/_red-team.sh"; else
+  echo "ℹ️  red-team nao rodou: nao achei a lib do red-team nesta instalacao."
+  exit 2
+fi
+
+command -v _norte_red_team_rodar >/dev/null 2>&1 || { echo "ℹ️  red-team nao rodou: lib incompleta."; exit 2; }
+
+_norte_red_team_rodar "$_arq" "$_sess"
+exit $?
