@@ -67,18 +67,26 @@ jobs:
           fi
           echo "jq OK: $(jq --version)"
 
-      - name: Instalar Claude Code (npm)
+      - name: Instalar Claude Code (npm) — forca a versao LATEST (a mesma que o time instala)
         shell: bash
         run: |
           set -uo pipefail
           # via publica dos 7: o instalador oficial e o npm. Sem token, sem login.
-          npm install -g @anthropic-ai/claude-code
-          # garante que o 'claude' esta no PATH do Git Bash
+          # ATENCAO: o runner windows-latest JA vem com um 'claude' PRE-INSTALADO e VELHO (2.1.197)
+          # que sombra o do npm no PATH e NAO tem a opcao '-y'. O time instala a LATEST via npm,
+          # entao forcamos a mesma: @latest + poe o bin global do npm NA FRENTE do PATH.
+          npm install -g @anthropic-ai/claude-code@latest
+          NPM_PREFIX="$(npm prefix -g 2>/dev/null || echo)"
+          if [ -n "$NPM_PREFIX" ]; then
+            # unix: bin em $prefix/bin ; windows: o shim 'claude' fica na raiz do $prefix
+            printf '%s\n' "$NPM_PREFIX/bin" "$NPM_PREFIX" >> "$GITHUB_PATH"
+          fi
           if ! command -v claude >/dev/null 2>&1; then
             echo "::error::claude nao ficou no PATH apos npm install -g"
             exit 1
           fi
-          echo "claude versao: $(claude --version)"
+          echo "npm prefix: $NPM_PREFIX"
+          echo "claude versao (PATH atual, pode ser a pre-instalada): $(claude --version 2>&1 || echo n/a)"
 
       - name: E2E — marketplace add + install -y (SEM login, repo publico)
         shell: bash
@@ -86,15 +94,29 @@ jobs:
           set -uo pipefail
           # zera qualquer credencial herdada -> prova que install NAO precisa de login (scrub, nao uso)
           unset ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN || true
-          echo "== add do marketplace publico (a partir do proprio repo em checkout local) =="
-          # usa o proprio checkout do repo publico como fonte do marketplace (path local = mesma
-          # arvore que sera publicada). Assim o teste prova ESTA versao, nao a que ja esta no ar.
-          # (marketplace add aceita URL, path OU 'owner/repo' — aqui usamos o path do runner.)
-          set +e
-          claude plugin marketplace add "$GITHUB_WORKSPACE" >/tmp/mkt.txt 2>&1
-          MKT=$?
-          set -e
-          cat /tmp/mkt.txt
+          # confirma que estamos na versao LATEST (a do time), nao na pre-instalada do runner
+          echo "claude EM USO neste teste: $(claude --version 2>&1 || echo n/a)"
+          echo "== add do marketplace publico (Rogeriofresende/norte-box-dist, do GitHub — o jeito REAL do time) =="
+          # instala do jeito EXATO que os 7 vao usar: 'owner/repo' publico, baixado do GitHub, SEM login.
+          # (antes apontava pro caminho local $GITHUB_WORKSPACE, mas o workflow nao faz checkout -> a
+          #  arvore vinha VAZIA e o marketplace.json "sumia" no Windows. Agora prova a versao publicada.)
+          # o Windows as vezes trava um arquivo do clone por um instante (EBUSY) -> retry ate 3x.
+          MKT=1
+          for try in 1 2 3; do
+            set +e
+            claude plugin marketplace add Rogeriofresende/norte-box-dist >/tmp/mkt.txt 2>&1
+            MKT=$?
+            set -e
+            cat /tmp/mkt.txt
+            if [ "$MKT" -eq 0 ]; then break; fi
+            if grep -qi 'EBUSY' /tmp/mkt.txt; then
+              echo "  (EBUSY intermitente do Windows na tentativa $try — limpo o dir travado e tento de novo em 5s)"
+              rm -rf "$HOME/.claude/plugins/marketplaces/Rogeriofresende-norte-box-dist" 2>/dev/null || true
+              sleep 5
+              continue
+            fi
+            break
+          done
           if [ "$MKT" -ne 0 ]; then
             echo "::error::marketplace add falhou (exit $MKT) num Windows real, SEM login"
             exit 1
