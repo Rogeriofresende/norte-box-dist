@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# nb-bilhete-validade — helper de linha de comando do AVISO DE BILHETE VENCIDO (o selo com prazo de
+# validade na RETOMADA) do norte-box (NRT-_990474). Recebe o CAMINHO de um bilhete (handoff) e ecoa UMA
+# linha de veredito sobre a IDADE dele: 🟢 fresco / 🟡 envelhecido / 🔴 velho — confira antes de seguir.
+# Serve pra /norte-retomar mostrar esse aviso NO TOPO, antes das 5 perguntas.
+#
+# USO:
+#   nb-bilhete-validade <arquivo-handoff>   -> ecoa a linha de veredito no stdout.
+#
+# ONDE CONFERE: no CWD (a pasta do projeto do usuario) — le o cabecalho do bilhete (selado-em +
+# selado-em-commit) e conta os commits desde no git local. Rode do diretorio do projeto (a /norte-retomar
+# ja roda ali).
+#
+# SAIDA:
+#   stdout -> UMA linha: o veredito da idade do bilhete.
+#   exit 0 SEMPRE que conseguiu carregar a peca (fail-open: NUNCA trava a retomada). exit 2 so pra erro de
+#   uso (sem argumento). Sem carimbo/sem git/carimbo malformado NAO e erro: vira "🟡 nao sei a idade".
+#
+# MOLDURA HONESTA (nao overclaim): a peca mede so IDADE + numero de mudancas no git — NAO le o conteudo do
+# bilhete nem do codigo. Commits em outro canto do repo contam; mudanca fora do git nao conta. E ALERTA pra
+# conferir, NUNCA licenca pra executar. 🟢 quer dizer "recente", nao "correto".
+#
+# LEIS: LOCAL/zero rede (o bilhete e do proprio projeto e nunca sai da maquina) · fail-open da sessao (peca
+# quebrada / carimbo ausente nao trava a /norte-retomar) · dado e dado (o commit vira argumento de git
+# rev-list, nunca comando). Kill-switch NORTE_VALIDADE=0 -> inerte (nada no stdout). bash 3.2, set -u.
+set -u
+
+_arg="${1:-}"
+if [ -z "$_arg" ]; then
+  printf '🟡 uso: nb-bilhete-validade <arquivo-handoff>\n' >&2
+  exit 2
+fi
+
+# Carrega a lib da validade (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_bilhete_validade.sh" ]; then
+  _lib="${_self_dir}/../hooks/_bilhete_validade.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_bilhete_validade.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_bilhete_validade.sh"
+fi
+if [ -z "$_lib" ]; then
+  # fail-open: sem a lib, nao trava a retomada — so avisa que nao sabe a idade e segue.
+  printf '🟡 nao achei o aviso de bilhete vencido nesta instalacao — trate a idade como suposicao.\n'
+  exit 0
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_bilhete_validade >/dev/null 2>&1 || {
+  printf '🟡 aviso de bilhete vencido incompleto nesta instalacao — trate a idade como suposicao.\n'
+  exit 0
+}
+
+_norte_bilhete_validade "$_arg"
+exit 0

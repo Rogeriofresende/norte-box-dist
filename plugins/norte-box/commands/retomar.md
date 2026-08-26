@@ -10,6 +10,10 @@ herdado, onde a sessao anterior parou, o proximo passo e 1 discordancia se o mun
 
 Siga o contrato da skill `norte-retomar`:
 - detecte o **staleness** (FRESH / SLIGHTLY_STALE / STALE / VERY_STALE) por idade + commits desde;
+- rode o **aviso de bilhete vencido** (`bin/nb-bilhete-validade "$HANDOFF_PATH"`) e mostre a linha de
+  veredito da idade (`🟢 fresco` / `🟡 envelhecido` / `🔴 velho — confira antes de seguir`, com Nd/Nc) **no
+  TOPO**, antes das 5 perguntas — coexistindo com o bloco 🔴 do selo. E ALERTA pra conferir, nunca licenca
+  pra executar (mede so idade+commits, nao le o conteudo); `🟡 nao sei a idade` se faltar carimbo/git;
 - siga a cadeia `continues-from` (leitura real, recursiva ate a raiz);
 - levante as **5 perguntas** (premissa / beco / efeito / mundo / intencao) ANTES de pesquisar;
 - **valide o mundo** — trate o "proximo passo" do handoff como SUPOSICAO, nao fato; se o mundo mexeu

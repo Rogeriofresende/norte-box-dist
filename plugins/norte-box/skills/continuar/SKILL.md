@@ -41,6 +41,14 @@ Deriva os campos do handoff:
 - **continues-from** = o handoff anterior deste projeto, se existir:
   `ls -t ./norte-out/handoffs/*.md 2>/dev/null | head -1` (ou `-` se for o primeiro).
 - **timestamp** = `date +"%Y-%m-%d %H:%M"` e o sufixo do arquivo `date +"%Y%m%d-%H%M"`.
+- **carimbo de validade** (o "prazo do bilhete" — a `norte-retomar` usa isto pra avisar se o
+  bilhete envelheceu). Deriva de COMANDO, nao de opiniao:
+  - **selado-em-commit** = `git rev-parse --short HEAD 2>/dev/null || echo sem-git` — o commit do
+    projeto NESTE instante (a ancora pra contar "quantas mudancas entraram desde").
+  - **selado-em** = `date -u +%Y-%m-%dT%H:%M:%SZ` — o agora em ISO UTC (a ancora pra contar "ha
+    quantos dias").
+  Escreva os dois no CABECALHO do handoff (ver Passo 2). Se nao for repo git, `selado-em-commit`
+  vira `sem-git` — sem problema: a `norte-retomar` trata como "commits: nao sei" e segue.
 
 ## Passo 2 — Escreva o handoff
 
@@ -52,6 +60,8 @@ o timestamp garante nome novo). Use exatamente estas 6 secoes:
 data: <AAAA-MM-DD HH:MM>
 projeto: <basename do cwd>
 continues-from: <arquivo do handoff anterior deste projeto | "-">
+selado-em-commit: <sha curto do HEAD do projeto AGORA | "sem-git">
+selado-em: <timestamp ISO UTC de agora>
 
 ## Objetivo (1 frase)
 <o que estamos tentando fazer — em portugues de padaria, sem sigla>
@@ -110,6 +120,11 @@ O que o selo faz, linha a linha, na secao **`## Onde estamos`** (so ali):
 o cita** — NAO que o trabalho foi feito **certo** (um arquivo real, mas vazio/errado, passa). E LOCAL, nao
 usa rede. Se o selo nao estiver instalado ou quebrar, ele **devolve o rascunho como esta** (fail-open) —
 nunca trava o `/continuar`. Kill-switch: `NORTE_BILHETE=0` grava o rascunho intacto, como antes.
+
+> **O carimbo de validade passa intacto pelo selo.** O selo do bilhete so mexe nas linhas `- [x] ...` da
+> secao `## Onde estamos` — o CABECALHO (incluindo `selado-em` e `selado-em-commit` do Passo 1) atravessa
+> sem ser tocado. Sao **duas pecas somadas, nao concorrentes**: o selo confere o que o bilhete jura ter
+> feito; o carimbo permite, na retomada, avisar se o bilhete envelheceu. Nao remova nem duplique o carimbo.
 
 ## Passo 3 — Atualize o ponteiro `ULTIMO.md`
 

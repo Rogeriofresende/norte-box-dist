@@ -66,6 +66,35 @@ Reporte: "Staleness do handoff: <NIVEL> (N dias, M commits desde)."
 Se VERY_STALE, adicione: "O handoff tem mais de 7 dias — o estado do mundo provavelmente mudou bastante.
 Considere salvar um handoff novo depois desta analise."
 
+## Passo 2.6 — Aviso de bilhete vencido (o carimbo de validade — mostrar NO TOPO)
+
+Alem do staleness por mtime do Passo 2, o bilhete pode trazer um **carimbo factual** que a `continuar`
+gravou no cabecalho: `selado-em: <ISO UTC>` + `selado-em-commit: <sha|sem-git>`. A partir dele, a peca
+**aviso de bilhete vencido** ecoa UMA linha de veredito baseada em FATO — quantos DIAS decorreram e
+quantos COMMITS entraram desde que o bilhete foi selado:
+
+```bash
+# rode do CWD do projeto (onde o git do projeto vive)
+"${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-validade" "$HANDOFF_PATH"
+```
+
+Sai uma destas linhas (guarde-a pra o cartao de chegada):
+- **`🟢 fresco (Nd, Nc)`** — recente; ainda assim confira.
+- **`🟡 envelhecido (Nd, Nc)`** — confira antes de confiar.
+- **`🔴 velho — confira antes de seguir (Nd, Nc)`** — o mundo provavelmente ja mexeu; NAO siga cego.
+- **`🟡 nao sei a idade — trate como suposicao`** — bilhete velho sem carimbo / sem git / carimbo
+  malformado (fail-open: informa, nunca trava).
+
+**Moldura honesta (a propria linha ja carrega):** a peca mede so **idade + numero de mudancas no git** —
+NAO le o conteudo do bilhete nem do codigo. Commits em outro canto do repo contam; mudanca fora do git
+nao conta. E **alerta pra conferir, NUNCA licenca pra executar**. `🟢` quer dizer "recente", nao "correto".
+
+Mostre essa linha **no TOPO** do cartao de chegada (ver Passo 8), ANTES das 5 perguntas. Ela **coexiste**
+com o bloco 🔴 das linhas rebaixadas pelo selo (Passo 7.5) — sao dois avisos diferentes: o selo diz "isto
+o disco desmente"; o carimbo diz "isto pode estar velho". Nao duplique nem remova nenhum dos dois. Se a
+peca nao estiver instalada ou o carimbo faltar, ela devolve `🟡 nao sei a idade` e a retomada segue normal.
+Kill-switch do mecanismo: `NORTE_VALIDADE=0` -> a linha nao aparece (a retomada segue como antes).
+
 ## Passo 3 — Siga a cadeia (chain-aware)
 
 Se o handoff tem `continues-from: <arquivo>` (diferente de `-`), **leia esse arquivo tambem** com o
@@ -173,10 +202,14 @@ Formato pelo staleness:
 - **STALE / VERY_STALE** -> escreva a mesma analise em `<basename-do-handoff>-RECEIVED.md` ao lado do
   handoff (idempotente — sobrescreve; nao encadeie RECEIVED).
 
-**Se houver linhas rebaixadas pelo selo (Passo 7.5), a PRIMEIRISSIMA coisa do output e o bloco 🔴 delas**
-(antes ate da ancora "De onde viemos") — o alerta de "isto o disco desmente" ganha de tudo.
+**Ordem dos avisos no TOPO (antes ate da ancora "De onde viemos"):**
+1. **Se houver linhas rebaixadas pelo selo (Passo 7.5), o bloco 🔴 delas vem PRIMEIRO** — "isto o disco
+   desmente" ganha de tudo.
+2. **Logo abaixo, a linha do aviso de bilhete vencido (Passo 2.6)** — o carimbo de validade (`🟢/🟡/🔴`).
+   Sao dois avisos diferentes e complementares (o selo desmente conteudo; o carimbo alerta idade); mostre
+   os dois quando existirem, sem duplicar.
 
-**A primeira coisa do output e SEMPRE a ancora** (nunca comprima nem pule, mesmo em FRESH):
+**Depois dos avisos, a ancora e SEMPRE a proxima coisa** (nunca comprima nem pule, mesmo em FRESH):
 
 ```
 De onde viemos: <objetivo herdado LITERAL do handoff>
