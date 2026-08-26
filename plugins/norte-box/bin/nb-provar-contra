@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# nb-provar-contra — helper da peca "PROVA QUE REPROVA" (negative control, NRT-_990429) do norte-box.
+# ADITIVO ao nb-provar-planilha (que prova que a planilha CONFERE): aqui a gente prova que o CONFERIDOR
+# TEM DENTES — rodando o MESMO checker contra um caso BOM (tem que PASSAR) e contra um dado SABIDAMENTE
+# ERRADO (tem que REPROVAR). O par "passa no bom E reprova no ruim" e o que prova o dente. Se o checker
+# aprova ate um caso errado, ele nao tem dentes; se ele so QUEBRA (typo/import), tambem nao prova — um
+# verde desses e mentira.
+#
+# USO:  nb-provar-contra <checker> <dados_ruim> [dados_ok] [sessao]
+#   <checker>    = o conferidor (.py/.js/.sh) que a caixa criou (o mesmo que voce quer confiar).
+#   <dados_ruim> = uma planilha (.csv/.json) com um erro PLANTADO (o checker DEVE reprovar isto).
+#   [dados_ok]   = uma planilha BOA (.csv/.json); o checker tem que PASSAR nela. E O PAR QUE PROVA O DENTE.
+#                  SEM ele, NAO ha 🟢 PROVA FORTE — no maximo 🟡 indicio fraco (um checker quebrado tambem
+#                  falha no ruim; so o caso bom separa "reprova de proposito" de "esta so quebrado").
+#   [sessao]     = rotulo curto (opcional; default "sessao").
+#
+# SAIDA (stdout, humano de padaria):
+#   🟢 PROVA FORTE: passou no bom E reprovou o erro plantado     -> exit 0  (tem dentes; fichinha virou verde)
+#   🟡 RECUSA a prova forte: aprovou o erro plantado / reprova ate o bom -> exit 1  (nao tem dentes)
+#   🟡 nao consegui provar / desligado / travou / QUEBROU no ruim / so-negativo (indicio fraco) -> exit 2
+#
+# KILL-SWITCH: NORTE_PROVA_NEGATIVA=0 desliga a peca (inerte). A prova NUNCA sai da maquina (privado por
+# padrao). LEIS: fail-honest, fail-CLOSED da confianca, fail-OPEN da sessao, sandbox contido, set -u,
+# nunca usa dado como comando.
+set -u
+
+_chk="${1:-}"
+_ruim="${2:-}"
+_ok="${3:-}"
+_sess="${4:-sessao}"
+
+if [ -z "$_chk" ] || [ -z "$_ruim" ]; then
+  echo "🟡 nao consegui provar: diga qual conferidor e qual dado ERRADO (uso: nb-provar-contra <checker> <dados_ruim> [dados_ok] [sessao])."
+  exit 2
+fi
+
+# Carrega a lib da peca (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_prova-negativa.sh" ]; then
+  _lib="${_self_dir}/../hooks/_prova-negativa.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_prova-negativa.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_prova-negativa.sh"
+fi
+if [ -z "$_lib" ]; then
+  echo "🟡 nao consegui provar: nao achei a peca 'prova que reprova' nesta instalacao."
+  exit 2
+fi
+# a lib ja carrega o motor (_provar.sh), a fichinha (_situacao.sh) e o redator (_redact.sh) se ao lado.
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_prova_negativa >/dev/null 2>&1 || { echo "🟡 nao consegui provar: peca incompleta (prova-negativa ausente)."; exit 2; }
+
+_norte_prova_negativa "$_chk" "$_ruim" "$_ok" "$_sess"
+exit $?
