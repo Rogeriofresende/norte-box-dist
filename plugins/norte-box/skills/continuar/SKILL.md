@@ -82,6 +82,35 @@ continues-from: <arquivo do handoff anterior deste projeto | "-">
 - **Nao invente.** Se uma secao nao tem substancia real, escreva menos — mas nunca deixe vazio
   quando houve trabalho de verdade.
 
+## Passo 2.5 — Sele o bilhete (OBRIGATORIO, antes de gravar)
+
+O "so marque `[x]` com prova" do Passo 2 e um pedido ao modelo — sozinho, **nada verifica**. Um bilhete
+pode jurar `[x] feito: PR #42` ou `[x] pronto: soma.py` sem NENHUM commit/arquivo no disco, e a proxima
+sessao (`norte-retomar`) le como verdade. Esse e o furo do **relato fabricado**. Feche-o **antes de gravar**:
+
+Depois de rascunhar o bilhete e **ANTES** de escrever o `.md`, rode o **selo do bilhete** no rascunho e
+grave a **versao conferida** (nunca o rascunho cru):
+
+```bash
+# rode do CWD do projeto (onde os arquivos/commits do bilhete moram)
+printf '%s' "$RASCUNHO" | "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-selo" - > ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md
+# (ou, se ja escreveu um rascunho em arquivo:)
+#   "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-selo" rascunho.md > ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md
+```
+
+O que o selo faz, linha a linha, na secao **`## Onde estamos`** (so ali):
+- **`[x]` que cita arquivo/commit que EXISTE** -> mantem `[x]` + `✓ conferido: existe`.
+- **`[x]` que cita arquivo/commit que NAO existe** -> **REBAIXA** pra `[ ] ⚠ nao achei no disco: <ref>`
+  (a mentira obvia morre aqui — nao grave um "feito" que o disco desmente).
+- **`[x]` que cita `PR #N`** ou coisa que nao da pra checar local -> `🟡 nao-verificavel` (nao rebaixa,
+  mas tambem nao abencoa).
+- **`[x]` sem artefato conferivel** (vago) -> mantem `[x]` + `(sem prova no disco pra conferir)`.
+
+**Moldura honesta (nao mais que isso):** o selo so atesta que **o arquivo/commit citado existe e o bilhete
+o cita** — NAO que o trabalho foi feito **certo** (um arquivo real, mas vazio/errado, passa). E LOCAL, nao
+usa rede. Se o selo nao estiver instalado ou quebrar, ele **devolve o rascunho como esta** (fail-open) —
+nunca trava o `/continuar`. Kill-switch: `NORTE_BILHETE=0` grava o rascunho intacto, como antes.
+
 ## Passo 3 — Atualize o ponteiro `ULTIMO.md`
 
 Aponte `./norte-out/handoffs/ULTIMO.md` pro handoff recem-criado (e o que `norte-retomar` le

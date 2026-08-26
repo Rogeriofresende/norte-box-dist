@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# nb-bilhete-selo — helper de linha de comando do SELO DO BILHETE (memoria entre sessoes que nao mente)
+# do norte-box (NRT-_990429). Le o TEXTO de um bilhete-rascunho (handoff da skill /continuar) e devolve a
+# VERSAO CONFERIDA: cada linha "- [x] ..." da secao "## Onde estamos" tem a referencia de artefato citada
+# CONFERIDA no disco (arquivo existe? / commit existe?), e o que NAO existe no disco e REBAIXADO pra
+# "- [ ] ⚠ nao achei no disco: <ref>" ANTES de a skill gravar. Mata o RELATO FABRICADO ("[x] feito: PR #42
+# / soma.py" sem nada no disco).
+#
+# USO:
+#   nb-bilhete-selo <arquivo>     -> le o rascunho do <arquivo>, escreve a versao conferida no stdout.
+#   nb-bilhete-selo -             -> le o rascunho do STDIN, escreve a versao conferida no stdout.
+#   cat rascunho.md | nb-bilhete-selo   -> idem (stdin sem "-").
+#
+# ONDE CONFERE: no CWD (a pasta do projeto do usuario) — test -e pros caminhos, git cat-file pros commits.
+# Rode do diretorio do projeto (a skill /continuar ja roda ali).
+#
+# SAIDA:
+#   stdout -> a versao CONFERIDA do bilhete (pra a skill gravar em ./norte-out/handoffs/...).
+#   stderr -> 1 linha de resumo (N conferidas / N rebaixadas / N nao-verificaveis / N sem prova).
+#   exit 0 sempre que conseguiu processar (fail-open: nunca trava o /continuar). exit 2 so pra erro de uso.
+#
+# MOLDURA HONESTA (nao overclaim): "✓ conferido" = "o arquivo/commit CITADO existe E o bilhete o cita",
+# NAO "o trabalho foi feito certo". Um artefato real mas irrelevante passa. O selo mata a mentira obvia
+# (citou algo que nem existe), nao mede corretude.
+#
+# LEIS: LOCAL/zero rede (o bilhete e do proprio projeto do usuario e nunca sai da maquina) · fail-honest
+# (so mantem [x] com artefato existente) · fail-open da sessao (peca quebrada nao trava o /continuar) ·
+# dado e dado (a ref e argumento de test -e / git cat-file, nunca comando; traversal fora do projeto ->
+# 🟡 nao-verificavel). Kill-switch NORTE_BILHETE=0 -> passthrough. bash 3.2 (macOS), set -u.
+set -u
+
+_arg="${1:-}"
+
+# Carrega a lib do selo (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_bilhete_selo.sh" ]; then
+  _lib="${_self_dir}/../hooks/_bilhete_selo.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_bilhete_selo.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_bilhete_selo.sh"
+fi
+if [ -z "$_lib" ]; then
+  # fail-open: sem a lib, devolve o rascunho intacto (nunca trava o /continuar) e avisa.
+  printf '🟡 nao achei o selo do bilhete nesta instalacao: gravando o rascunho como esta.\n' >&2
+  [ -n "$_arg" ] && [ "$_arg" != "-" ] && { cat -- "$_arg" 2>/dev/null; exit 0; }
+  cat; exit 0
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+
+command -v _norte_bilhete_selar >/dev/null 2>&1 || {
+  printf '🟡 selo do bilhete incompleto nesta instalacao: gravando o rascunho como esta.\n' >&2
+  [ -n "$_arg" ] && [ "$_arg" != "-" ] && { cat -- "$_arg" 2>/dev/null; exit 0; }
+  cat; exit 0
+}
+
+# le do arquivo (se passado e != "-") ou do stdin.
+if [ -n "$_arg" ] && [ "$_arg" != "-" ]; then
+  if [ ! -f "$_arg" ]; then
+    printf '🟡 nao consegui selar: o arquivo do rascunho nao existe: %s\n' "$_arg" >&2
+    exit 2
+  fi
+  _norte_bilhete_selar < "$_arg"
+else
+  _norte_bilhete_selar
+fi
+exit 0

@@ -145,12 +145,36 @@ Varra o corpo do handoff (e a cadeia) por verbos de acao com efeito externo — 
 3. **Regra padrao: NAO re-executar.** So refaca se o handoff documentar uma chave de idempotencia OU a
    verificacao confirmar que a acao falhou de forma recuperavel. Na duvida, pergunte ao usuario.
 
+## Passo 7.5 — Levante as linhas REBAIXADAS pelo selo do bilhete (mostrar em 🔴 no topo)
+
+O bilhete pode ter sido gravado pela `continuar` **com o selo do bilhete** (Passo 2.5 de la): cada `[x]`
+da secao `## Onde estamos` que citou um arquivo/commit que **nao existia no disco** foi REBAIXADO pra:
+
+```
+- [ ] ⚠ nao achei no disco: <ref> (o bilhete marcava feito, mas o disco nao mostra) — era: ...
+```
+
+Varra o corpo do handoff (e a cadeia) por essas linhas: padrao `⚠ nao achei no disco` (ou `nao-verificavel`).
+Se houver **qualquer** uma, mostre-a **em 🔴 NO TOPO** do cartao de chegada, ANTES de tudo:
+
+```
+🔴 O bilhete jurava isto, mas o disco nao mostra — CONFIRME antes de confiar:
+   - <ref> (o bilhete marcava feito; nao achei no projeto)
+```
+
+Isto e o oposto do relato fabricado: em vez de a proxima sessao herdar um "feito" falso, ela ve, logo de
+cara, o que o disco desmente. **Nao execute** o proximo passo que dependa de uma linha rebaixada sem antes
+reconciliar com o usuario. (Se o handoff nao tiver linhas rebaixadas, pule este passo — bilhete limpo.)
+
 ## Passo 8 — Entregue (o cartao de chegada)
 
 Formato pelo staleness:
 - **FRESH / SLIGHTLY_STALE** -> apresente a analise no chat.
 - **STALE / VERY_STALE** -> escreva a mesma analise em `<basename-do-handoff>-RECEIVED.md` ao lado do
   handoff (idempotente — sobrescreve; nao encadeie RECEIVED).
+
+**Se houver linhas rebaixadas pelo selo (Passo 7.5), a PRIMEIRISSIMA coisa do output e o bloco 🔴 delas**
+(antes ate da ancora "De onde viemos") — o alerta de "isto o disco desmente" ganha de tudo.
 
 **A primeira coisa do output e SEMPRE a ancora** (nunca comprima nem pule, mesmo em FRESH):
 
