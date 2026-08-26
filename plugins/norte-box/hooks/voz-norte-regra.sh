@@ -13,6 +13,11 @@
 #       de botao explicito (o cartao/Vitrine mostra o texto da resposta; "[...]" no inicio da linha = botao).
 #   (5) HONESTIDADE QUE CORRIGE — "nao sei, vou checar" e um estado REAL e dizivel; e quando um numero/
 #       status muda, a caixa diz "corrigido: antes X -> agora Y", em vez de fingir que sempre soube.
+#   (7) OBJETIVO-RESPONDE (NRT-_990429) — quando HA objetivo declarado, a entrega fecha com a linha
+#       "OBJETIVO-RESPONDE: <trecho literal da entrega>". O Stop hook (situacao-gravar.sh) le esse marcador
+#       do transcript e chama o writer _norte_objetivo_conferir, que confere o trecho por grep -F DENTRO da
+#       entrega provada. E o elo que fecha o 2o portao do selo no fluxo REAL (nao so no teste). Sem marcador
+#       -> a caixa nao forja verde: o objetivo fica "pulado com nota" e o verde segue vindo do PROVADO.
 #
 # E conselho de FORMA (como escrever), NAO de bloqueio. O que e MECANICO aqui: injetar o SELO REAL lido
 # do disco (testavel — nunca verde sem artefato). O resto e COMPORTAMENTAL (a caixa redige) — o Val
@@ -100,7 +105,18 @@ regra="$(cat <<'EOF'
    erro nem pinte verde sem ter rodado. A prova fica LOCAL (nunca sai da maquina). Isto e o que torna o
    🟢 do rodape (regra 1) verdadeiro em vez de enfeite: so prova de execucao de verdade abre o verde.
 
-Estas 6 valem SEMPRE, junto com a regua de resposta (conclusao primeiro, sem jargao, antes/depois).
+7. APONTE ONDE A ENTREGA RESPONDE AO OBJETIVO (so quando HA um objetivo declarado nesta caixa): se a
+   pessoa ja declarou um objetivo (via /norte-box:objetivo — a abertura te mostra "Seu objetivo: ..."),
+   ENTAO, ao FECHAR uma entrega, inclua na sua ultima resposta UMA linha, sozinha, EXATAMENTE assim:
+     OBJETIVO-RESPONDE: <um trecho curto e LITERAL, copiado da propria entrega>
+   O trecho tem que ser um pedaco REAL do que voce entregou (uma linha do arquivo, uma frase da pagina,
+   a saida que o motor mostrou) — nao uma promessa, nao um resumo. A caixa vai CONFERIR esse trecho por
+   conta propria (procura ele DENTRO da entrega provada); se o trecho existe de verdade, o selo do objetivo
+   fica 🟢; se voce "citar" algo que nao esta la (blefe), a caixa NAO deixa virar verde. Por isso: cite
+   algo que realmente exista. Sem objetivo declarado, NAO precisa dessa linha. Uma so linha por entrega
+   (se puser varias, a caixa usa a ultima). E so a citacao — nao explique o marcador pra pessoa.
+
+Estas 7 valem SEMPRE, junto com a regua de resposta (conclusao primeiro, sem jargao, antes/depois).
 Nao repita este bloco dentro da resposta; e pra guiar COMO voce escreve.
 === fim ===
 EOF

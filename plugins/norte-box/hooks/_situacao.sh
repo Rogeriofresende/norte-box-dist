@@ -129,10 +129,122 @@ _norte_situacao_provado() {
   return 0
 }
 
+# _norte_situacao_objetivo_ok — 2o PORTAO (NRT-_990429): "a entrega RESPONDE ao objetivo?".
+# O selo do passo 1 (_norte_situacao_provado) so responde "PROVEI a entrega?" (roda / passa no motor).
+# Uma entrega pode estar PROVADA e ainda ser a coisa ERRADA (derivou do que a pessoa pediu). Este portao
+# confere MECANICAMENTE se a entrega bate com o objetivo DECLARADO — sem confiar no texto do modelo.
+#
+# COMO: quando ha objetivo, a caixa registra na fichinha um bloco .objetivo_conferido com:
+#   - objetivo_hash: hash do .objetivo que ESTAVA valendo na hora da conferencia (amarra a conferencia
+#     a UMA versao do objetivo — se o objetivo muda depois, a conferencia velha nao vale mais);
+#   - trecho: um pedaco curto que o agente aponta como "onde a entrega responde ao objetivo";
+#   - trecho_encontrado: bool computado MECANICAMENTE (grep -F do trecho DENTRO do artefato de prova
+#     real) por quem GRAVA (nunca confia no texto do modelo). Aqui o portao so LE esse bool ja apurado.
+#
+# CONTRATO (pra o selo compor limpo com o provado):
+#   exit 0  = NAO BLOQUEIA o verde. Dois casos, distinguidos pelo texto ecoado:
+#             * "ok:<trecho>"       -> o trecho CITADO e REAL (grep -F achou na entrega). ATENCAO: isto NAO
+#                                      prova que a entrega RESPONDE ao objetivo — so que o agente nao blefou
+#                                      o trecho. Quem confere se o trecho responde ao objetivo e a PESSOA.
+#             * "pulado:<motivo>"   -> pulado com nota (kill-switch OU sem objetivo declarado). Honesto:
+#                                      ausencia de objetivo NAO derruba o verde; quem manda ai e o provado.
+#   exit 1  = BLOQUEIA o verde (AMARELO). Ecoa "amarelo:<motivo>" legivel. Fail-honest: na duvida, amarelo.
+#
+# LEIS (padrao Norte): LOCAL, so le disco. Fail-OPEN pra sessao (se quebra, nao trava). Fail-CLOSED pro
+# verde (na duvida -> amarelo, nunca verde otimista). ADITIVO: nao afrouxa nada do provado/hash existente.
+# KILL-SWITCH: NB_OBJETIVO_CHECK=0 -> "pulado:kill-switch" (o selo se comporta como HOJE, exit 0).
+# AUSENCIA GRACIOSA (NRT-_990429 fatia 2 — o wiring): objetivo declarado mas SEM bloco objetivo_conferido
+#   -> "pulado:sem conferencia registrada ainda" (exit 0, NAO bloqueia o verde). Racional: o 2o portao so
+#   pega BLEFE (uma conferencia que EXISTE e FALHA). ABSENCIA de conferencia nao e blefe — e so' o agente
+#   que nao citou onde a entrega responde (nem todo turno tem objetivo declarado + citacao). Se a ausencia
+#   virasse amarelo, TODA sessao com /objetivo ficaria presa no amarelo ate o writer pegar — disruptivo e
+#   sem valor de seguranca (o verde continua vindo do PROVADO, que exige prova de motor real). O 🟡 fica
+#   reservado pro que importa: HA um bloco de conferencia e ele NAO bate (trecho ausente = blefe / hash do
+#   objetivo mudou). Retro-compat: fichinha ANTIGA (sem objetivo_conferido) tambem cai aqui -> pulada, nunca
+#   amarelo retroativo cego.
+_norte_situacao_objetivo_ok() {
+  # kill-switch: default LIGADO; NB_OBJETIVO_CHECK=0 -> inerte (pulado), o selo fica igual ao de hoje.
+  case "${NB_OBJETIVO_CHECK:-1}" in 0|no|nao|off|false) printf 'pulado:kill-switch'; return 0 ;; esac
+  command -v jq >/dev/null 2>&1 || { printf 'pulado:sem jq'; return 0; }
+  local _f; _f="$(_norte_situacao_path)"
+  _norte_situacao_tem || { printf 'pulado:sem fichinha'; return 0; }
+
+  # O 2o portao so' vale pro objetivo DECLARADO por ato explicito (/norte-box:objetivo -> objetivo_declarado:true).
+  # O rotulo AUTO da 1a fala (objetivo_declarado:false ou ausente) e um lembrete fraco, NAO o pedido soberano
+  # da pessoa — nao faz sentido "conferir a entrega contra um rotulo que a maquina inventou". Sem declaracao
+  # -> pulado com nota (nao bloqueia o verde; o provado manda). Isso tambem garante retro-compat total:
+  # fichinha ANTIGA (sem o campo objetivo_declarado) NUNCA vira amarelo retroativo cego — fica pulada.
+  jq -e '.objetivo_declarado == true' "$_f" >/dev/null 2>&1 \
+    || { printf 'pulado:sem objetivo declarado (so o /objetivo liga o 2o portao)'; return 0; }
+
+  # Objetivo atual (o .objetivo cru da fichinha — o mesmo que o cartao mostra).
+  local _obj
+  _obj="$(jq -r '.objetivo // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+  # Declarado mas com texto vazio (nao devia acontecer) -> pulado com nota (honesto, nao bloqueia).
+  [ -n "$_obj" ] || { printf 'pulado:objetivo declarado porem vazio'; return 0; }
+
+  # Ha bloco de conferencia? AUSENCIA GRACIOSA: objetivo declarado mas sem o bloco (o agente nao citou
+  # onde a entrega responde, OU e uma fichinha antiga) -> PULADO com nota, NAO amarelo. O amarelo fica so'
+  # pra conferencia PRESENTE que FALHA (blefe/hash) — checado abaixo. Assim o /objetivo nao prende no
+  # amarelo antes do writer pegar; o verde segue vindo do PROVADO.
+  jq -e '.objetivo_conferido | type=="object"' "$_f" >/dev/null 2>&1 \
+    || { printf 'pulado:sem conferencia registrada ainda (o agente nao citou onde a entrega responde; o provado manda)'; return 0; }
+
+  local _oh_reg _trecho _tenc _oh_atual
+  _oh_reg="$(jq -r '.objetivo_conferido.objetivo_hash // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+  _trecho="$(jq -r '.objetivo_conferido.trecho // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+  _tenc="$(jq -r 'if .objetivo_conferido.trecho_encontrado==true then "1" else "0" end' "$_f" 2>/dev/null)"
+
+  # Objetivo mudou desde a prova? (hash registrado != hash do objetivo atual) -> amarelo.
+  _oh_atual="$(_norte_prova_hash_texto "$_obj")"
+  [ -n "$_oh_reg" ]   || { printf 'amarelo:conferencia sem hash do objetivo'; return 1; }
+  [ -n "$_oh_atual" ] || { printf 'amarelo:nao consegui hashear o objetivo atual'; return 1; }
+  [ "$_oh_reg" = "$_oh_atual" ] || { printf 'amarelo:o objetivo mudou desde a ultima conferencia (a entrega foi conferida contra outro objetivo)'; return 1; }
+
+  # Trecho vazio -> amarelo (nao ha o que casar mecanicamente).
+  [ -n "$_trecho" ] || { printf 'amarelo:sem trecho citado (nao da pra conferir onde a entrega responde)'; return 1; }
+
+  # trecho_encontrado tem que ser true (computado por grep -F por quem gravou — aqui so lemos o veredito).
+  # HONESTO: o grep so prova que o trecho CITADO e real (aparece na entrega). Nao prova que a entrega
+  # RESPONDE ao objetivo — so pega o blefe (citou um trecho que nao existe). A copy fala so o que garante.
+  [ "$_tenc" = "1" ] || { printf 'amarelo:o trecho citado nao aparece na entrega — pode ser blefe (nao consegui confirmar que ele e real)'; return 1; }
+
+  printf 'ok:%s' "$_trecho"
+  return 0
+}
+
+# _norte_situacao_objetivo_linha — 1 linha curta de status pra o cartao/situacao (REUSA a funcao acima,
+# nao recomputa). "Objetivo conferido: 🟢" quando bate; "🟡 <motivo>" quando diverge; "⚪ <motivo>" quando
+# pulado (kill-switch/sem objetivo) — pulado NAO e alarme, so uma nota honesta. Sempre exit 0 (extra do
+# cartao, fail-open). Kill-switch NB_OBJETIVO_CHECK=0 vem herdado da _norte_situacao_objetivo_ok.
+_norte_situacao_objetivo_linha() {
+  local _out _rc _motivo
+  _out="$(_norte_situacao_objetivo_ok 2>/dev/null)"; _rc=$?
+  case "$_out" in
+    ok:*)     printf 'Objetivo conferido: 🟢 o agente citou um trecho REAL da entrega (confira se ele responde ao seu objetivo)' ;;
+    pulado:*) _motivo="${_out#pulado:}"; printf 'Objetivo conferido: ⚪ pulado (%s)' "$_motivo" ;;
+    amarelo:*) _motivo="${_out#amarelo:}"; printf 'Objetivo conferido: 🟡 %s' "$_motivo" ;;
+    *)        printf 'Objetivo conferido: ⚪ pulado (sem informacao)' ;;
+  esac
+  return 0
+}
+
 # _norte_situacao_selo — ecoa a frase do selo, honesta pelo estado real.
+# 2 PORTOES (NRT-_990429): so 🟢 se PROVADO (o motor rodou e deu certo) E o objetivo confere (ou foi
+# pulado por ausencia/kill-switch). Provado mas objetivo DIVERGE -> 🟡 com o motivo (a entrega roda, mas
+# nao e a coisa que a pessoa pediu). ADITIVO: com NB_OBJETIVO_CHECK=0 o 2o portao vira inerte (pulado ->
+# exit 0) e o selo fica IDENTICO ao de hoje (so o provado manda).
 _norte_situacao_selo() {
   if _norte_situacao_provado; then
-    printf '🟢 PROVADO'
+    # PROVADO. Agora o 2o portao: objetivo confere? (exit 0 = nao bloqueia; exit 1 = bloqueia com motivo).
+    local _oout _orc _omot
+    _oout="$(_norte_situacao_objetivo_ok 2>/dev/null)"; _orc=$?
+    if [ "$_orc" -eq 0 ]; then
+      printf '🟢 PROVADO'
+    else
+      _omot="${_oout#amarelo:}"
+      printf '🟡 NAO-PROVADO (provei que roda, mas nao confirmei o trecho citado do objetivo: %s)' "$_omot"
+    fi
   else
     printf '🟡 NAO-PROVADO'
   fi
@@ -501,6 +613,57 @@ _norte_objetivo_em() {
   jq -r '.objetivo_em // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null
 }
 
+# _norte_objetivo_conferir <trecho> [artefato-de-entrega] — GRAVA o bloco .objetivo_conferido (NRT-_990429).
+# Este e o WRITER honesto do 2o portao: o trecho_encontrado NAO vem do modelo — e computado AQUI, por
+# grep -F do <trecho> DENTRO do artefato de entrega/prova REAL. Assim o agente pode "citar" onde a entrega
+# responde ao objetivo, mas se o trecho NAO existe no arquivo de verdade, o bool sai false (blefe pego).
+#
+# QUAL artefato: se [artefato-de-entrega] vier e existir, usa ele (o arquivo que o agente aponta como a
+# entrega); senao cai no prova.artefato registrado na fichinha (o arquivo que o MOTOR provou). Sem nenhum
+# arquivo legivel -> trecho_encontrado=false (nao inventa verde). O objetivo_hash gravado e o hash do
+# .objetivo ATUAL — amarra a conferencia a esta versao do objetivo (se ele mudar depois, o portao acusa).
+#
+# LEIS: SO GRAVA POR ATO EXPLICITO (quem chama passa o trecho). VERBATIM no trecho (jq --arg copia cru).
+# PRESERVA os outros campos. So le/escreve o disco local. Sem jq / sem trecho / sem objetivo -> 1 (nada).
+# Trecho SO-ESPACOS ("   ") conta como SEM trecho (ausencia): retorna 1 sem gravar — bate com "sem trecho -> nada".
+_norte_objetivo_conferir() {
+  local _trecho="${1:-}" _art_in="${2:-}"
+  [ -n "$_trecho" ] || return 1
+  # trecho que colapsa pra VAZIO (so espacos/tabs/newlines) NAO e trecho — trata como ausencia (docstring:
+  # "sem trecho -> nada"). Sem isso, "   " passaria o [ -n ] e gravaria uma conferencia inutil (grep -F de
+  # espacos casa quase sempre) que poderia abrir verde a toa. Bash 3.2: tr apara todo whitespace.
+  local _trecho_util
+  _trecho_util="$(printf '%s' "$_trecho" | tr -d '[:space:]')"
+  [ -n "$_trecho_util" ] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  _norte_situacao_tem || return 1
+  local _dir="${HOME}/.norte-box" _f _tmp _ts _obj _oh _art _enc
+  _f="$(_norte_situacao_path)"; mkdir -p "$_dir" 2>/dev/null || return 1
+  _obj="$(jq -r '.objetivo // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+  [ -n "$_obj" ] || return 1
+  _oh="$(_norte_prova_hash_texto "$_obj")"; [ -n "$_oh" ] || return 1
+
+  # escolhe o artefato de entrega: explicito (se existe) OU o prova.artefato registrado (se existe).
+  if [ -n "$_art_in" ] && [ -f "$_art_in" ]; then
+    _art="$_art_in"
+  else
+    _art="$(jq -r '.prova.artefato // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+  fi
+
+  # computa MECANICAMENTE trecho_encontrado (grep -F, string literal). Sem arquivo legivel -> false.
+  _enc="false"
+  if [ -n "$_art" ] && [ ! -L "$_art" ] && [ -f "$_art" ]; then
+    if grep -Fq -- "$_trecho" "$_art" 2>/dev/null; then _enc="true"; fi
+  fi
+
+  _ts="$(date -u +%FT%TZ 2>/dev/null || echo unknown)"; _tmp="${_f}.tmp.$$"
+  jq --arg tr "$_trecho" --arg oh "$_oh" --argjson enc "$_enc" --arg ts "$_ts" \
+    '.objetivo_conferido={objetivo_hash:$oh, trecho:$tr, trecho_encontrado:$enc, conferido_em:$ts} | .ultima_atualizacao=$ts' \
+    "$_f" > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
+  mv -f "$_tmp" "$_f" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
+  return 0
+}
+
 # _norte_situacao_gravar — escreve/atualiza a fichinha (fim de sessao). Recebe por variaveis de
 # ambiente pra nao brigar com aspas: NB_SIT_OBJETIVO, NB_SIT_ENTREGOU, NB_SIT_PROXIMO.
 #
@@ -548,6 +711,21 @@ _norte_situacao_gravar() {
     _use_obj_decl="true"
   fi
 
+  # CONFERENCIA DO OBJETIVO (NRT-_990429): PRESERVA o bloco .objetivo_conferido SO se ele ainda vale pro
+  # objetivo que vai ser escrito — isto e, o objetivo_hash registrado bate com o hash do objetivo NOVO
+  # (_use_obj). Se o objetivo mudou, o bloco fica STALE de proposito e e DESCARTADO (a conferencia velha
+  # nao vale pra outro objetivo — deixar cair e o comportamento honesto; o selo cai em amarelo ate reconferir).
+  # _keep_confer_json = o objeto JSON cru (ou "null"), injetado com --argjson nas duas branches.
+  local _keep_confer_json="null" _cf_oh _cur_oh
+  if [ -f "$_f" ] && jq -e '.objetivo_conferido | type=="object"' "$_f" >/dev/null 2>&1; then
+    _cf_oh="$(jq -r '.objetivo_conferido.objetivo_hash // "" | if type=="string" then . else "" end' "$_f" 2>/dev/null)"
+    _cur_oh="$(_norte_prova_hash_texto "$_use_obj" 2>/dev/null)"
+    if [ -n "$_cf_oh" ] && [ -n "$_cur_oh" ] && [ "$_cf_oh" = "$_cur_oh" ]; then
+      _keep_confer_json="$(jq -c '.objetivo_conferido' "$_f" 2>/dev/null)"
+      [ -n "$_keep_confer_json" ] || _keep_confer_json="null"
+    fi
+  fi
+
   if [ -n "$_keep_art" ]; then
     # PRESERVA o verde legitimo do motor. Objetivo/entregou/proximo sao atualizados (o Stop conhece a
     # 1a fala); provado/prova ficam como o motor deixou; tipo_pedido + perfil (manuais) preservados.
@@ -562,11 +740,13 @@ _norte_situacao_gravar() {
       --arg perfilem  "$_keep_perfil_em" \
       --arg art       "$_keep_art" \
       --arg ent       "$_keep_ent" \
+      --argjson confer "$_keep_confer_json" \
       --arg ts        "$_ts" \
       '{objetivo:$objetivo, objetivo_em:$objem, objetivo_declarado:($objdecl=="true"),
         entregou:$entregou, proximo:$proximo, tipo_pedido:$tipo,
         perfil:$perfil, perfil_em:$perfilem,
-        provado:true, prova:{artefato:$art, entrega:$ent}, ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
+        provado:true, prova:{artefato:$art, entrega:$ent}, objetivo_conferido:$confer,
+        ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
   else
     # Default HONESTO: sem prova valida do motor -> provado:false, prova vazia. Conteudo do trabalho NAO
     # entra: so o rotulo do objetivo; tipo_pedido + perfil (manuais) preservados.
@@ -579,11 +759,13 @@ _norte_situacao_gravar() {
       --arg tipo      "$_keep_tipo" \
       --arg perfil    "$_keep_perfil" \
       --arg perfilem  "$_keep_perfil_em" \
+      --argjson confer "$_keep_confer_json" \
       --arg ts        "$_ts" \
       '{objetivo:$objetivo, objetivo_em:$objem, objetivo_declarado:($objdecl=="true"),
         entregou:$entregou, proximo:$proximo, tipo_pedido:$tipo,
         perfil:$perfil, perfil_em:$perfilem,
-        provado:false, prova:{artefato:"", entrega:""}, ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
+        provado:false, prova:{artefato:"", entrega:""}, objetivo_conferido:$confer,
+        ultima_atualizacao:$ts}' > "$_tmp" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
   fi
   mv -f "$_tmp" "$_f" 2>/dev/null || { rm -f "$_tmp" 2>/dev/null; return 1; }
   return 0

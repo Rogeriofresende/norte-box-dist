@@ -109,6 +109,29 @@ if [ -n "$ROOT" ]; then
   fi
 else emit "Objetivo" "NAO_VERIFICADO" "raiz do plugin nao acessivel"; fi
 
+# 3e — Objetivo confere (NRT-_990429): o 2o portao do selo. Checa DE FATO que (1) a funcao
+# _norte_situacao_objetivo_ok existe em _situacao.sh E (2) ela esta ENCAIXADA no selo (o
+# _norte_situacao_selo chama _norte_situacao_objetivo_ok — senao o portao esta orfao e nao vale nada).
+if [ -n "$ROOT" ]; then
+  _sit="$ROOT/hooks/_situacao.sh"
+  if [ -f "$_sit" ]; then
+    _ofn=""; _owired=""
+    grep -q '_norte_situacao_objetivo_ok()' "$_sit" 2>/dev/null && _ofn=1
+    # encaixe no selo: dentro do corpo de _norte_situacao_selo tem que haver chamada a _norte_situacao_objetivo_ok.
+    awk '/^_norte_situacao_selo\(\)/{f=1} f&&/_norte_situacao_objetivo_ok/{print "WIRED"; exit} f&&/^\}/{exit}' "$_sit" 2>/dev/null | grep -q WIRED && _owired=1
+    if [ -n "$_ofn" ] && [ -n "$_owired" ]; then
+      emit "Objetivo confere" "OK" "_norte_situacao_objetivo_ok existe e esta encaixada no selo"
+    else
+      _falta=""
+      [ -z "$_ofn" ] && _falta="$_falta _norte_situacao_objetivo_ok"
+      [ -z "$_owired" ] && _falta="$_falta encaixe-no-selo"
+      emit "Objetivo confere" "FALHA" "faltando:$_falta (reinstale/atualize o plugin)"
+    fi
+  else
+    emit "Objetivo confere" "FALHA" "hooks/_situacao.sh ausente (reinstale/atualize o plugin)"
+  fi
+else emit "Objetivo confere" "NAO_VERIFICADO" "raiz do plugin nao acessivel"; fi
+
 if [ -n "$ROOT" ]; then
   if [ -x "$ROOT/bin/nb-freio" ]; then emit "Freio de mao" "OK" "bin/nb-freio presente e executavel"
   elif [ -f "$ROOT/bin/nb-freio" ]; then emit "Freio de mao" "FALHA" "sem +x (rode: chmod +x bin/nb-freio)"

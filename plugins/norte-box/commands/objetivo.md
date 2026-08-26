@@ -47,6 +47,17 @@ O que fazer:
 5. **Se saiu `__SEM_LIB__`** (não achei a lib) ou o comando falhou: fail-open — diga em 1 linha que não
    consegui guardar o objetivo agora e siga, sem travar.
 
+Depois de declarar (o 2º portão do selo — NRT-_990429):
+- Com um objetivo declarado, toda vez que você **fechar uma entrega**, inclua na sua última resposta
+  **uma linha, sozinha**, exatamente assim:
+  `OBJETIVO-RESPONDE: <um trecho curto e LITERAL, copiado da própria entrega>`
+  O trecho tem que ser um pedaço **real** do que você entregou (uma linha do arquivo, uma frase da
+  página, a saída que o motor mostrou) — **não** uma promessa nem um resumo. A caixa (no fim do turno)
+  **confere sozinha** esse trecho: procura ele **dentro** da entrega provada. Se existir de verdade, o
+  selo do objetivo fica 🟢; se você "citar" algo que não está lá (blefe), a caixa **não** deixa virar
+  verde. Cite algo que **realmente exista**. Sem objetivo declarado, essa linha não é necessária.
+  Se a entrega mudar de rumo (o objetivo já não é mais esse), **redeclare** o objetivo aqui primeiro.
+
 Regras (não-negociáveis):
 - A caixa **NUNCA adivinha/deduz** o objetivo. Sem o texto explícito no comando, **nada é gravado** —
   mesmo que a conversa "pareça" conter o objetivo.

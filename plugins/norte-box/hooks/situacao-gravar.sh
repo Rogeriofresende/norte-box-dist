@@ -59,4 +59,53 @@ _objetivo="$(printf '%s' "$_objetivo" | tr '\n\r\t' '   ' | sed 's/^[[:space:]]*
 # Deixamos vazios aqui — a skill /norte-box:continuar (que pede o resumo ao modelo) e o lugar certo
 # pra enriquecer isso depois. O importante do 1.1 (nunca ficar no branco) ja e coberto pelo objetivo.
 NB_SIT_OBJETIVO="$_objetivo" NB_SIT_ENTREGOU="" NB_SIT_PROXIMO="" _norte_situacao_gravar || exit 0
+
+# --- 2o PORTAO (NRT-_990429 fatia 2 — FIAR O WRITER NO FLUXO REAL) --------------------------------
+# Ate aqui o writer _norte_objetivo_conferir so era chamado pelo teste. Consequencia: no uso REAL, uma
+# sessao COM objetivo declarado nunca ganhava o bloco .objetivo_conferido -> o selo ficava preso no
+# amarelo (o antigo Caso 6). O ajuste gracioso do gate ja tirou o amarelo cego (ausencia = pulado); aqui
+# fechamos o elo GENUINO: se o agente DECLAROU onde a entrega responde ao objetivo — via um marcador de
+# saida "OBJETIVO-RESPONDE: <trecho literal da entrega>" na sua ultima resposta — a caixa registra a
+# conferencia. O trecho_encontrado NAO vem do modelo: o writer computa por grep -F do trecho DENTRO do
+# artefato de prova real (blefe pego). Sem marcador -> nao faz nada (preserva o estado; nunca forja verde).
+#
+# LEIS: FAIL-OPEN (qualquer tropeco daqui pra frente sai 0, a sessao NUNCA trava). Kill-switch
+# NB_OBJETIVO_CHECK=0 restaura o de hoje (nao mexe na conferencia). So roda quando o objetivo foi
+# DECLARADO por ato explicito (objetivo_declarado:true) — o rotulo AUTO da 1a fala nao liga o 2o portao.
+case "${NB_OBJETIVO_CHECK:-1}" in 0|no|nao|off|false) exit 0 ;; esac
+command -v _norte_objetivo_conferir >/dev/null 2>&1 || exit 0
+command -v _norte_objetivo_declarado >/dev/null 2>&1 || exit 0
+# So confere contra objetivo DECLARADO (soberano); rotulo auto nao vale (mesma regra do gate).
+_norte_objetivo_declarado || exit 0
+
+# Extrai a ULTIMA mensagem do assistente que tem TEXTO (a resposta final; pula mensagens so-tool_use),
+# junta seus blocos de texto e le a ULTIMA linha "OBJETIVO-RESPONDE: <trecho>". Consome o transcript como
+# DADO (jq), nunca executa. Sem marcador legivel -> _mark vazio -> nao chama o writer (preserva o estado).
+_ultimo_texto="$(jq -rs '
+  [ .[] | select(.type=="assistant")
+        | .message.content
+        | if type=="array" then (map(select(.type=="text") | .text) | join("\n"))
+          elif type=="string" then .
+          else "" end ]
+  | map(select(. != ""))
+  | .[-1] // ""
+' "$_transcript" 2>/dev/null || true)"
+
+# Pega a ULTIMA ocorrencia do marcador (ancorada no inicio da linha, tolera indentacao). tail -n1 garante
+# "a ultima da ultima mensagem". Depois tira o prefixo do marcador + espacos das pontas + colapsa pra 1
+# linha + cap de tamanho (o trecho e uma citacao curta, nao um dump). Tudo tratado como STRING literal.
+_mark_linha="$(printf '%s\n' "$_ultimo_texto" | grep -E '^[[:space:]]*OBJETIVO-RESPONDE:' 2>/dev/null | tail -n 1 || true)"
+[ -n "$_mark_linha" ] || exit 0
+_trecho_resp="$(printf '%s' "$_mark_linha" \
+  | sed -E 's/^[[:space:]]*OBJETIVO-RESPONDE:[[:space:]]*//' \
+  | tr '\n\r\t' '   ' \
+  | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+  | cut -c1-240)"
+[ -n "$_trecho_resp" ] || exit 0
+
+# Chama o WRITER honesto: grava .objetivo_conferido conferindo o trecho por grep -F DENTRO do artefato de
+# prova ja registrado (o writer resolve o artefato: usa o prova.artefato da fichinha se nenhum for passado).
+# Se o trecho existe na entrega -> trecho_encontrado=true (o gate abre verde no PROVADO). Se nao existe
+# (blefe) -> false (o gate segura em amarelo). Fail-open: falha do writer nao trava a sessao.
+_norte_objetivo_conferir "$_trecho_resp" >/dev/null 2>&1 || exit 0
 exit 0

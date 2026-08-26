@@ -112,6 +112,18 @@ Regras do cartao:
 EOF
 )"
 
+    # OBJETIVO CONFERE (NRT-_990429): 1 linha curta de status — a entrega bate com o objetivo? REUSA a
+    # MESMA funcao do selo (_norte_situacao_objetivo_linha), nao recomputa. 🟢 confere / 🟡 diverge (com
+    # motivo) / ⚪ pulado (kill-switch ou sem objetivo declarado). Kill-switch NB_OBJETIVO_CHECK=0 -> a
+    # linha diz "pulado" (herdado da funcao). Extra do cartao, fail-open (se a lib nova nao carregou, nao
+    # aparece nada — o cartao segue igual ao de hoje).
+    if command -v _norte_situacao_objetivo_linha >/dev/null 2>&1; then
+      _obj_linha="$(_norte_situacao_objetivo_linha 2>/dev/null || true)"
+      if [ -n "$_obj_linha" ]; then
+        _ctx="$(printf '%s\n\n=== 2o PORTAO — objetivo confere? (mostre esta 1 linha logo abaixo do selo) ===\nMOSTRE ao usuario esta linha EXATAMENTE como esta (nao reescreva o selo). Ela diz se a entrega bate com\no OBJETIVO (nao so se roda). 🟡 = roda mas nao bate; ⚪ = pulado (sem objetivo declarado ou desligado);\n🟢 = bate. Nunca finja 🟢:\n%s\n=== fim ===' "$_ctx" "$_obj_linha")"
+      fi
+    fi
+
     # ▶ VER RODAR (NRT-_990212): quando ha prova VALIDA, o cartao mostra "a coisa rodando" — a SAIDA
     # REAL capturada pela prova, nao so o selo. So aparece com prova legitima (mesma validacao do selo),
     # a saida ja vem CORTADA (ultimas ~15 linhas) e REDIGIDA (secrets mascarados). Sem prova valida OU
