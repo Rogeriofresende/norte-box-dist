@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# nb-mudou — helper de linha de comando do "O QUE MUDOU PRA VOCE" do norte-box (NRT-_990484).
+# A peca-irma _changelog.sh AVISA na abertura o que mudou desde a ultima versao que a pessoa viu. Este
+# helper deixa ela VER sob demanda: o que mudou desde a ultima vez (default) ou o historico inteiro.
+#
+# USO:
+#   nb-mudou               -> mostra SO o que e novo pra voce (desde a ultima versao vista, ate a atual).
+#                             Se voce ja esta em dia, avisa que nao ha novidade. NAO marca nada como visto
+#                             (ver sob demanda nao "consome" o aviso da abertura).
+#   nb-mudou --tudo        -> mostra o historico inteiro do CHANGELOG de padaria (todas as versoes).
+#   nb-mudou -h|--help     -> esta ajuda.
+#
+# SAIDA: as frases de padaria das versoes pedidas (cada versao como "✨ X.Y.Z" + bullets). Nada de rede,
+# nada sai da maquina. exit 0 sempre (fail-open); exit 2 so pra erro de uso.
+#
+# LEIS: LOCAL/zero rede · fail-open (peca quebrada / kill-switch nao trava) · dado e dado (le o CHANGELOG
+# como TEXTO, nunca executa). Kill-switch NORTE_CHANGELOG=0 -> inerte (nada no stdout). bash 3.2, set -u.
+set -u
+
+_cmd="${1:-}"
+
+# Carrega a lib da peca (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_changelog.sh" ]; then
+  _lib="${_self_dir}/../hooks/_changelog.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_changelog.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_changelog.sh"
+fi
+if [ -z "$_lib" ]; then
+  # fail-open: sem a lib, nao trava — segue calado.
+  exit 0
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+command -v _nbc_novidades >/dev/null 2>&1 || exit 0
+
+# kill-switch: inerte (nada no stdout, exit 0).
+case "${NORTE_CHANGELOG:-1}" in 0|no|nao|off|false) exit 0 ;; esac
+
+case "$_cmd" in
+  -h|--help|ajuda)
+    printf 'uso: nb-mudou            (o que mudou pra voce desde a ultima vez)\n' >&2
+    printf '     nb-mudou --tudo    (o historico inteiro)\n' >&2
+    exit 2
+    ;;
+  --tudo|tudo|todas|--todas)
+    _atual="$(_nbc_versao_atual)"
+    _hist="$(_nbc_novidades "" "$_atual")"
+    if [ -n "$_hist" ]; then
+      printf 'O que a caixa ja te trouxe, do comeco:\n'
+      printf '%s\n' "$_hist"
+    else
+      printf '(ainda nao tenho um historico de mudancas pra te mostrar.)\n'
+    fi
+    exit 0
+    ;;
+  ''|desde|novo)
+    _atual="$(_nbc_versao_atual)"
+    _visto="$(_nbc_visto_ler)"
+    if [ -z "$_visto" ]; then
+      # nunca viu nada ainda: mostra o mais recente pra dar um gostinho, sem despejar tudo.
+      _novo="$(_nbc_novidades "" "$_atual")"
+      # so a versao atual (a primeira do bloco): pega ate a primeira linha em branco.
+      if [ -n "$_novo" ]; then
+        printf 'Novidade mais recente da sua caixa:\n'
+        printf '%s\n' "$_novo" | awk 'NR==1{print;next} /^$/{exit} {print}'
+      else
+        printf '(ainda nao tenho novidade pra te mostrar.)\n'
+      fi
+      exit 0
+    fi
+    if [ "$(_nbc_cmp "$_visto" "$_atual")" != "-1" ]; then
+      printf 'Voce ja esta em dia — nada mudou desde a ultima vez que voce abriu.\n'
+      exit 0
+    fi
+    _novo="$(_nbc_novidades "$_visto" "$_atual")"
+    if [ -n "$_novo" ]; then
+      printf '✨ O que mudou pra voce desde a ultima vez:\n'
+      printf '%s\n' "$_novo"
+    else
+      printf 'Voce ja esta em dia — nada mudou desde a ultima vez que voce abriu.\n'
+    fi
+    exit 0
+    ;;
+  *)
+    printf 'uso: nb-mudou [--tudo]\n' >&2
+    exit 2
+    ;;
+esac

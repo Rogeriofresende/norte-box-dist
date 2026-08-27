@@ -53,6 +53,14 @@ elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_reda
   . "${CLAUDE_PLUGIN_ROOT}/hooks/_redact.sh" 2>/dev/null
 fi
 
+# Carrega a lib do "O QUE MUDOU PRA VOCE" (NRT-_990484): avisa na abertura o que ficou diferente desde a
+# ultima versao que a pessoa viu. Opcional: sem ela, o cartao segue sem o bloco de novidades (fail-open).
+if [ -n "${_SELF_DIR:-}" ] && [ -f "${_SELF_DIR}/_changelog.sh" ]; then
+  . "${_SELF_DIR}/_changelog.sh" 2>/dev/null
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_changelog.sh" ]; then
+  . "${CLAUDE_PLUGIN_ROOT}/hooks/_changelog.sh" 2>/dev/null
+fi
+
 # Consome o JSON do SessionStart como DADO (evita SIGPIPE) e sai limpo se algo faltar.
 cat >/dev/null 2>&1 || true
 
@@ -188,6 +196,20 @@ if command -v _norte_memoria_funda >/dev/null 2>&1; then
   _mem="$(_norte_memoria_funda 2>/dev/null || true)"
   if [ -n "${_mem:-}" ]; then
     _ctx="$(printf '%s\n\n=== 🧠 MEMORIA FUNDA (mostre ao usuario, do jeito que esta) ===\nMOSTRE ao usuario este bloco: o PERFIL do negocio dele e AS REGRAS que ele ja te ensinou, CITADOS\nVERBATIM (do jeito que ele escreveu, sem reescrever/resumir). Se disser "nenhuma regra gravada" ou que\nvoce ainda nao sabe o negocio, e a verdade honesta — NAO invente perfil/regra que ele nao declarou. Uma\nlinha de moldura simples, tipo "O que voce ja me ensinou, do seu jeito:":\n%s\n=== fim ===' "$_ctx" "$_mem")"
+  fi
+fi
+
+# ✨ O QUE MUDOU PRA VOCE (NRT-_990484): quando a caixa mudou de versao desde a ultima vez que a pessoa
+# abriu, avisa em portugues de padaria o que ficou diferente PRA ELA — so as versoes novas, uma vez.
+# Fica FORA do if/else de objetivo DE PROPOSITO: a novidade de versao independe de ter objetivo fechado
+# (aparece na 1a abertura pos-upgrade, com ou sem objetivo). 1a vez de todas -> a funcao so marca a versao
+# atual como vista e fica QUIETA (nao despeja changelog). Depois de mostrar, marca a atual como vista ->
+# na proxima nao repete. Kill-switch NORTE_CHANGELOG=0 -> a funcao nao ecoa nada. Extra do cartao, nunca
+# o coracao do situar (fail-open).
+if command -v _norte_changelog_abertura >/dev/null 2>&1; then
+  _mudou="$(_norte_changelog_abertura 2>/dev/null || true)"
+  if [ -n "${_mudou:-}" ]; then
+    _ctx="$(printf '%s\n\n=== ✨ O QUE MUDOU PRA VOCE (mostre ao usuario, do jeito que esta) ===\nMOSTRE ao usuario este bloco: o que ficou DIFERENTE pra ele desde a ultima vez que ele abriu a caixa,\ndo jeito que esta (frases de padaria, sem reescrever/tecniques). Uma linha de moldura simples, tipo\n"Antes de comecar: umas coisas mudaram por aqui desde a ultima vez —". So aparece uma vez; nao repita\nnas proximas aberturas:\n%s\n=== fim ===' "$_ctx" "$_mudou")"
   fi
 fi
 
