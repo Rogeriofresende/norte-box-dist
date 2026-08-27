@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# nb-socorro — helper de linha de comando do "BILHETE DE SOCORRO" do norte-box (NRT-_990484, peca-irma
+# do freio quando-trava). Quando a caixa TENTOU e NAO CONSEGUIU (travou DE VEZ no meio da execucao — um
+# erro que a trava, diferente de "faltou um dado" que o nb-perguntar cobre), em vez de deixar a pessoa
+# presa sem saber o que fazer, isto EMPACOTA num arquivo LOCAL tudo o que a Norte precisa pra socorrer
+# rapido — objetivo + o que a caixa tentou + o erro exato + selo/versao/modo — e MOSTRA o caminho + a
+# mensagem "salvei aqui pra pedir ajuda". NADA e enviado: e um arquivo na maquina que a pessoa decide mandar.
+#
+# USO:
+#   nb-socorro salvar <erro-exato> [<resumo-curto>]   (ou:  nb-socorro <erro> [<resumo>])
+#       -> monta o bilhete (juntando o que ja existe no disco) e GRAVA em
+#          $HOME/.norte-box/socorro/<sessao>.md ; ecoa o caminho + a mensagem de socorro.
+#   nb-socorro mostrar [<sessao>]
+#       -> imprime no stdout o bilhete ja salvo (o mais recente, ou o da <sessao> dada). Nada envia.
+#   nb-socorro apagar  <sessao>
+#       -> apaga UM bilhete salvo (so dentro de $HOME/.norte-box/socorro/, nunca fora).
+#
+# A <sessao> e um rotulo estavel pra nomear o arquivo (default: o CLAUDE_SESSION_ID, ou a data-hora).
+# So [A-Za-z0-9._-] entra no nome (o resto vira '-'), pra nao dar path-traversal no nome do arquivo.
+#
+# SAIDA:
+#   salvar  -> grava o arquivo + ecoa "🆘 salvei aqui: <caminho>" e a mensagem. exit 0 (fail-open).
+#   mostrar -> o conteudo do bilhete OU nada (sem bilhete). exit 0.
+#   apagar  -> confirma "apagado" OU "nao achei". exit 0. exit 2 so pra erro de uso (sem argumento).
+#
+# MOLDURA HONESTA (nao overclaim): a peca so JUNTA o que ja esta no disco + o erro que voce passa e
+# escreve UM arquivo local. Ela NAO conserta, NAO decide, NAO ENVIA. E um pedido de socorro pronto pra a
+# pessoa mandar — nunca um canal que dispara sozinho.
+#
+# LEIS: LOCAL/zero rede (nada sai da maquina) · fail-open (peca quebrada / kill-switch nao trava) · dado e
+# dado (erro/resumo entram como TEXTO, nunca executados) · PRIVACIDADE fail-safe (tudo passa pelo redator;
+# campo que nao da pra redigir fica de fora). Kill-switch NORTE_SOCORRO=0 -> inerte (nada no stdout).
+# bash 3.2, set -u.
+set -u
+
+_cmd="${1:-}"
+
+# Carrega a lib da peca (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_socorro.sh" ]; then
+  _lib="${_self_dir}/../hooks/_socorro.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_socorro.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_socorro.sh"
+fi
+if [ -z "$_lib" ]; then
+  # fail-open: sem a lib, nao trava a execucao — segue calado (o chamador nao recebe o bilhete).
+  exit 0
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+command -v _norte_socorro >/dev/null 2>&1 || exit 0
+
+_socorro_dir() { printf '%s/.norte-box/socorro' "${HOME}"; }
+
+# sanea um rotulo de sessao pro nome do arquivo: so [A-Za-z0-9._-], o resto vira '-'. Corta em 64 chars.
+# Fecha path-traversal no NOME (barra/.. viram '-'), sem depender do disco.
+_socorro_slug() {
+  local _s="${1:-}"
+  _s="$(printf '%s' "$_s" | tr -c 'A-Za-z0-9._-' '-' | cut -c1-64)"
+  # nao deixa comecar com '.' (evita nome oculto / '..'): troca ponto inicial por '_'.
+  case "$_s" in .*) _s="_${_s#.}" ;; esac
+  [ -n "$_s" ] || _s=""
+  printf '%s' "$_s"
+}
+
+_socorro_sessao() {
+  local _s="${1:-}"
+  [ -n "$_s" ] || _s="${CLAUDE_SESSION_ID:-}"
+  [ -n "$_s" ] || _s="$(date +%Y%m%d-%H%M%S 2>/dev/null || echo socorro)"
+  _socorro_slug "$_s"
+}
+
+case "$_cmd" in
+  mostrar|ver)
+    _sess="$(_socorro_sessao "${2:-}")"
+    _dir="$(_socorro_dir)"
+    if [ -n "${2:-}" ] && [ -f "$_dir/$_sess.md" ]; then
+      cat "$_dir/$_sess.md" 2>/dev/null
+    else
+      # sem sessao dada -> o mais recente (ls por mtime). Sem nenhum -> nada.
+      _last="$(ls -t "$_dir"/*.md 2>/dev/null | head -n1)"
+      [ -n "$_last" ] && cat "$_last" 2>/dev/null || true
+    fi
+    exit 0
+    ;;
+  apagar|remover)
+    _sess="$(_socorro_sessao "${2:-}")"
+    if [ -z "${2:-}" ]; then
+      printf '🟡 uso: nb-socorro apagar <sessao>\n' >&2
+      exit 2
+    fi
+    _dir="$(_socorro_dir)"
+    _f="$_dir/$_sess.md"
+    # so apaga DENTRO de socorro/ (o slug ja matou traversal; a checagem de prefixo e cinto+suspensorio).
+    case "$_f" in
+      "$_dir"/*.md)
+        if [ -f "$_f" ]; then rm -f "$_f" 2>/dev/null && printf 'apagado: %s\n' "$_f" || printf 'nao consegui apagar: %s\n' "$_f"
+        else printf 'nao achei: %s\n' "$_f"; fi
+        ;;
+      *) printf 'nao achei (nome invalido)\n' ;;
+    esac
+    exit 0
+    ;;
+  ''|-h|--help|ajuda)
+    printf '🟡 uso: nb-socorro salvar <erro-exato> [<resumo-curto>]\n' >&2
+    printf '       nb-socorro mostrar [<sessao>]\n' >&2
+    printf '       nb-socorro apagar <sessao>\n' >&2
+    exit 2
+    ;;
+  salvar)
+    shift 2>/dev/null || true
+    _erro="${1:-}"; _resumo="${2:-}"
+    ;;
+  *)
+    # atalho: "nb-socorro <erro> [<resumo>]" sem o verbo salvar.
+    _erro="${1:-}"; _resumo="${2:-}"
+    ;;
+esac
+
+# --- salvar (default) ---
+# kill-switch: inerte (nada gravado, nada no stdout, exit 0 — o fluxo segue como antes).
+case "${NORTE_SOCORRO:-1}" in 0|no|nao|off|false) exit 0 ;; esac
+
+_bilhete="$(_norte_socorro "${_erro:-}" "${_resumo:-}")"
+# fail-open: se por qualquer motivo o bilhete saiu vazio, nao grava lixo — segue calado.
+[ -n "$_bilhete" ] || exit 0
+
+_dir="$(_socorro_dir)"
+mkdir -p "$_dir" 2>/dev/null || exit 0   # sem poder gravar -> fail-open (nao trava a execucao)
+_sess="$(_socorro_sessao "")"
+_f="$_dir/$_sess.md"
+if printf '%s\n' "$_bilhete" > "$_f" 2>/dev/null; then
+  printf '🆘 Nao consegui terminar — salvei aqui o que a Norte precisa pra te ajudar:\n'
+  printf '   %s\n' "$_f"
+  printf 'Nada foi enviado. Quando quiser, mande esse arquivo pra Norte (voce escolhe o canal).\n'
+fi
+exit 0
