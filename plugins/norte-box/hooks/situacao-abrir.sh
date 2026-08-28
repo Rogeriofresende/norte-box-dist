@@ -61,6 +61,15 @@ elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_chan
   . "${CLAUDE_PLUGIN_ROOT}/hooks/_changelog.sh" 2>/dev/null
 fi
 
+# Carrega a lib do "ATUALIZA SEM QUEBRAR" (NRT-_990484): quando a caixa mudou de versao, confere se a nova
+# esta SA e so avisa se estiver QUEBRADA ("nao confie nesta versao"). Opcional: sem ela, o cartao segue
+# sem o bloco de conferencia de upgrade (fail-open).
+if [ -n "${_SELF_DIR:-}" ] && [ -f "${_SELF_DIR}/_upgrade.sh" ]; then
+  . "${_SELF_DIR}/_upgrade.sh" 2>/dev/null
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_upgrade.sh" ]; then
+  . "${CLAUDE_PLUGIN_ROOT}/hooks/_upgrade.sh" 2>/dev/null
+fi
+
 # Consome o JSON do SessionStart como DADO (evita SIGPIPE) e sai limpo se algo faltar.
 cat >/dev/null 2>&1 || true
 
@@ -210,6 +219,21 @@ if command -v _norte_changelog_abertura >/dev/null 2>&1; then
   _mudou="$(_norte_changelog_abertura 2>/dev/null || true)"
   if [ -n "${_mudou:-}" ]; then
     _ctx="$(printf '%s\n\n=== ✨ O QUE MUDOU PRA VOCE (mostre ao usuario, do jeito que esta) ===\nMOSTRE ao usuario este bloco: o que ficou DIFERENTE pra ele desde a ultima vez que ele abriu a caixa,\ndo jeito que esta (frases de padaria, sem reescrever/tecniques). Uma linha de moldura simples, tipo\n"Antes de comecar: umas coisas mudaram por aqui desde a ultima vez —". So aparece uma vez; nao repita\nnas proximas aberturas:\n%s\n=== fim ===' "$_ctx" "$_mudou")"
+  fi
+fi
+
+# 🔎 ATUALIZA SEM QUEBRAR (NRT-_990484): quando a caixa mudou de VERSAO desde a ultima conferida, confere
+# se a nova esta SA (manifestos concordam + arquivos-chave parseiam + doctor sem FALHA — reusa o doctor).
+# Fica FORA do if/else de objetivo DE PROPOSITO: a conferencia de upgrade independe de ter objetivo. Se a
+# versao esta SA -> uma linha curtissima "✓ atualizacao conferida", uma vez (depois cala). Se esta
+# QUEBRADA -> aviso claro "nao confie nesta versao; avise a Norte". Sem troca de versao -> silencio.
+# Kill-switch NORTE_UPGRADE=0 -> a funcao nao ecoa nada. Extra do cartao, nunca o coracao do situar
+# (fail-open: na duvida NAO alarma). Convive com o vigia-doctor (aquele cuida do "quebrou no meio"; este
+# do "acabei de atualizar — a nova esta inteira?").
+if command -v _norte_upgrade_abertura >/dev/null 2>&1; then
+  _upg="$(_norte_upgrade_abertura 2>/dev/null || true)"
+  if [ -n "${_upg:-}" ]; then
+    _ctx="$(printf '%s\n\n=== 🔎 ATUALIZA SEM QUEBRAR (mostre ao usuario, do jeito que esta) ===\nMOSTRE ao usuario este bloco EXATAMENTE como esta. Se comecar com ⚠, e um ALERTA de que a versao nova\nda caixa parece quebrada: nao amenize, nao "conserte" — repasse o aviso pra pessoa nao confiar na versao\ne avisar a Norte. Se comecar com ✓, e so um recado curto de que a atualizacao foi conferida (uma vez):\n%s\n=== fim ===' "$_ctx" "$_upg")"
   fi
 fi
 

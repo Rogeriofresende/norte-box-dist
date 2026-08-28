@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# nb-atualizar — helper de linha de comando do "ATUALIZA SEM QUEBRAR" do norte-box (NRT-_990484).
+# A peca-irma _upgrade.sh e o PORTAO na abertura: quando a versao mudou, confere se a nova esta SA e so
+# fala se estiver QUEBRADA. Este helper deixa a pessoa CONFERIR sob demanda, a qualquer momento: "esta
+# versao da caixa da pra confiar?".
+#
+# USO:
+#   nb-atualizar            -> roda a checagem "esta sa?" e diz: "pode confiar" ou "tem problema: X".
+#   nb-atualizar -h|--help  -> esta ajuda.
+#
+# SAIDA: uma frase de padaria dizendo se pode confiar na versao atual. Nada de rede, nada sai da maquina.
+# EXIT: 0 = sa (pode confiar); 1 = quebrada (tem problema); 0 tambem quando nao deu pra checar (fail-open,
+# nao alarma) — mas a frase deixa claro que nao conferiu. exit 2 so pra erro de uso.
+#
+# LEIS: LOCAL/zero rede · fail-open (peca quebrada / kill-switch nao trava) · dado e dado (le manifestos e
+# saida do doctor como TEXTO, nunca executa). Kill-switch NORTE_UPGRADE=0 -> inerte (avisa que esta
+# desligado, exit 0). bash 3.2, set -u.
+set -u
+
+_cmd="${1:-}"
+
+case "$_cmd" in
+  -h|--help|ajuda)
+    printf 'uso: nb-atualizar          (confere se a versao atual da caixa da pra confiar)\n' >&2
+    exit 2
+    ;;
+esac
+
+# Carrega a lib da peca (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_lib=""
+if [ -n "${_self_dir:-}" ] && [ -f "${_self_dir}/../hooks/_upgrade.sh" ]; then
+  _lib="${_self_dir}/../hooks/_upgrade.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_upgrade.sh" ]; then
+  _lib="${CLAUDE_PLUGIN_ROOT}/hooks/_upgrade.sh"
+fi
+if [ -z "$_lib" ]; then
+  # fail-open: sem a lib, nao trava — segue calado (nao afirma nada).
+  printf '(nao consegui achar a checagem de versao — segue como esta.)\n'
+  exit 0
+fi
+# shellcheck source=/dev/null
+. "$_lib"
+command -v _nbu_sanidade >/dev/null 2>&1 || { printf '(nao consegui carregar a checagem — segue como esta.)\n'; exit 0; }
+
+# kill-switch: inerte, mas avisa (o helper e sob demanda — silencio total confundiria).
+case "${NORTE_UPGRADE:-1}" in
+  0|no|nao|off|false) printf '(a checagem de versao esta desligada — NORTE_UPGRADE=0.)\n'; exit 0 ;;
+esac
+
+_atual="$(_nbu_versao_atual 2>/dev/null)"
+_motivo="$(_nbu_sanidade)"; _rc=$?
+
+if [ "$_rc" = "0" ]; then
+  if [ -n "$_atual" ]; then
+    printf '✓ Pode confiar: a versao %s desta caixa foi checada e esta inteira.\n' "$_atual"
+  else
+    printf '✓ Pode confiar: esta versao da caixa foi checada e esta inteira.\n'
+  fi
+  exit 0
+fi
+
+if [ "$_rc" = "1" ]; then
+  printf '⚠ Tem problema: %s.\n' "$_motivo"
+  printf 'Nao confie nesta versao da caixa; avise a Norte.\n'
+  exit 1
+fi
+
+# _rc=2: indeterminado -> fail-open (nao alarma), mas honesto de que nao conferiu.
+printf '(nao consegui conferir agora: %s. Nao vou alarmar — tente de novo mais tarde.)\n' "${_motivo:-motivo desconhecido}"
+exit 0

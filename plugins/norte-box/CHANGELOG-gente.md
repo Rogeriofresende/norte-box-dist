@@ -8,6 +8,10 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.12
+- Quando eu me atualizo, agora eu me CONFIRO sozinho antes de você usar — e só te aviso se a versão nova parecer com problema ("não confie nesta versão, avise a Norte"). Se estiver tudo certo, fico quieto.
+- Você também pode conferir na hora que quiser com o comando `nb-atualizar` — ele te diz "pode confiar" ou "tem problema: X".
+
 ## 0.3.11
 - Agora, quando a caixa muda de versão, ela te AVISA em português o que ficou diferente pra você — em vez de mudar por baixo, calada.
 - É só um recado curto na abertura, uma vez. Sem novidade, sem recado.
