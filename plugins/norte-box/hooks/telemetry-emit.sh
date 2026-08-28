@@ -207,6 +207,22 @@ else
   _ms_json="null"
 fi
 
+# --- VERSAO DA CAIXA (NRT-_990500): a NOSSA versao do plugin, NUNCA conteudo do cliente. Serve pro
+# painel mostrar quem ja atualizou. Le do proprio plugin.json distribuido (via _SELF_DIR, fallback
+# CLAUDE_PLUGIN_ROOT). GATE de privacidade: SO numero-e-ponto curto passa (equivale a ^[0-9][0-9.]{0,15}$,
+# ex 0.3.14) — qualquer outra coisa (texto, injecao, string gigante, plugin.json editado a mao) vira
+# vazio -> null. O valor nasce do NOSSO arquivo, nunca de stdin/prompt/tool_input. ---
+_pj=""
+[ -n "${_SELF_DIR:-}" ] && [ -f "${_SELF_DIR}/../.claude-plugin/plugin.json" ] && _pj="${_SELF_DIR}/../.claude-plugin/plugin.json"
+[ -z "$_pj" ] && [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" ] && _pj="${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json"
+_versao=""
+[ -n "$_pj" ] && _versao="$(jq -r '.version // empty' "$_pj" 2>/dev/null || true)"
+case "$_versao" in
+  ''|*[!0-9.]*) _versao="" ;;   # vazio, ou contem char != [0-9.] (texto/injecao) -> descarta
+  [!0-9]*)      _versao="" ;;   # nao comeca com digito (ex ".5") -> descarta
+esac
+[ "${#_versao}" -gt 16 ] && _versao=""   # string gigante -> descarta
+
 # --- Monta o evento SO-NUMEROS com jq (jq escapa tudo -> JSON sempre valido). Se jq falhar -> fail-open. ---
 # Campos: invite_id (opaco), kind:"medidor" (marca o evento como so-numeros), event (tipo do hook,
 # colapsado por allowlist), tool (rotulo GENERICO da acao — Read/Edit/"mcp"/"outro", NUNCA o nome
@@ -217,11 +233,13 @@ _line="$(jq -cn \
   --arg event     "$_event" \
   --arg tool      "${_tool_safe:-outro}" \
   --arg ts        "$_ts" \
+  --arg versao    "$_versao" \
   --argjson comandos 1 \
   --argjson tokens "${_tokens_aprox:-0}" \
   --argjson ms     "${_ms_json:-null}" \
   --argjson bytes  "${_chars:-0}" \
   '{invite_id:$invite_id, kind:"medidor", event:$event, tool:$tool, ts:$ts,
+    versao:(if $versao=="" then null else $versao end),
     uso:{comandos:$comandos, tokens:$tokens, ms:$ms, bytes:$bytes}}' 2>/dev/null || true)"
 
 [ -z "$_line" ] && exit 0

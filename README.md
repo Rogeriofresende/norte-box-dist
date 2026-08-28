@@ -77,6 +77,16 @@ Pra conferir a qualquer momento:
 
 Verde = tudo certo.
 
+### 7) Deixar a caixa se atualizar sozinha (recomendado — 1 vez só)
+
+Assim você não precisa atualizar na mão a cada versão nova. Dentro do Claude, abra:
+
+```
+/plugin
+```
+
+Vá em **Marketplaces → norte-box** e ligue o **auto-update** (atualização automática). Pronto: daí em diante, quando sair uma versão nova, a caixa se atualiza sozinha pouco depois de você abrir o Claude. Quem liga é você — a caixa **nunca** se atualiza escondida.
+
 ---
 
 ## Já tinha instalado uma versão antiga? (2º encontro)
