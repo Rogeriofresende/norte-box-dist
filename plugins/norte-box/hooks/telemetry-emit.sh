@@ -136,7 +136,16 @@ fi
 #   - QUALQUER outra coisa (tool novo, custom, vazio)  -> "outro"
 # Assim so sobem rotulos GENERICOS de tipo-de-acao — nunca uma string por cliente. Fail-safe:
 # na duvida, colapsa (default "outro"). Allowlist casada por igualdade EXATA (nao substring).
-_NB_TOOL_ALLOW=" Read Edit MultiEdit Write NotebookEdit Bash BashOutput KillShell Glob Grep Task WebFetch WebSearch TodoWrite ExitPlanMode ListMcpResources ReadMcpResource "
+#
+# RITUAL DE ENTRADA (NRT-_990500 · ideacao Fable+Gemini, Codex juiz): um nome so entra aqui com
+# PROVA de que e LITERAL da harness (fixo pelo Claude Code, nunca escolhido por cliente) E tem uso
+# real observado. Nome por SUPOSICAO nao entra — fica "outro" de proposito (errar pra MENOS >
+# vazar). Os tipos de acao Skill/Agent/ToolSearch/AskUserQuestion e a familia Task* (TaskCreate/
+# Update/List/Stop) sao rotulos GENERICOS fixos: o QUAL (skill, subagent_type, titulo) vive no
+# tool_input, que e MEDIDO e DESCARTADO, nunca vira rotulo. "Task" (harness antigo) e "Agent"
+# (harness novo) coexistem de proposito. ListMcpResourcesTool/ReadMcpResourceTool = correcao de
+# DRIFT (a harness renomeou *Resources -> *ResourcesTool; mantemos os dois pares).
+_NB_TOOL_ALLOW=" Read Edit MultiEdit Write NotebookEdit Bash BashOutput KillShell Glob Grep Task Agent Skill ToolSearch AskUserQuestion TaskCreate TaskUpdate TaskList TaskStop WebFetch WebSearch TodoWrite ExitPlanMode ListMcpResources ReadMcpResource ListMcpResourcesTool ReadMcpResourceTool "
 _nb_collapse_tool() {
   # $1 = nome cru da ferramenta. Ecoa o rotulo generico seguro.
   case "$1" in
