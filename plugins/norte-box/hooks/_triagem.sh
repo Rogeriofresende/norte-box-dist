@@ -10,8 +10,18 @@
 # como certeza, vira uma inversao silenciosa da vontade do CEO — o erro mais caro. O Val reprovou 3x
 # por essa falsa confianca.
 #
+# O FREIO DE SILENCIO (NRT-_990148, conversa 746, regra literal do CEO): "a triagem so fala quando o
+# pedido e RISCO REAL (publicar / apagar / mexer) e fica CALADA em consulta / oi / follow-up". Antes a
+# peca abria a boca em TODO pedido — inclusive "oi", "quantos leads temos" e follow-ups — virando atrito
+# a toa (o CEO odeia perguntar sem motivo). Agora o palpite do tipo VIRA a chave do freio:
+#   - tipo ∈ {publicar, apagar-ou-mexer}  -> RISCO REAL: a peca FALA (o bloco de confirmacao abaixo).
+#   - tipo = consultar  OU  "" (nao sei / oi / saudacao / follow-up / ambiguo) -> SILENCIO TOTAL
+#     (nada no stdout, exit 0). Consultar so LE (nao muda nada); "nao sei" nao e risco provado -> calar.
+#   Errar pro lado do silencio e o barato (o CEO nao sente atrito); so ABRE a boca com sinal de risco.
+#
 # O DESENHO NOVO (a chave e uma so: NUNCA cravar). Detectar o tipo passa a ser um PALPITE best-effort,
-# JAMAIS uma afirmacao. A peca reusa o FORMATO da peca "quando trava, pergunta" (0.3.9):
+# JAMAIS uma afirmacao. QUANDO FALA (so em risco), a peca reusa o FORMATO da peca "quando trava,
+# pergunta" (0.3.9):
 #   1) UMA linha de padaria com o palpite marcado como palpite: "isso me parece <tipo> — confirma?"
 #      (nunca "Entendi como X", nunca "E do tipo X", nunca "Vou tratar como X").
 #   2) 2-3 opcoes concretas: (1) sim  (2) nao, e outro  (3) nao sei — pergunte antes de agir.
@@ -31,8 +41,8 @@
 # LEIS (nao-negociaveis, iguais aos outros passos):
 #   - LOCAL, ZERO REDE: so monta texto e ecoa no stdout. NUNCA sai da maquina, nada de telemetria/rede.
 #   - FAIL-OPEN: kill-switch NORTE_TRIAGEM=0 -> INERTE (nada no stdout, exit 0), o fluxo segue como antes.
-#     Pedido vazio / so-espacos tambem nao trava: sem palpite util, ecoa uma sugestao neutra "nao sei o
-#     tipo — me confirma?" (nunca inventa um tipo com certeza) e exit 0.
+#     Pedido vazio / so-espacos / "oi" / consulta tambem nao trava: sem sinal de RISCO, a peca CALA
+#     (nada no stdout, exit 0) — o freio de silencio. So risco (publicar/apagar-ou-mexer) abre a boca.
 #   - DADO E DADO, NUNCA COMANDO: o pedido do CEO e TEXTO que entra na sugestao — NUNCA e executado/eval.
 #     `set -u`, sem eval, sem expandir o pedido como shell. Payload de shell no pedido vira texto (e e
 #     saneado por linha). Comparacoes de palavra sao case-insensitive via minusculizacao por `tr`, sem
@@ -112,6 +122,17 @@ _nbt_frase_tipo() {
   esac
 }
 
+# _nbt_e_risco <etiqueta> — a CHAVE do freio de silencio (NRT-_990148). 0 (verdadeiro) se o tipo
+# palpitado e RISCO REAL — aquilo que o CEO mandou a peca FALAR: publicar (vai pro mundo) ou
+# apagar-ou-mexer (muda o disco). 1 (falso) pra consultar (so leitura) e pra "" (nao sei / oi /
+# saudacao / follow-up / ambiguo) — nesses a peca CALA. So um palpite vira gatilho, nunca certeza.
+_nbt_e_risco() {
+  case "${1:-}" in
+    publicar|apagar-ou-mexer) return 0 ;;   # RISCO REAL -> FALA
+    *)                        return 1 ;;   # consultar / nao-sei -> SILENCIO
+  esac
+}
+
 # _nbt_nega <pedido-minusculo> — 0 se o pedido tem cara de NEGACAO/proibicao (o caso que matou a versao
 # velha). So influencia o TOM do palpite ("parece que voce NAO quer ...") — NUNCA vira certeza.
 _nbt_nega() {
@@ -129,10 +150,11 @@ _nbt_condicional() {
     || _nbt_tem "acho que" "$_p" || _nbt_tem "sera que" "$_p" || _nbt_tem "será que" "$_p"
 }
 
-# _norte_triar <pedido> — o CORACAO da peca. Recebe o pedido do CEO (texto) e monta UMA sugestao-a-
-# confirmar. NUNCA crava. SEMPRE exit 0 (fail-open).
+# _norte_triar <pedido> — o CORACAO da peca. Recebe o pedido do CEO (texto) e, SO EM RISCO REAL, monta
+# UMA sugestao-a-confirmar. NUNCA crava. SEMPRE exit 0 (fail-open).
 #   kill-switch NORTE_TRIAGEM=0 -> inerte: nada no stdout, exit 0.
-#   qualquer pedido (ate vazio) -> uma sugestao com palpite marcado como palpite + opcoes + default PARA.
+#   FREIO DE SILENCIO (NRT-_990148): tipo consultar / "" (oi/saudacao/follow-up/ambiguo) -> CALA
+#     (nada no stdout, exit 0). So tipo publicar/apagar-ou-mexer -> FALA (palpite + opcoes + default PARA).
 _norte_triar() {
   local _raw _p _low _tipo _fr _tom
 
@@ -143,6 +165,14 @@ _norte_triar() {
   _raw="$(_nbt_1linha "${1:-}")"
   _low="$(_nbt_lower "$_raw")"
   _tipo="$(_nbt_palpite_tipo "$_low")"
+
+  # FREIO DE SILENCIO: so abre a boca em RISCO REAL (publicar / apagar-ou-mexer). Consulta, "oi",
+  # follow-up e qualquer coisa que a peca nao conseguiu ler como risco -> CALA (stdout vazio, exit 0).
+  # Errar pro lado do silencio e o barato; so o sinal de risco justifica interromper o CEO.
+  if ! _nbt_e_risco "$_tipo"; then
+    return 0   # calada: nao e risco -> nada no stdout, fluxo segue sem atrito.
+  fi
+
   _fr="$(_nbt_frase_tipo "$_tipo")"
 
   # TOM do palpite (nunca certeza). Negacao/condicional so mudam a frase pra deixar CLARO que e chute.

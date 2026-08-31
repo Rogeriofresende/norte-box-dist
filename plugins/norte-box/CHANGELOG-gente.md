@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.16
+- Agora isso funciona sozinho, e do jeito certo: quando você me pede algo que MEXE no mundo (publicar, apagar, alterar arquivo), eu paro e te peço pra confirmar antes — mas quando é só uma pergunta, um "oi" ou um "depois a gente vê", eu fico QUIETO e não te interrompo à toa. Só falo quando é risco de verdade.
+
 ## 0.3.15
 - Quando você me pede uma coisa, eu NUNCA cravo por conta própria: eu te devolvo um palpite ("me parece que você quer X"), duas ou três opções, e paro pra você confirmar — nada anda sozinho no meu chute.
 
