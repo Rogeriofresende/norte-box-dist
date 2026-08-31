@@ -85,6 +85,44 @@ _nbt_tem() {
   esac
 }
 
+# _nbt_entre <verbo> <ancora> <palheiro-ja-minusculo> — 0 se o palheiro tem "<verbo> ... <ancora>" com um
+# OBJETO no MEIO (ate 40 chars de gap). Fecha o furo do Val (NRT-_990148, conversa 746): risco com objeto
+# entre o verbo e a palavra-ancora escapava calado porque _nbt_tem so acha string CONTIGUA — "poe online"
+# grudado nao existe em "poe ISSO online". Aqui o verbo e a ancora podem estar separados por um objeto
+# curto ("isso", "o site", "esse arquivo"). O teto de 40 chars evita casar verbo+ancora acidentais numa
+# frase longa e nao-relacionada. bash 3.2: sem regex, so case-glob + expansao de parametro. Nunca executa.
+_nbt_entre() {
+  local _v="${1:-}" _a="${2:-}" _p="${3:-}"
+  case "$_p" in
+    *"$_v"*"$_a"*)
+      local _resto="${_p#*"$_v"}"      # tudo depois da 1a ocorrencia do verbo
+      local _ate="${_resto%%"$_a"*}"   # o que fica entre o verbo e a 1a ancora seguinte (o "objeto")
+      [ "${#_ate}" -le 40 ] && return 0 || return 1 ;;
+    *) return 1 ;;
+  esac
+}
+
+# _nbt_e_pergunta <pedido-ja-minusculo> — 0 (verdadeiro) se o pedido, apos tirar espacos finais, TERMINA
+# em "?" — a regra literal do CEO (NRT-_990148, conversa 746): "fica calada quando e pergunta — frase
+# termina em interrogacao". Perguntas que so CITAM o assunto de risco ("quanto custou o deploy?", "sera
+# que publico hoje?", "o servico esta no ar?") vazavam porque a peca casava o substantivo de risco ANTES
+# de olhar se era consulta — atrito a toa que o CEO mandou eliminar. Esta checagem entra ANTES da
+# classificacao de risco em _norte_triar: se e pergunta -> CALA.
+# NAO ha excecao de "ordem": uma ordem de risco REAL vem imperativa e SEM "?" (ex.: "apaga o arquivo"),
+# entao nunca cai aqui — segue direto pra classificacao e FALA. Na duvida entre pergunta e ordem, o CEO
+# mandou ERRAR PRO SILENCIO (silencio e o lado barato). TRADE-OFF ASSUMIDO (o CEO pediu pra reportar, nao
+# esconder): um risco escrito como pergunta ("apaga o banco?", "publico isso?") vai CALAR. E raro (risco
+# de verdade vem imperativo, sem "?") e o preco de zerar o atrito das perguntas legitimas.
+_nbt_e_pergunta() {
+  local _t="${1:-}"
+  # tira espacos/tab finais (sed, portavel macOS bash 3.2). NAO executa o conteudo — so limpa a cauda.
+  _t="$(printf '%s' "$_t" | sed 's/[[:space:]]*$//')"
+  case "$_t" in
+    *'?') return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # _nbt_palpite_tipo <pedido-minusculo> — devolve o PALPITE do tipo (best-effort, NUNCA certeza). Ecoa
 # uma das etiquetas: "publicar" (vai pro mundo) / "apagar-ou-mexer" (mexe arquivo) / "consultar" (so
 # leitura) / "" (nao sei). E so um chute por pista de texto — quem confirma e o CEO.
@@ -110,7 +148,13 @@ _nbt_palpite_tipo() {
      || _nbt_tem "manda pra" "$_p" || _nbt_tem "manda pro" "$_p" || _nbt_tem "mandar pra" "$_p" \
      || _nbt_tem "manda o " "$_p" || _nbt_tem "manda a " "$_p" || _nbt_tem "manda isso" "$_p" \
      || _nbt_tem "manda esse" "$_p" || _nbt_tem "manda essa" "$_p" \
-     || _nbt_tem "joga no site" "$_p" || _nbt_tem "joga no ar" "$_p" || _nbt_tem "joga pro ar" "$_p"; then
+     || _nbt_tem "joga no site" "$_p" || _nbt_tem "joga no ar" "$_p" || _nbt_tem "joga pro ar" "$_p" \
+     || _nbt_entre "poe " "online" "$_p" || _nbt_entre "põe " "online" "$_p" \
+     || _nbt_entre "coloca " "online" "$_p" || _nbt_entre "deixa " "online" "$_p" \
+     || _nbt_entre "poe " "no ar" "$_p" || _nbt_entre "põe " "no ar" "$_p" \
+     || _nbt_entre "coloca " "no ar" "$_p" || _nbt_entre "deixa " "no ar" "$_p" \
+     || _nbt_entre "poe " "pro ar" "$_p" || _nbt_entre "põe " "pro ar" "$_p" \
+     || _nbt_entre "coloca " "pro ar" "$_p" || _nbt_entre "deixa " "pro ar" "$_p"; then
     printf 'publicar'
     return 0
   fi
@@ -140,7 +184,15 @@ _nbt_palpite_tipo() {
      || _nbt_tem "mata o servico" "$_p" || _nbt_tem "mata a instancia" "$_p" \
      || _nbt_tem "reset" "$_p" \
      || _nbt_tem "rm " "$_p" || _nbt_tem "rm-" "$_p" || _nbt_tem "rm." "$_p" \
-     || _nbt_tem "rm dessa" "$_p" || _nbt_tem "rm nessa" "$_p"; then
+     || _nbt_tem "rm dessa" "$_p" || _nbt_tem "rm nessa" "$_p" \
+     || _nbt_entre "move " "arquivo" "$_p" || _nbt_entre "mova " "arquivo" "$_p" || _nbt_entre "mover " "arquivo" "$_p" \
+     || _nbt_entre "tira " "arquivo" "$_p" || _nbt_entre "tire " "arquivo" "$_p" || _nbt_entre "tirar " "arquivo" "$_p" \
+     || _nbt_entre "remove " "arquivo" "$_p" || _nbt_entre "remova " "arquivo" "$_p" || _nbt_entre "remover " "arquivo" "$_p" \
+     || _nbt_entre "move " "pasta" "$_p" || _nbt_entre "mova " "pasta" "$_p" \
+     || _nbt_entre "tira " "pasta" "$_p" || _nbt_entre "tire " "pasta" "$_p" || _nbt_entre "tirar " "pasta" "$_p" \
+     || _nbt_entre "remove " "pasta" "$_p" || _nbt_entre "remova " "pasta" "$_p" || _nbt_entre "remover " "pasta" "$_p" \
+     || _nbt_entre "move " "isso" "$_p" || _nbt_entre "mova " "isso" "$_p" \
+     || _nbt_entre "tira " "isso" "$_p" || _nbt_entre "remove " "isso" "$_p"; then
     printf 'apagar-ou-mexer'
     return 0
   fi
@@ -206,6 +258,16 @@ _norte_triar() {
 
   _raw="$(_nbt_1linha "${1:-}")"
   _low="$(_nbt_lower "$_raw")"
+
+  # DETECTOR DE PERGUNTA (NRT-_990148, conversa 746, regra literal do CEO) — ANTES da classificacao de
+  # risco. Se o pedido termina em "?" -> e PERGUNTA -> CALA, mesmo que cite um assunto de risco. Isso mata
+  # o atrito das consultas que so NOMEIAM o risco ("quanto custou o deploy?", "sera que publico hoje?",
+  # "o servico esta no ar?") e que antes disparavam porque a peca casava o substantivo antes de ver o "?".
+  # Ordem de risco REAL vem imperativa SEM "?" -> nao cai aqui -> segue e FALA. Na duvida, silencio (barato).
+  if _nbt_e_pergunta "$_low"; then
+    return 0   # pergunta -> calada: nada no stdout, exit 0 (o freio de silencio, no lado barato).
+  fi
+
   _tipo="$(_nbt_palpite_tipo "$_low")"
 
   # FREIO DE SILENCIO: so abre a boca em RISCO REAL (publicar / apagar-ou-mexer). Consulta, "oi",

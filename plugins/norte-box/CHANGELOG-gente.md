@@ -8,6 +8,11 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.18
+- Parei de te interromper quando você só FAZ UMA PERGUNTA: "quanto custou o deploy?", "vale a pena mandar a newsletter?", "será que publico hoje?", "o serviço está no ar?" — se a frase termina com "?", eu fico quieto. Perguntar não é mandar fazer, então não te atrapalho à toa.
+- E fechei uns furos: pedido perigoso com uma palavra no meio ("põe ISSO online", "deixa ISSO online", "move O arquivo pra lá") agora eu paro pra confirmar também — antes esse jeitinho de escrever passava batido.
+- Detalhe honesto: se você escrever um risco COMO pergunta ("apaga o banco?"), eu vou ficar quieto (trato como pergunta). É raro — ordem de verdade vem sem "?" — e é o preço de eu não te encher quando você só quer perguntar.
+
 ## 0.3.17
 - Ficou mais difícil eu deixar passar um pedido perigoso escrito "de outro jeito": além de "publica"/"apaga", agora eu também paro pra confirmar em "sobe pro ar", "faz o deploy", "dispara a newsletter", "limpa a pasta", "zera o banco", "revoga os convites", "formata", "derruba o serviço" e afins.
 - E continuei quieto no que é só pergunta: "quantos leads", "manda ver os números", "consulta o saldo" e afins seguem sem interromper você — nada de falar à toa.
