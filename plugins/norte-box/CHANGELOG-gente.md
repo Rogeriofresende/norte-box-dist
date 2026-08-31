@@ -8,6 +8,11 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.19
+- Agora o seu time é DE VERDADE: a Ada (construir/subir), a Val (revisar e tentar quebrar) e o Max (juntar tudo) vieram embarcados na caixa — antes eram só nomes, agora respondem.
+- Comando novo `/norte-box:time-ordem "sua ordem"`: você dá UMA ordem e o time debate em paralelo, a Val tenta quebrar, e o Max te devolve UMA decisão recomendada (com o risco dela e o que precisa de você). A discordância é obrigatória — se todos concordam, ele te avisa que não valeu chamar o time.
+- Detalhe honesto: chamar o time roda 3 agentes de uma vez, então gasta ~3x. Use quando a escolha tem dois lados; pra tarefa simples de uma pessoa só, chame um agente e pronto.
+
 ## 0.3.18
 - Parei de te interromper quando você só FAZ UMA PERGUNTA: "quanto custou o deploy?", "vale a pena mandar a newsletter?", "será que publico hoje?", "o serviço está no ar?" — se a frase termina com "?", eu fico quieto. Perguntar não é mandar fazer, então não te atrapalho à toa.
 - E fechei uns furos: pedido perigoso com uma palavra no meio ("põe ISSO online", "deixa ISSO online", "move O arquivo pra lá") agora eu paro pra confirmar também — antes esse jeitinho de escrever passava batido.

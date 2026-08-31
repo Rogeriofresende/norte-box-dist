@@ -34,3 +34,16 @@ grava com jq, json valido, de forma atomica; nunca executa o texto).
 
 Depois, confirme pro usuario com o nome novo e lembre que ele pode chamar o agente por esse
 nome dali pra frente. Os ids validos sao: **ada, max, val, leo, iris**.
+
+## Dar uma ORDEM ao time (debate + decisao)
+
+Este comando so **mostra e renomeia** o time. Pra **por o time pra trabalhar numa decisao**
+(Ada/Val/Max debatem em paralelo, a Val tenta quebrar, o Max sintetiza numa decisao),
+use o outro comando:
+
+```
+/norte-box:time-ordem "<a ordem/pergunta com trade-off>"
+```
+
+Lembre ao dono: o `/time-ordem` roda **3 agentes** (custa ~3x a cota). Vale a pena so quando a
+escolha tem **trade-off real**; pra tarefa de uma raia so, chame **um** agente.
