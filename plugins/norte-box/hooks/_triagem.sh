@@ -90,15 +90,57 @@ _nbt_tem() {
 # leitura) / "" (nao sei). E so um chute por pista de texto — quem confirma e o CEO.
 _nbt_palpite_tipo() {
   local _p="${1:-}"
-  # vai-pro-mundo (publicar/postar/enviar/subir pro mundo)
+  # vai-pro-mundo (publicar/postar/enviar/subir/deploy/commit-push/newsletter/producao).
+  # LISTA ENGORDADA (NRT-_990148, conversa 746, red-team do Val): a lista curta deixava passar CALADO
+  # pedido de risco escrito com outra palavra ("sobe pro ar", "faz o deploy", "dispara a newsletter").
+  # Radicais mirados no VERBO DE ACAO — ex.: "manda pra"/"manda o " (nao o bare "manda", que aparece em
+  # "manda ver os numeros" = consulta) e "sobe pro"/"sobe pra" (nao o bare "sobe", que aparece em
+  # "que horas sobe o relatorio?" = consulta). Assim engorda o alcance SEM disparar em consulta/oi.
   if _nbt_tem "public" "$_p" || _nbt_tem "post" "$_p" || _nbt_tem "envi" "$_p" \
-     || _nbt_tem "pro mundo" "$_p" || _nbt_tem "no ar" "$_p" || _nbt_tem "instagram" "$_p"; then
+     || _nbt_tem "pro mundo" "$_p" || _nbt_tem "no ar" "$_p" || _nbt_tem "instagram" "$_p" \
+     || _nbt_tem "deploy" "$_p" || _nbt_tem "producao" "$_p" || _nbt_tem "produção" "$_p" \
+     || _nbt_tem "commit e push" "$_p" || _nbt_tem "faz o commit" "$_p" || _nbt_tem "commita" "$_p" \
+     || _nbt_tem "git push" "$_p" || _nbt_tem " push " "$_p" || _nbt_tem "push pra" "$_p" \
+     || _nbt_tem "newsletter" "$_p" \
+     || _nbt_tem "coloca online" "$_p" || _nbt_tem "poe online" "$_p" || _nbt_tem "deixa online" "$_p" \
+     || _nbt_tem "sobe pro" "$_p" || _nbt_tem "sobe pra" "$_p" || _nbt_tem "sobe o site" "$_p" \
+     || _nbt_tem "sobe isso" "$_p" || _nbt_tem "sobe a " "$_p" \
+     || _nbt_tem "subir pro" "$_p" || _nbt_tem "subir pra" "$_p" \
+     || _nbt_tem "dispara" "$_p" || _nbt_tem "dispare" "$_p" || _nbt_tem "disparar" "$_p" \
+     || _nbt_tem "manda pra" "$_p" || _nbt_tem "manda pro" "$_p" || _nbt_tem "mandar pra" "$_p" \
+     || _nbt_tem "manda o " "$_p" || _nbt_tem "manda a " "$_p" || _nbt_tem "manda isso" "$_p" \
+     || _nbt_tem "manda esse" "$_p" || _nbt_tem "manda essa" "$_p" \
+     || _nbt_tem "joga no site" "$_p" || _nbt_tem "joga no ar" "$_p" || _nbt_tem "joga pro ar" "$_p"; then
     printf 'publicar'
     return 0
   fi
-  # mexe-arquivo (apagar/deletar/remover/mover/renomear/gravar)
+  # mexe-arquivo (apagar/deletar/remover/mover/renomear/gravar + limpar/zerar/sobrescrever/revogar/
+  # dropar/truncar/formatar/derrubar/matar-processo/resetar/rm). LISTA ENGORDADA (mesma origem).
+  # Radicais que poderiam pegar consulta ficam colados ao objeto de acao ("tira esse"/"limpa a",
+  # nao o bare "tira"/"limpa" que aparecem em "tirar duvida"/"limpo de bugs?"). "reset"/"trunc" ficam
+  # bare de proposito (pegam reseta/resetar/trunca/truncar) — nao aparecem em consulta plausivel.
   if _nbt_tem "apag" "$_p" || _nbt_tem "delet" "$_p" || _nbt_tem "remov" "$_p" \
-     || _nbt_tem "mover" "$_p" || _nbt_tem "renome" "$_p" || _nbt_tem "grav" "$_p"; then
+     || _nbt_tem "mover" "$_p" || _nbt_tem "renome" "$_p" || _nbt_tem "grav" "$_p" \
+     || _nbt_tem "tira esse" "$_p" || _nbt_tem "tira essa" "$_p" || _nbt_tem "tira o " "$_p" \
+     || _nbt_tem "tira a " "$_p" || _nbt_tem "tira aquele" "$_p" \
+     || _nbt_tem "tirar esse" "$_p" || _nbt_tem "tirar essa" "$_p" || _nbt_tem "tirar o " "$_p" \
+     || _nbt_tem "tirar a " "$_p" \
+     || _nbt_tem "limpa a" "$_p" || _nbt_tem "limpa o" "$_p" || _nbt_tem "limpa essa" "$_p" \
+     || _nbt_tem "limpa esse" "$_p" || _nbt_tem "limpar a" "$_p" || _nbt_tem "limpar o" "$_p" \
+     || _nbt_tem "zera" "$_p" || _nbt_tem "zerar" "$_p" \
+     || _nbt_tem "sobrescrev" "$_p" \
+     || _nbt_tem "troca o conteud" "$_p" || _nbt_tem "troca esse conteud" "$_p" \
+     || _nbt_tem "troca essa conteud" "$_p" \
+     || _nbt_tem "revoga" "$_p" || _nbt_tem "revogar" "$_p" \
+     || _nbt_tem "dropa" "$_p" || _nbt_tem " drop " "$_p" || _nbt_tem " drop-" "$_p" \
+     || _nbt_tem "faz drop" "$_p" || _nbt_tem "trunc" "$_p" \
+     || _nbt_tem "formata o" "$_p" || _nbt_tem "formata a" "$_p" || _nbt_tem "formatar" "$_p" \
+     || _nbt_tem "derruba" "$_p" || _nbt_tem "derrubar" "$_p" \
+     || _nbt_tem "mata o process" "$_p" || _nbt_tem "matar o process" "$_p" \
+     || _nbt_tem "mata o servico" "$_p" || _nbt_tem "mata a instancia" "$_p" \
+     || _nbt_tem "reset" "$_p" \
+     || _nbt_tem "rm " "$_p" || _nbt_tem "rm-" "$_p" || _nbt_tem "rm." "$_p" \
+     || _nbt_tem "rm dessa" "$_p" || _nbt_tem "rm nessa" "$_p"; then
     printf 'apagar-ou-mexer'
     return 0
   fi
