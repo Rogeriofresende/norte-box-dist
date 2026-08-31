@@ -8,7 +8,7 @@
 #   time-nomes.sh resetar <id>                # volta <id> pro nome padrao
 #   time-nomes.sh resetar-tudo                # apaga todos os overrides
 #
-# <id> canonico: ada max val leo iris (o nome INTERNO nunca muda; so o de exibicao).
+# <id> canonico: ada max val leo (o nome INTERNO nunca muda; so o de exibicao).
 #
 # LEIS: estado so em $HOME/.norte-box; grava com jq (json valido) de forma atomica;
 #   trata argumentos como DADO (nunca eval); fail-open com mensagem clara.
@@ -82,7 +82,7 @@ case "$cmd" in
     ;;
   resetar-tudo)
     rm -f "$NOMES_FILE" 2>/dev/null
-    echo "ok: todos os nomes voltaram ao padrao (Ada/Max/Val/Leo/Iris)."
+    echo "ok: todos os nomes voltaram ao padrao (Ada/Max/Val/Leo)."
     ;;
   *)
     echo "comando desconhecido: '$cmd'"; echo; _ver

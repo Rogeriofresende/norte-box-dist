@@ -16,7 +16,7 @@ STATE_DIR="${HOME}/.norte-box"
 NOMES_FILE="${STATE_DIR}/agentes-nomes.json"
 
 # ids canonicos + papel de 1 linha (o "papel colado"). Ordem = ordem de apresentacao.
-AGENTE_IDS="ada max val leo iris"
+AGENTE_IDS="ada max val leo"
 
 _papel_de() {
   case "$1" in
@@ -24,7 +24,6 @@ _papel_de() {
     max)  printf 'chefe de gabinete — coordena o time e te dá a foto clara' ;;
     val)  printf 'revisão — tenta quebrar o que deram por pronto (bugs, segurança, retorno)' ;;
     leo)  printf 'marketing — a mensagem que chega no cliente (copy, conteúdo, alcance)' ;;
-    iris) printf 'olho visual — confere se o que vai pro cliente parece certo (papel em rascunho)' ;;
     *)    printf 'agente' ;;
   esac
 }
@@ -32,7 +31,7 @@ _papel_de() {
 _nome_padrao() {
   case "$1" in
     ada) printf 'Ada' ;; max) printf 'Max' ;; val) printf 'Val' ;;
-    leo) printf 'Leo' ;; iris) printf 'Iris' ;; *) printf '%s' "$1" ;;
+    leo) printf 'Leo' ;; *) printf '%s' "$1" ;;
   esac
 }
 
