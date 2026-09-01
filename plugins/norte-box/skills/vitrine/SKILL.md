@@ -1,6 +1,6 @@
 ---
 name: vitrine
-description: Transforma uma entrega em markdown num unico arquivo .html auto-contido (CSS inline, zero rede) em ./norte-out/ e abre no navegador (open no macOS, xdg-open no Linux) — a VITRINE, o lugar onde voce VE a entrega. Use quando o usuario pede "vitrine", "mostra na vitrine", "gera a resposta em HTML", "manda como pagina local", "quero ver a entrega num arquivo", ou os comandos /norte-box:vitrine ou /norte-box:resposta (apelido retrocompat). Slug ASCII sempre (acento/espaco no nome quebra a abertura). Nao usa servidor, nao busca nada da rede.
+description: Transforma uma entrega em markdown num unico arquivo .html auto-contido (CSS inline, zero rede) em ./norte-out/ e abre no navegador (open no macOS, xdg-open no Linux, start no Windows/Git Bash) — a VITRINE, o lugar onde voce VE a entrega. Use quando o usuario pede "vitrine", "mostra na vitrine", "gera a resposta em HTML", "manda como pagina local", "quero ver a entrega num arquivo", ou os comandos /norte-box:vitrine ou /norte-box:resposta (apelido retrocompat). Slug ASCII sempre (acento/espaco no nome quebra a abertura). Nao usa servidor, nao busca nada da rede.
 ---
 
 # vitrine — a entrega como HTML local, sem servidor
@@ -151,6 +151,12 @@ próprio arquivo, via `templates/resposta.html`.
 4. **Abra no navegador (best-effort).** Se a última linha foi `OUT=<path>` (não `OUT=-`):
    - macOS: `open "<path>"`
    - Linux: `xdg-open "<path>"` (se ausente, apenas imprima o path absoluto).
+   - Windows (Git Bash): `start "" "<path>"` (o `""` vazio é o título da janela — sem ele o
+     `start` trata o 1º argumento entre aspas como título e não abre o arquivo). Se o `start`
+     não estiver acessível, tente `cmd.exe /c start "" "<path>"`; se nada abrir, apenas imprima
+     o path absoluto.
+   Detectar a plataforma por `uname` (Git Bash reporta `MINGW*`/`MSYS*`): `case "$(uname -s)" in
+   Darwin) open ... ;; MINGW*|MSYS*|CYGWIN*) start "" ... ;; *) xdg-open ... ;; esac`.
    Nunca falhe a skill se a abertura falhar — sempre reporte o path.
 
 5. **Reporte ao usuário** em 1-2 linhas: o arquivo gerado (path relativo `./norte-out/<slug>.html`)
