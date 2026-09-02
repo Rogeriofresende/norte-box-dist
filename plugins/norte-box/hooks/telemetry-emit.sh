@@ -115,6 +115,15 @@ _tool_input_raw="$(printf '%s' "$_stdin"    | jq -c '.tool_input // empty' 2>/de
 _tool_response_raw="$(printf '%s' "$_stdin" | jq -c '.tool_response // empty' 2>/dev/null || true)"
 _event_name="$(printf '%s' "$_stdin"        | jq -r '.hook_event_name // empty' 2>/dev/null || true)"
 
+# --- TRAJETORIA + SAUDE (passo 1 observabilidade "filme"): SO id opaco + 1 bit. ZERO conteudo. ---
+# session_id: gerado pela harness (UUID, ninguem digita). Lido SO pra derivar o run_id HASHEADO
+# (abaixo) — o cru NUNCA sobe: o proprio session_id e o nome do arquivo de transcript local, entao
+# hashear impede ate cruzar esse arquivo. err: 1 bit derivado do BOOLEANO is_error do tool_response
+# (nunca a mensagem — o texto do erro segue so MEDIDO em bytes e descartado, como todo conteudo).
+_session_raw="$(printf '%s' "$_stdin" | jq -r '.session_id // empty' 2>/dev/null || true)"
+_err="$(printf '%s' "$_stdin" | jq -r 'if (.tool_response|type)=="object" then ((.tool_response.is_error // false)==true) else false end' 2>/dev/null || echo false)"
+case "$_err" in true) _err=true ;; *) _err=false ;; esac
+
 if [ -n "$_prompt_raw" ]; then
   _event="UserPromptSubmit"
 elif [ -n "$_tool" ] || [ -n "$_tool_input_raw" ] || [ -n "$_tool_response_raw" ]; then
@@ -176,6 +185,31 @@ _invite_id="$(jq -r '.invite_id // .sub // empty' "${STATE_DIR}/identity.json" 2
 [ -z "$_invite_id" ] && _invite_id="$(jq -r '.hash // empty' "${STATE_DIR}/consent.json" 2>/dev/null || true)"
 [ -z "$_invite_id" ] && _invite_id="anon"
 
+# --- run_id: HASH (16 hex) do session_id. shasum (macOS) ou sha256sum (Linux) — ambos pre-instalados,
+#     zero dependencia nova. Sem hash disponivel OU sem session_id -> run_id vazio (o cru NUNCA sobe;
+#     o filme so degrada pra lista achatada, o trabalho nunca trava). Fail-open. ---
+_run_id=""
+if [ -n "$_session_raw" ]; then
+  if command -v shasum >/dev/null 2>&1; then
+    _run_id="$(printf '%s' "$_session_raw" | shasum -a 256 2>/dev/null | cut -c1-16)"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    _run_id="$(printf '%s' "$_session_raw" | sha256sum 2>/dev/null | cut -c1-16)"
+  fi
+fi
+# seq: contador por-run num arquivo nomeado pelo HASH (nunca o id cru; respeita "so escreve em
+# $HOME/.norte-box"). 2 sessoes paralelas nao se atropelam (arquivo separado por run). O emit e o
+# stop compartilham este contador -> o fecho do turno ganha o maior seq. I/O falho -> seq null.
+_seq="null"
+if [ -n "$_run_id" ]; then
+  _seq_file="${STATE_DIR}/seq-${_run_id}"
+  _prev="$(cat "$_seq_file" 2>/dev/null || echo 0)"
+  case "$_prev" in ''|*[!0-9]*) _prev=0 ;; esac
+  _seq=$(( _prev + 1 ))
+  printf '%s' "$_seq" > "$_seq_file" 2>/dev/null || _seq="null"
+  # limpeza best-effort dos contadores de runs antigos (>7 dias), so 1x por run (no 1o passo).
+  [ "$_seq" = "1" ] && find "$STATE_DIR" -name 'seq-*' -mtime +7 -delete 2>/dev/null || true
+fi
+
 # --- CUSTO REAL: tokens ~= chars/4 do TAMANHO do trabalho. So MEDIMOS o conteudo; nao o gravamos. ---
 # UserPromptSubmit -> tamanho do prompt; PostToolUse -> tamanho do tool_input + tool_response.
 # O texto sai de escopo (variaveis locais descartadas) sem nunca entrar na linha da fila.
@@ -189,7 +223,7 @@ _chars="$(printf '%s' "$_content" | wc -c | tr -d ' ')"
 _tokens_aprox=$(( _chars / 4 ))
 # Descarta o texto EXPLICITAMENTE assim que o tamanho foi medido (defesa em profundidade:
 # garante que nenhuma linha abaixo possa reaproveitar o conteudo por engano).
-_content=""; _prompt_raw=""; _tool_input_raw=""; _tool_response_raw=""
+_content=""; _prompt_raw=""; _tool_input_raw=""; _tool_response_raw=""; _session_raw=""
 # O nome CRU da ferramenta ja foi colapsado em _tool_safe; descarta o cru (pode ser um MCP
 # nomeado por cliente) pra nenhuma linha abaixo poder reaproveita-lo por engano.
 _tool=""
@@ -223,23 +257,33 @@ case "$_versao" in
 esac
 [ "${#_versao}" -gt 16 ] && _versao=""   # string gigante -> descarta
 
+# ts_ms: epoch em ms do inicio do evento (reusa _t_start ja capturado). Numero puro; serve pra o
+# report medir "demora" (gap entre passos). Nao-numerico/ausente -> null.
+case "${_t_start:-}" in ''|*[!0-9]*) _ts_ms="null" ;; *) _ts_ms="$_t_start" ;; esac
+
 # --- Monta o evento SO-NUMEROS com jq (jq escapa tudo -> JSON sempre valido). Se jq falhar -> fail-open. ---
 # Campos: invite_id (opaco), kind:"medidor" (marca o evento como so-numeros), event (tipo do hook,
 # colapsado por allowlist), tool (rotulo GENERICO da acao — Read/Edit/"mcp"/"outro", NUNCA o nome
-# cru; um MCP nomeado por cliente ja virou "mcp"), ts, uso:{...}.
-# NENHUM campo de conteudo (prompt/tool_input/tool_response) — Modelo A: numeros por padrao.
+# cru; um MCP nomeado por cliente ja virou "mcp"), ts, versao (a NOSSA, nao do cliente), uso:{...}.
+# TRAJETORIA/SAUDE (passo 1): run_id (HASH opaco do session_id; costura o filme), seq (ordem no run),
+# ts_ms (pra medir demora), err (BOOLEANO de saude). NENHUM e conteudo — Modelo A: numeros por padrao.
 _line="$(jq -cn \
   --arg invite_id "$_invite_id" \
   --arg event     "$_event" \
   --arg tool      "${_tool_safe:-outro}" \
   --arg ts        "$_ts" \
   --arg versao    "$_versao" \
+  --arg run_id    "${_run_id:-}" \
+  --argjson seq   "${_seq:-null}" \
+  --argjson ts_ms "${_ts_ms:-null}" \
+  --argjson err   "${_err:-false}" \
   --argjson comandos 1 \
   --argjson tokens "${_tokens_aprox:-0}" \
   --argjson ms     "${_ms_json:-null}" \
   --argjson bytes  "${_chars:-0}" \
   '{invite_id:$invite_id, kind:"medidor", event:$event, tool:$tool, ts:$ts,
     versao:(if $versao=="" then null else $versao end),
+    run_id:(if $run_id=="" then null else $run_id end), seq:$seq, ts_ms:$ts_ms, err:$err,
     uso:{comandos:$comandos, tokens:$tokens, ms:$ms, bytes:$bytes}}' 2>/dev/null || true)"
 
 [ -z "$_line" ] && exit 0

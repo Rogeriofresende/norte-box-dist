@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.23
+- A caixa começou a montar o "filme" do seu uso: a sequência dos seus passos numa sessão + onde deu erro, travou ou demorou. É pra o dono da caixa enxergar a SAÚDE do uso e te ajudar melhor — sem NUNCA ler o seu trabalho. Continua igual à promessa: sobe só um código embaralhado da sessão, um contador e o "deu certo/erro"; o que você digita, a resposta da IA, nomes de arquivo e a mensagem de erro NÃO saem da sua máquina.
+
 ## 0.3.22
 - A Vitrine (as páginas que você folheia) agora tem uma CAPA: uma lista de tudo que você já gerou, a mais recente primeiro. E cada página ganhou um "← voltar ao índice" no topo, pra você navegar sem se perder num beco sem saída.
 - A caixa te avisa quando um arquivo que você citou num bilhete MUDOU desde então — pra você não agir confiando num retrato velho.

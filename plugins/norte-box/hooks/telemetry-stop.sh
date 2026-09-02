@@ -57,6 +57,28 @@ _invite_id="$(jq -r '.invite_id // .sub // empty' "${STATE_DIR}/identity.json" 2
 [ -z "$_invite_id" ] && _invite_id="$(jq -r '.hash // empty' "${STATE_DIR}/consent.json" 2>/dev/null || true)"
 [ -z "$_invite_id" ] && _invite_id="anon"
 
+# --- TRAJETORIA (passo 1 "filme"): costura este FECHO de turno no MESMO run dos passos, dando-lhe
+#     o proximo seq -> o report sabe que o turno FECHOU (run sem este marcador = travou). run_id e o
+#     HASH (16 hex) do session_id; o cru NUNCA sobe. ZERO conteudo (so id opaco + contador). ---
+_session_raw="$(printf '%s' "$_stdin" | jq -r '.session_id // empty' 2>/dev/null || true)"
+_run_id=""
+if [ -n "$_session_raw" ]; then
+  if command -v shasum >/dev/null 2>&1; then
+    _run_id="$(printf '%s' "$_session_raw" | shasum -a 256 2>/dev/null | cut -c1-16)"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    _run_id="$(printf '%s' "$_session_raw" | sha256sum 2>/dev/null | cut -c1-16)"
+  fi
+fi
+_session_raw=""
+_seq="null"
+if [ -n "$_run_id" ]; then
+  _seq_file="${STATE_DIR}/seq-${_run_id}"
+  _prev="$(cat "$_seq_file" 2>/dev/null || echo 0)"
+  case "$_prev" in ''|*[!0-9]*) _prev=0 ;; esac
+  _seq=$(( _prev + 1 ))
+  printf '%s' "$_seq" > "$_seq_file" 2>/dev/null || _seq="null"
+fi
+
 # Mede o tamanho e DESCARTA o texto (defesa em profundidade: nenhuma linha abaixo pode reusa-lo).
 _chars="$(printf '%s' "$_resp_raw" | wc -c | tr -d ' ')"; [ -z "$_chars" ] && _chars=0
 _resp_raw=""
@@ -64,13 +86,18 @@ _tokens_aprox=$(( _chars / 4 ))
 _ts="$(date -u +%FT%TZ 2>/dev/null || echo unknown)"
 
 # Evento SO-NUMEROS (kind:"medidor"). Sem campo `response` nem qualquer conteudo — Modelo A.
+# Mesmo schema do emit (run_id/seq/ts_ms/err) pro report tratar todo evento igual; aqui err=false
+# (o fecho nao e resultado de ferramenta) e ts_ms=null (o stop nao mede overhead proprio).
 _line="$(jq -cn \
   --arg invite_id "$_invite_id" \
   --arg event     "AssistantResponse" \
   --arg ts        "$_ts" \
+  --arg run_id    "${_run_id:-}" \
+  --argjson seq   "${_seq:-null}" \
   --argjson tokens "${_tokens_aprox:-0}" \
   --argjson bytes  "${_chars:-0}" \
   '{invite_id:$invite_id, kind:"medidor", event:$event, tool:"", ts:$ts,
+    run_id:(if $run_id=="" then null else $run_id end), seq:$seq, ts_ms:null, err:false,
     uso:{comandos:0, tokens:$tokens, ms:null, bytes:$bytes}}' 2>/dev/null || true)"
 
 [ -z "$_line" ] && exit 0

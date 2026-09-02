@@ -41,7 +41,14 @@ No modo compartilhavel, cada acao vira 1 evento **so-numeros** (`kind:"medidor"`
   `Read`/`Edit`/`Bash`/...; **qualquer ferramenta MCP** (`mcp__servidor__funcao`, que poderia
   carregar o nome de um cliente, ex `mcp__clinica-dr-joao__buscar_prontuario`) colapsa pra `mcp`;
   e qualquer ferramenta desconhecida/custom vira `outro` — **nao** e o caminho, nem o conteudo,
-  nem o nome do servidor MCP), `ts`, e um `invite_id` opaco (id da pessoa, **nunca** um token/chave).
+  nem o nome do servidor MCP), `ts`, e um `invite_id` opaco (id da pessoa, **nunca** um token/chave);
+- `versao` — a versao do NOSSO plugin (ex `0.3.23`), pro painel saber quem ja atualizou. Nasce do
+  nosso `plugin.json`, nunca de nada que voce digita;
+- `run_id` — um codigo EMBARALHADO (hash) da sessao, so pra costurar seus passos numa trajetoria
+  (o "filme"). **Nao** e a sessao crua nem indexa nada seu — e um hash irreversivel; `seq` — a ordem
+  do passo dentro da sessao (1, 2, 3...); `ts_ms` — o instante em ms (pra medir demora entre passos);
+  `err` — um **booleano** de saude (deu erro sim/nao no passo), derivado so do sinal `is_error` —
+  **nunca** a mensagem do erro.
 
 **O que NUNCA vai no evento automatico:** o texto que voce digita, a resposta da IA, o
 conteudo/diff dos arquivos, o **nome ou caminho** dos arquivos, e o **nome de um servidor/ferramenta
@@ -49,7 +56,8 @@ MCP** (que num tool nomeado por cliente carregaria o nome dele). Os hooks LEEM o
 **medir o tamanho** (contar bytes/tokens pro custo) e o descartam no mesmo passo, e colapsam o
 nome da ferramenta num rotulo generico ANTES de montar o evento — o texto e o nome-por-cliente
 nunca entram na linha da fila (`telemetry-queue.jsonl`) nem no POST. Confira por `head` na fila:
-so aparece `uso`/`event`/`tool`/`ts`/`invite_id`, nenhum campo de conteudo e nenhum nome cru de MCP.
+so aparece `uso`/`event`/`tool`/`ts`/`invite_id`/`kind`/`versao`/`run_id`/`seq`/`ts_ms`/`err` —
+todos numero, id-opaco ou booleano; nenhum campo de conteudo e nenhum nome cru de MCP.
 
 O `invite_id` e **derivado no servidor do token que autentica o envio** — nao do que o cliente
 escreve no corpo — entao ninguem grava evento se passando por outra pessoa.
