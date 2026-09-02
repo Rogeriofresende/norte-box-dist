@@ -48,6 +48,9 @@
   h2 { font-size: 1.25rem; margin: 1.8rem 0 .6rem; }
   h3 { font-size: 1.05rem; margin: 1.4rem 0 .5rem; }
   a { color: var(--accent); }
+  .back-index { display: inline-block; margin: 0 0 .85rem; font-size: .85rem; color: var(--muted); text-decoration: none; }
+  .back-index:hover { color: var(--accent); text-decoration: underline; }
+  .back-index:visited { color: var(--muted); }
   p { margin: .7rem 0; }
   ul, ol { padding-left: 1.4rem; }
   li { margin: .3rem 0; }
@@ -97,6 +100,7 @@
 <body>
   <div class="wrap">
     <header class="doc-head">
+      <nav aria-label="Navegação da vitrine"><a class="back-index" href="index.html">&#8592; voltar ao &iacute;ndice</a></nav>
       <h1>{{TITULO}}</h1>
       <div class="meta">{{META}}</div>
     </header>

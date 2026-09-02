@@ -14,6 +14,10 @@ próprio arquivo, via `templates/resposta.html`.
 
 - **Zero rede.** O HTML final NÃO tem `<script src=...>`, `<link href=...>` externo, `fetch`,
   fonte remota, nem CDN. Tudo inline. O gate de release pode conferir com `grep -c 'http' <arquivo>`.
+- **Carimbo de data DENTRO da entrega.** Ao gerar o HTML, inclua no `<head>` a tag
+  `<meta name="norte-ts" content="<ISO 8601 do momento>">` — a data que VIAJA no arquivo. É o
+  fix do risco do mtime: a capa (índice) prefere essa data à data do sistema de arquivos, que
+  muda em cópia/restore. O renderizador do passo 3 já injeta esse meta.
 - **Slug ASCII sempre.** O nome do arquivo é `[a-z0-9-]` derivado do título. Acento/espaço no
   nome quebra a abertura no navegador (some calado). Deriva o slug do título; se não houver
   título, use `resposta`.
@@ -122,13 +126,18 @@ próprio arquivo, via `templates/resposta.html`.
            if l.strip(): titulo = l.strip()[:80]; break
        slug = slugify(titulo)
        from datetime import datetime
-       meta = "Norte-box &middot; " + datetime.now().strftime("%Y-%m-%d %H:%M")
+       now = datetime.now()
+       meta = "Norte-box &middot; " + now.strftime("%Y-%m-%d %H:%M")
+       # carimbo que VIAJA no arquivo (fix do mtime): ISO 8601 do momento, dentro do <head>.
+       ts_iso = now.astimezone().isoformat(timespec="seconds")
+       ts_meta = '<meta name="norte-ts" content="' + html.escape(ts_iso, quote=True) + '">'
        with open(template_path, encoding="utf-8") as f:
            tpl = f.read()
        corpo = md_to_html(md)
        out_html = (tpl.replace("{{TITULO}}", html.escape(titulo, quote=False))
                       .replace("{{META}}", meta)
-                      .replace("{{CORPO_HTML}}", corpo))
+                      .replace("{{CORPO_HTML}}", corpo)
+                      .replace("</head>", ts_meta + "\n</head>", 1))
        outdir = os.path.join(os.getcwd(), "norte-out")
        try:
            os.makedirs(outdir, exist_ok=True)
@@ -162,6 +171,18 @@ próprio arquivo, via `templates/resposta.html`.
 5. **Reporte ao usuário** em 1-2 linhas: o arquivo gerado (path relativo `./norte-out/<slug>.html`)
    e que abriu no navegador (ou o path pra abrir manualmente). Não despeje o HTML no chat quando
    a gravação deu certo.
+
+6. **Regenere a CAPA (índice) da Vitrine.** Depois de gerar e abrir a entrega, atualize o
+   `./norte-out/index.html` — a capa que lista TODAS as entregas (título + data + link). Rode:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/lib/nb-indice.js" ./norte-out || true
+   ```
+
+   O `|| true` é obrigatório: a capa é acessório, NUNCA pode travar a entrega principal. O
+   `nb-indice.js` é local (zero rede, zero servidor, roda e termina), lê a data do `<meta
+   name="norte-ts">` de cada entrega (fix do mtime) e escapa o título (dado é dado). Se o
+   usuário quiser desligar a capa: `NB_INDICE_OFF=1` ou o arquivo `~/.claude/nb-indice-off`.
 
 ## Prova (o que confirma "pronto")
 

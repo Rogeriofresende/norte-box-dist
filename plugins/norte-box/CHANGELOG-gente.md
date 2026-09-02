@@ -8,6 +8,13 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.22
+- A Vitrine (as páginas que você folheia) agora tem uma CAPA: uma lista de tudo que você já gerou, a mais recente primeiro. E cada página ganhou um "← voltar ao índice" no topo, pra você navegar sem se perder num beco sem saída.
+- A caixa te avisa quando um arquivo que você citou num bilhete MUDOU desde então — pra você não agir confiando num retrato velho.
+- Um "já tentei isso?": a caixa lembra o que você já tentou antes, pra não te deixar repetir um caminho que não deu certo.
+- Um "vale-manter": de vez em quando ela te mostra, em silêncio, o que anda sem uso — pra você decidir o que guardar e o que largar. Não apaga nada; só mostra.
+- No Windows, a Vitrine agora abre sozinha no navegador (antes às vezes não abria).
+
 ## 0.3.19
 - Agora o seu time é DE VERDADE: a Ada (construir/subir), a Val (revisar e tentar quebrar) e o Max (juntar tudo) vieram embarcados na caixa — antes eram só nomes, agora respondem.
 - Comando novo `/norte-box:time-ordem "sua ordem"`: você dá UMA ordem e o time debate em paralelo, a Val tenta quebrar, e o Max te devolve UMA decisão recomendada (com o risco dela e o que precisa de você). A discordância é obrigatória — se todos concordam, ele te avisa que não valeu chamar o time.
