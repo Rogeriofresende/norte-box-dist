@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# nb-kit-editar — EDITAR um kit existente: abre um rascunho PRE-PREENCHIDO com o checklist do kit atual,
+# deixa ajustar o texto, e segue o MESMO fluxo preview->token->aprovar da fabrica (NRT-_991092, fatia 3).
+#
+# O kit existente e IMUTAVEL. "Editar" = criar uma NOVA VERSAO (novo nome) a partir do checklist do
+# atual — preserva o original intacto. O rascunho abre pre-preenchido; a pessoa edita o texto; o fluxo
+# restante e IDENTICO ao de criar: nb-kit-rascunho <nome-novo> (preview + token) ->
+# nb-kit-aprovar <nome-novo> --confirmo <token> [--rodar <doc>].
+#
+# USO:  nb-kit-editar <nome-existente> <nome-novo>
+#   <nome-existente> = o kit que voce quer versionar (veja os que existem com: nb-kits).
+#   <nome-novo>      = nome da nova versao (slug; sem barra, espaco, ".." — vira uma pasta).
+#                      Nao pode coincidir com nenhum kit ja existente.
+#
+# FLUXO COMPLETO:
+#   nb-kit-editar <nome-orig> <nome-novo>         <- abre rascunho pre-preenchido (este comando)
+#   (edita o checklist.txt no caminho mostrado)
+#   nb-kit-rascunho <nome-novo>                   <- preview + token (motor ja existente)
+#   nb-kit-aprovar <nome-novo> --confirmo <token> <- salva nova versao; original intacto
+#
+# KILL-SWITCH: NORTE_KIT_FABRICA=0 desliga (recusa, exit 2). Nada sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, <nomes> validados como slug (nunca executados como comando).
+set -u
+
+_nome_orig="${1:-}"
+_nome_novo="${2:-}"
+
+if [ -z "$_nome_orig" ] || [ -z "$_nome_novo" ]; then
+  printf '🟡 uso: nb-kit-editar <nome-existente> <nome-novo>\n'
+  printf '   exemplo: nb-kit-editar contrato contrato-v2\n'
+  exit 2
+fi
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kit_fabrica.sh" ]; then
+  echo "🟡 nao consegui abrir o editor: nao achei a fabrica de kits nesta instalacao."
+  exit 2
+fi
+
+# shellcheck source=/dev/null
+. "${_hooks}/_situacao.sh"     2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_provar.sh"       2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_contrato_doc.sh" 2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_estreia.sh"      2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"         2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kit_fabrica.sh"
+
+command -v _norte_kit_editar >/dev/null 2>&1 || { echo "🟡 nao consegui abrir o editor: motor incompleto."; exit 2; }
+
+_norte_kit_editar "$_nome_orig" "$_nome_novo"
+exit $?

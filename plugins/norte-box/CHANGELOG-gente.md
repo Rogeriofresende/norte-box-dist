@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.25
+- Agora você pode **editar um kit que já existe**: em vez de começar do zero, o `nb-kit-editar <kit-existente> <nome-novo>` abre o checklist do kit original numa área de rascunho já pré-preenchida. Você ajusta o texto que quiser, roda o preview normal (`nb-kit-rascunho`) e aprova — e a nova versão fica salva com nome novo. O kit anterior continua intacto (nada é sobrescrito).
+
 ## 0.3.24
 - Chegou a **fábrica de kits**: você DESCREVE uma tarefa em palavras normais ("quero conferir se um contrato tem partes, valor, prazo e foro") e a caixa REDIGE o checklist pra você — mostra o preview, você aprova com "aprovo", e o kit fica salvo pra usar sempre. Antes o `kit-criar` exigia que você chegasse com o checklist já escrito; agora a fábrica é a porta de entrada pra quem quer começar do zero, sem saber o formato.
 

@@ -234,6 +234,142 @@ _norte_kit_rascunho_preview() {
 #   COM [doc] espelha o exit do _norte_kit_rodar (0/1/2).
 #   RETORNO: SEM [doc] -> espelha _norte_kit_criar no sucesso (0); 2 nas recusas da fabrica (kill/slug/ausente/
 #   token/lint). COM [doc] -> 2 nas pre-checagens/recusas; senao espelha o motor real (0/1/2) apos salvar.
+# _norte_kit_editar <nome-existente> <nome-novo> — EDITAR um kit existente, versao MINIMA (NRT-_991092, fatia 3).
+#
+#   O buraco que esta peca fecha: herdamos kits IMUTAVEIS (a foto e fixa). Pra ajustar a descricao/texto de
+#   um kit existente a pessoa precisa comecar do zero. A "edicao" na verdade e: carregar o checklist ATUAL do
+#   kit num novo rascunho (pre-preenchido), deixar ajustar o texto, e seguir o MESMO fluxo
+#   preview->token->aprovar que a fabrica JA tem. O resultado e uma NOVA VERSAO do kit (nome novo) que
+#   PRESERVA o anterior (nao sobrescreve nada). Reusa 100% do motor existente.
+#
+#   FLUXO:
+#     nb-kit-editar <nome-existente> <nome-novo>   -> cria rascunho pre-preenchido + ecoa o caminho
+#     (edita o texto no checklist.txt se quiser)
+#     nb-kit-rascunho <nome-novo>                  -> preview + token (IDENTICO ao fluxo criar)
+#     nb-kit-aprovar <nome-novo> --confirmo <tok>  -> nova versao salva; a antiga continua intacta
+#
+#   PORTAO DE INTEGRIDADE (anti-circular): o kit-existente tem que ser um kit REAL (diretorio + kit.txt +
+#   checklist.txt). Nao pode usar como "kit existente" um caminho do rascunho ou da caixa que nao seja
+#   um kit valido — o checklist e lido DO KIT, nao inventado.
+#
+#   LEIS herdadas (iguais ao resto da fabrica):
+#     - IMUTABILIDADE: <nome-novo> nao pode colidir com um kit que ja existe.
+#     - Portabilidade macOS (bash 3.2): sem eval, sem array associativo.
+#     - O <nome> e tratado como STRING (validado como SLUG antes de virar caminho).
+#     - Kill-switch: NORTE_KIT_FABRICA=0 recusa (exit 2, amarelo).
+#     - Fail-honest: nao inventa verde; o kit novo nasce com origem 🟡.
+#     - A copia e feita por cp (atomica pra o fs local); o rascunho nasce privado (umask 077).
+#   RETORNO: 0 rascunho pre-preenchido aberto / 2 recusa (kill/slug/kit-nao-existe/nome-novo-ja-kit/disco).
+_norte_kit_editar() {
+  local _nome_orig="${1:-}" _nome_novo="${2:-}"
+
+  # kill-switch.
+  case "${NORTE_KIT_FABRICA:-1}" in
+    0|no|nao|off|false)
+      printf '🟡 a fabrica de kits nao esta ligada nesta maquina (NORTE_KIT_FABRICA=0).\n'
+      return 2 ;;
+  esac
+
+  # ambos os nomes precisam ser SLUGs seguros.
+  if ! command -v _norte_kit_slug_valido >/dev/null 2>&1; then
+    printf '🟡 motor de validacao de slug nao disponivel.\n'
+    return 2
+  fi
+  if ! _norte_kit_slug_valido "$_nome_orig"; then
+    printf '🟡 nome do kit existente invalido: use so letras, numeros, ponto, hifen e underscore.\n'
+    return 2
+  fi
+  if ! _norte_kit_slug_valido "$_nome_novo"; then
+    printf '🟡 nome do kit novo invalido: use so letras, numeros, ponto, hifen e underscore (sem barra, espaco, "..").\n'
+    return 2
+  fi
+  if [ "$_nome_orig" = "$_nome_novo" ]; then
+    printf '🟡 o nome do kit novo precisa ser diferente do existente — o kit e imutavel; use outro nome (ex: %s-v2).\n' "$_nome_orig"
+    return 2
+  fi
+
+  # KIT EXISTENTE tem que ser um kit REAL (diretorio + kit.txt + checklist.txt validos).
+  local _kits_raiz _orig_dir _orig_chk _orig_kittxt
+  if command -v _norte_kits_raiz >/dev/null 2>&1; then
+    _kits_raiz="$(_norte_kits_raiz)"
+  else
+    _kits_raiz="${HOME}/.norte-box/kits"
+  fi
+  _orig_dir="${_kits_raiz}/${_nome_orig}"
+  _orig_chk="${_orig_dir}/checklist.txt"
+  _orig_kittxt="${_orig_dir}/kit.txt"
+
+  [ -d "$_orig_dir" ] && [ -f "$_orig_kittxt" ] || {
+    printf '🟡 nao achei o kit "%s". Veja os que existem com: nb-kits\n' "$_nome_orig"
+    return 2
+  }
+  [ -f "$_orig_chk" ] && [ -s "$_orig_chk" ] || {
+    printf '🟡 o checklist do kit "%s" sumiu ou esta vazio — nao e possivel editar a partir dele.\n' "$_nome_orig"
+    return 2
+  }
+
+  # NOME NOVO nao pode colidir com kit que ja existe (imutabilidade herdada).
+  local _novo_dir
+  _novo_dir="${_kits_raiz}/${_nome_novo}"
+  if [ -e "$_novo_dir" ]; then
+    printf '🟡 ja existe um kit com o nome "%s" — use outro nome pra uma nova versao (ex: %s-v2).\n' "$_nome_novo" "$_nome_novo"
+    return 2
+  fi
+
+  # NOME NOVO nao pode colidir com rascunho em andamento. Avisa mas NAO bloqueia (a pessoa pode querer
+  # continuar de onde parou — idempotente). So bloqueia se o rascunho JA TEM conteudo diferente do kit
+  # original (significaria que ja foi editado: sobrescrever apagaria trabalho anterior).
+  local _raiz_rasc _novo_rascdir _novo_rascchk
+  _raiz_rasc="$(_norte_fabrica_raiz)"
+  _novo_rascdir="${_raiz_rasc}/${_nome_novo}"
+  _novo_rascchk="${_novo_rascdir}/checklist.txt"
+  if [ -f "$_novo_rascchk" ] && [ -s "$_novo_rascchk" ]; then
+    # rascunho ja tem conteudo. Compara com o kit original.
+    if ! command -v _norte_prova_hash_arquivo >/dev/null 2>&1; then
+      # sem hash, nao consegue comparar — avisa e bloqueia (seguro: nao sobrescreve cego).
+      printf '🟡 ja existe um rascunho com o nome "%s" e nao consegui verificar se e igual ao kit (motor de hash ausente) — nao vou sobrescrever. Reveja o rascunho com: nb-kit-rascunho %s\n' "$_nome_novo" "$_nome_novo"
+      return 2
+    fi
+    local _h_rasc _h_orig
+    _h_rasc="$(_norte_prova_hash_arquivo "$_novo_rascchk" 2>/dev/null || true)"
+    _h_orig="$(_norte_prova_hash_arquivo "$_orig_chk" 2>/dev/null || true)"
+    if [ -n "$_h_rasc" ] && [ "$_h_rasc" != "$_h_orig" ]; then
+      printf '🟡 ja existe um rascunho "%s" com conteudo diferente do kit "%s" — nao vou sobrescrever (voce pode ter feito edicoes). Retome com: nb-kit-rascunho %s\n' "$_nome_novo" "$_nome_orig" "$_nome_novo"
+      return 2
+    fi
+    # hashes iguais = e o proprio kit copiado (idempotente) ou o rascunho ainda nao foi editado. Prossegue.
+  fi
+
+  # ABRE A AREA DO RASCUNHO (privada, 0700) e PRE-PREENCHE com o checklist do kit original.
+  ( umask 077; mkdir -p "$_novo_rascdir" ) 2>/dev/null || {
+    printf '🟡 nao consegui abrir a area do rascunho (disco nao gravavel).\n'
+    return 2
+  }
+  ( umask 077; cp "$_orig_chk" "$_novo_rascchk" ) 2>/dev/null || {
+    printf '🟡 nao consegui copiar o checklist do kit "%s" pro rascunho (disco nao gravavel).\n' "$_nome_orig"
+    return 2
+  }
+
+  # o cartao do rascunho — registra de onde vem (editado de qual kit).
+  ( umask 077
+    {
+      printf 'nome: %s\n' "$_nome_novo"
+      printf 'editado_de: %s\n' "$_nome_orig"
+      printf 'quando: %s\n' "$(date -u +%FT%TZ 2>/dev/null || echo t)"
+      printf 'estado: rascunho\n'
+    } > "${_novo_rascdir}/rascunho.txt"
+  ) 2>/dev/null || {
+    printf '🟡 nao consegui gravar o cartao do rascunho (disco nao gravavel).\n'
+    return 2
+  }
+
+  # ecoa o caminho do checklist pre-preenchido (a pessoa/agente edita ali).
+  printf '📝 rascunho "%s" aberto com o checklist do kit "%s" (pre-preenchido). Ajuste as exigencias em:\n' "$_nome_novo" "$_nome_orig"
+  printf '   %s\n' "$_novo_rascchk"
+  printf '   (quando terminar de editar, rode: nb-kit-rascunho %s)\n' "$_nome_novo"
+  return 0
+}
+
 _norte_kit_aprovar() {
   local _nome="${1:-}" _token="${2:-}" _doc="${3:-}"
 
