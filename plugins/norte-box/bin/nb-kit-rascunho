@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# nb-kit-rascunho — a PORTA DA FRENTE da fabrica de kits (NRT-_990148, fatia 1).
+#
+# Abre a area de rascunho de um kit novo E mostra o preview do estado atual. Rode 1x pra ganhar o CAMINHO do
+# checklist.txt; escreva as exigencias ("descricao :: ancora", uma por linha) nele; rode de novo pra ver o
+# PREVIEW numerado + o veredito do formato + (se o formato conferir) o TOKEN de aprovacao.
+#
+# USO:  nb-kit-rascunho <nome>
+#   <nome> = nome curto do kit (slug: letras/numeros/./-/_ ; sem barra, espaco, ".." — vira uma pasta).
+#
+# FLUXO:  nb-kit-rascunho <nome>  (ganha o caminho)  ->  escreve as linhas no checklist.txt  ->
+#         nb-kit-rascunho <nome>  (ve o preview + token)  ->  nb-kit-aprovar <nome> --confirmo <token>
+#
+# O kit nasce com ORIGEM 🟡 (a fabrica ainda nao provou nada); o 🟢 so vem do 1o nb-kit-rodar (motor real).
+# KILL-SWITCH: NORTE_KIT_FABRICA=0 desliga (recusa, exit 2). O rascunho NUNCA sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, nao usa dado como comando (o <nome> e validado como slug antes de virar caminho).
+set -u
+
+_nome="${1:-}"
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kit_fabrica.sh" ]; then
+  echo "🟡 nao consegui abrir o rascunho: nao achei a fabrica de kits nesta instalacao."
+  exit 2
+fi
+
+# a base reusada: _situacao.sh (hash), _provar.sh, _contrato_doc.sh, _estreia.sh, _kits.sh (slug/criar),
+# e por fim _kit_fabrica.sh (rascunho/preview/aprovar). Carrega por seguranca.
+# shellcheck source=/dev/null
+. "${_hooks}/_situacao.sh"     2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_provar.sh"       2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_contrato_doc.sh" 2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_estreia.sh"      2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"         2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kit_fabrica.sh"
+
+command -v _norte_kit_rascunho_criar   >/dev/null 2>&1 || { echo "🟡 nao consegui abrir o rascunho: motor incompleto."; exit 2; }
+command -v _norte_kit_rascunho_preview >/dev/null 2>&1 || { echo "🟡 nao consegui abrir o rascunho: motor incompleto."; exit 2; }
+
+# 1) garante o staging (idempotente) e ecoa o caminho do checklist.txt.
+_norte_kit_rascunho_criar "$_nome"; _rc=$?
+# se o abrir recusou (kill / slug / kit ja existe / disco), nem tenta o preview — espelha o rc.
+[ "$_rc" -eq 0 ] || exit "$_rc"
+
+echo
+# 2) mostra o estado atual: vazio -> sem token; cheio e formatado -> com token.
+_norte_kit_rascunho_preview "$_nome"
+exit $?

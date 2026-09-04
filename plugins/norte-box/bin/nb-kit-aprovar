@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# nb-kit-aprovar — APROVA um rascunho da fabrica e o salva como KIT (NRT-_990148, fatia 1 + fatia 2).
+#
+# So aprova com o TOKEN do ultimo preview (os 8 primeiros chars do hash do checklist). Re-hasheia o rascunho
+# ATUAL e, se o token nao bater, RECUSA — "nao vou aprovar bytes diferentes dos que voce viu". Batendo, salva
+# o kit REUSANDO nb-kit-criar (o motor de guardar; a fabrica NAO reimplementa o salvar). Sucesso: remove SO a
+# area do rascunho e aponta o nb-kit-rodar. A ORIGEM do kit nasce 🟡 (a fabrica ainda nao provou nada) — o 🟢
+# so vem depois do 1o nb-kit-rodar (motor real).
+#
+# FATIA 2 (--rodar <doc>): fecha o ciclo na hora. Depois de salvar o kit, roda o 1o teste REAL nesse documento
+# pela esteira real (nb-kit-rodar) — o 🟢, se vier, e do motor, nao da aprovacao. Regras (dentro do hook): o
+# doc vem da PESSOA, nao pode morar dentro de ~/.norte-box/ (prova circular), e o exit espelha o motor (0/1/2).
+# O kit fica salvo mesmo se o teste der 🟡.
+#
+# USO:  nb-kit-aprovar <nome> --confirmo <token>              (ou:  nb-kit-aprovar <nome> <token>)
+#       nb-kit-aprovar <nome> --confirmo <token> --rodar <doc>  (aprova E ja testa num documento seu)
+#   <nome>  = o rascunho aberto (veja o token com: nb-kit-rascunho <nome>).
+#   <token> = os 8 chars que o preview mostrou (amarrados ao conteudo exato mostrado).
+#   <doc>   = (opcional) um documento REAL seu, de FORA da caixa, pra o 1o teste na hora.
+#
+# KILL-SWITCH: NORTE_KIT_FABRICA=0 desliga a fabrica; NORTE_KIT_FABRICA_RODAR=0 desliga so o "--rodar" (recusa,
+#   exit 2, nada salvo). Nada sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, nada auto (aprovar so por chamada explicita com o token), <nome> validado como slug.
+set -u
+
+# parseia "<nome> --confirmo <token> [--rodar <doc>]" (aceita tambem "<nome> <token>"). Sem eval; so posicionais.
+_nome="${1:-}"
+_token=""
+_doc=""
+shift 2>/dev/null || true
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --confirmo)
+      shift 2>/dev/null || true
+      _token="${1:-}"
+      ;;
+    --confirmo=*)
+      _token="${1#--confirmo=}"
+      ;;
+    --rodar)
+      shift 2>/dev/null || true
+      _doc="${1:-}"
+      ;;
+    --rodar=*)
+      _doc="${1#--rodar=}"
+      ;;
+    *)
+      # primeiro posicional apos o nome que nao seja flag = o token (forma curta "<nome> <token>").
+      [ -z "$_token" ] && _token="$1"
+      ;;
+  esac
+  shift 2>/dev/null || true
+done
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kit_fabrica.sh" ]; then
+  echo "🟡 nao consegui aprovar: nao achei a fabrica de kits nesta instalacao."
+  exit 2
+fi
+
+# shellcheck source=/dev/null
+. "${_hooks}/_situacao.sh"     2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_provar.sh"       2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_contrato_doc.sh" 2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_estreia.sh"      2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"         2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kit_fabrica.sh"
+
+command -v _norte_kit_aprovar >/dev/null 2>&1 || { echo "🟡 nao consegui aprovar: motor incompleto."; exit 2; }
+
+# 3o arg [doc] so vai quando --rodar foi passado (senao string vazia -> comportamento IDENTICO a fatia 1).
+_norte_kit_aprovar "$_nome" "$_token" "$_doc"
+exit $?

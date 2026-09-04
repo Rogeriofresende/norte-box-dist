@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.24
+- Chegou a **fábrica de kits**: você DESCREVE uma tarefa em palavras normais ("quero conferir se um contrato tem partes, valor, prazo e foro") e a caixa REDIGE o checklist pra você — mostra o preview, você aprova com "aprovo", e o kit fica salvo pra usar sempre. Antes o `kit-criar` exigia que você chegasse com o checklist já escrito; agora a fábrica é a porta de entrada pra quem quer começar do zero, sem saber o formato.
+
 ## 0.3.23
 - A caixa começou a montar o "filme" do seu uso: a sequência dos seus passos numa sessão + onde deu erro, travou ou demorou. É pra o dono da caixa enxergar a SAÚDE do uso e te ajudar melhor — sem NUNCA ler o seu trabalho. Continua igual à promessa: sobe só um código embaralhado da sessão, um contador e o "deu certo/erro"; o que você digita, a resposta da IA, nomes de arquivo e a mensagem de erro NÃO saem da sua máquina.
 
