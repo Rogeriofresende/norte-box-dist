@@ -538,10 +538,28 @@ _norte_kit_editar() {
   _orig_mod="${_orig_dir}/modelo.txt"
   _novo_rascmod="${_novo_rascdir}/modelo.txt"
   if _norte_kit_modelo_relevante "$_orig_mod"; then
-    ( umask 077; cp "$_orig_mod" "$_novo_rascmod" ) 2>/dev/null || {
-      printf '🟡 nao consegui copiar o modelo do kit "%s" pro rascunho (disco nao gravavel).\n' "$_nome_orig"
-      return 2
-    }
+    # IDEMPOTENCIA (mesmo padrao do checklist acima): NAO sobrescreve cego um modelo de rascunho JA EDITADO.
+    # Se o rascunho ja tem um modelo.txt com conteudo DIFERENTE do original, a pessoa pode ter ajustado o
+    # modelo — copiar por cima apagaria esse trabalho. So copia se o modelo do rascunho ainda nao existe, ou
+    # e' byte-identico ao do kit original (re-editar idempotente). (O guard do checklist ja liberou o fluxo:
+    # aqui refinamos so pro arquivo modelo, que o guard do checklist nao cobre.)
+    local _pula_copia_mod=1
+    if [ -f "$_novo_rascmod" ] && [ -s "$_novo_rascmod" ] && command -v _norte_prova_hash_arquivo >/dev/null 2>&1; then
+      local _hm_rasc _hm_orig
+      _hm_rasc="$(_norte_prova_hash_arquivo "$_novo_rascmod" 2>/dev/null || true)"
+      _hm_orig="$(_norte_prova_hash_arquivo "$_orig_mod"     2>/dev/null || true)"
+      if [ -n "$_hm_rasc" ] && [ "$_hm_rasc" != "$_hm_orig" ]; then
+        printf '🟡 ja existe um rascunho "%s" com um MODELO diferente do kit "%s" — nao vou sobrescrever o modelo (voce pode ter feito edicoes). Retome com: nb-kit-rascunho %s\n' "$_nome_novo" "$_nome_orig" "$_nome_novo"
+        return 2
+      fi
+      _pula_copia_mod=0   # modelo do rascunho == original (idempotente): nao precisa copiar de novo.
+    fi
+    if [ "$_pula_copia_mod" -ne 0 ]; then
+      ( umask 077; cp "$_orig_mod" "$_novo_rascmod" ) 2>/dev/null || {
+        printf '🟡 nao consegui copiar o modelo do kit "%s" pro rascunho (disco nao gravavel).\n' "$_nome_orig"
+        return 2
+      }
+    fi
   fi
 
   # o cartao do rascunho — registra de onde vem (editado de qual kit).

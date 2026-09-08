@@ -342,3 +342,173 @@ _norte_kit_rodar() {
   _norte_estreia_selar "$_doc" "$_copia" "kit-${_nome}"
   return $?
 }
+
+# _norte_kit_strip_controle — filtro de EXIBICAO: apaga chars de controle EXCETO TAB. Preserva UTF-8/acentos
+#   (nao toca em bytes >= 0x80) e o TAB (0x09). Remove 0x00-0x08, 0x0B-0x1F e 0x7F (DEL). NAO remove a quebra
+#   de linha porque o CALLER ja quebrou o texto em linhas (le linha-a-linha) — o \n nunca chega aqui dentro de
+#   uma linha; um \n embutido numa "linha" (via read) so viria de \r\n e o \r (0x0D) e' apagado. bash-3.2-safe.
+#   Le stdin, escreve stdout. Guarda o 1o comando que despeja conteudo de kit na tela: nada de escape de terminal.
+_norte_kit_strip_controle() { tr -d '\000-\010\013-\037\177'; }
+
+# _norte_kit_ver <nome> — CARTAO READ-ONLY do que um kit faz (NRT-_746, fatia VER).
+#   O buraco: nb-kit-gerar exige saber as lacunas {{campo}} do modelo, mas NENHUM comando as mostra; nem da pra
+#   ver o que um kit CONFERE sem abrir arquivo. Este comando fecha isso — SO LE (read-only): kit.txt + checklist.txt
+#   + as lacunas do modelo.txt. NAO escreve em kits/, NAO emite selo, NAO toca registro (anti-circular por
+#   construcao — nao chama a esteira).
+#
+#   SELO HONESTO (a lei mais importante deste comando): mostra "origem (gravada)" (REPRINT LITERAL do campo do
+#   kit.txt, NUNCA promovido a 🟢) SEPARADO de "integridade agora" (hash do checklist+modelo recomputado AGORA x
+#   o checklist_hash gravado no kit.txt). O viewer NUNCA fabrica verde: no maximo REBAIXA a confianca (se o hash
+#   diverge -> 🟡 explicito, avisando que o nb-kit-rodar vai recusar). Verde aqui e' so "os bytes de hoje batem
+#   com o cartao", nao "o kit provou algo".
+#
+#   SEGURANCA (1o comando que despeja conteudo do kit na tela): STRIP de chars de controle exceto TAB em TODA
+#   linha exibida (ancora/descricao) — bloqueia escapes de terminal. CAP de exibicao: 50 linhas de CONFERE +
+#   "…e mais N" (N REAL, nao esconde a contagem). O <nome> e' validado como SLUG antes de virar caminho; o dado
+#   nunca vira comando (printf '%s').
+#   KILL-SWITCH: NORTE_KITS=0 (a familia toda) e NORTE_KIT_VER=0 (so este) -> recusa 🟡, exit 2.
+#   RETORNO: 0 mostrou / 2 recusa (kill / slug / kit inexistente).
+_norte_kit_ver() {
+  local _nome="${1:-}"
+
+  # kill-switch da familia + o proprio.
+  case "${NORTE_KITS:-1}" in
+    0|no|nao|off|false)
+      printf '🟡 os kits nao estao ligados nesta maquina (NORTE_KITS=0).\n'
+      return 2 ;;
+  esac
+  case "${NORTE_KIT_VER:-1}" in
+    0|no|nao|off|false)
+      printf '🟡 o "ver kit" nao esta ligado nesta maquina (NORTE_KIT_VER=0).\n'
+      return 2 ;;
+  esac
+
+  # nome = SLUG seguro (o nome vira caminho; guarda path-traversal e injecao). O nome nunca e' executado.
+  if ! _norte_kit_slug_valido "$_nome"; then
+    printf '🟡 nome de kit invalido: use so letras, numeros, ponto, hifen e underscore (sem barra, espaco, "..").\n'
+    return 2
+  fi
+
+  local _raiz _dir _kittxt _chk _mod
+  _raiz="$(_norte_kits_raiz)"
+  _dir="${_raiz}/${_nome}"
+  _kittxt="${_dir}/kit.txt"
+  _chk="${_dir}/checklist.txt"
+  _mod="${_dir}/modelo.txt"
+
+  # kit inexistente -> recusa 🟡, exit 2.
+  [ -d "$_dir" ] && [ -f "$_kittxt" ] || {
+    printf '🟡 nao achei o kit "%s". Veja os que existem com: nb-kits\n' "$_nome"
+    return 2
+  }
+
+  # --- campos do cartao (LE do disco, reprint literal onde manda a lei) ---
+  local _nome_reg _quando _origem_reg _hkit
+  _nome_reg="$(grep -m1 '^nome: '           "$_kittxt" 2>/dev/null | sed 's/^nome: //')"
+  _quando="$(grep -m1  '^quando: '          "$_kittxt" 2>/dev/null | sed 's/^quando: //')"
+  # ORIGEM (gravada): REPRINT LITERAL do campo origem_carimbo do kit.txt. NUNCA promovida a 🟢 pelo viewer.
+  _origem_reg="$(grep -m1 '^origem_carimbo: ' "$_kittxt" 2>/dev/null | sed 's/^origem_carimbo: //')"
+  _hkit="$(grep -m1 '^checklist_hash: '     "$_kittxt" 2>/dev/null | sed 's/^checklist_hash: //')"
+  [ -n "$_nome_reg" ] || _nome_reg="$_nome"
+  [ -n "$_origem_reg" ] || _origem_reg='(nao registrada)'
+
+  # TIPO derivado do DISCO (nao do campo tipo: do kit.txt, que sempre grava doc+checklist): tem modelo.txt
+  # nao-vazio -> "doc+checklist" (gera); senao -> "so checklist".
+  local _tem_modelo=1 _tipo='so checklist'
+  if command -v _norte_kit_modelo_relevante >/dev/null 2>&1 && _norte_kit_modelo_relevante "$_mod"; then
+    _tem_modelo=0; _tipo='doc+checklist'
+  fi
+
+  local _usos
+  _usos="$(_norte_kit_usos "$_nome_reg" 2>/dev/null)"; [ -n "$_usos" ] || _usos=0
+
+  # --- INTEGRIDADE AGORA: recomputa o hash do CHECKLIST e compara com o gravado no kit.txt. ---
+  # ESPELHA EXATAMENTE o que o nb-kit-rodar faz (_norte_kit_rodar re-hasheia SO o checklist.txt via
+  # _norte_prova_hash_arquivo e compara com checklist_hash do kit.txt) — a mensagem promete "o nb-kit-rodar
+  # vai recusar", entao a integridade tem que usar O MESMO criterio do rodar, senao mente. IMPORTANTE: o
+  # sistema atual grava/confere o hash do checklist SOZINHO mesmo em kit COM modelo (o modelo.txt NAO entra
+  # no checklist_hash nem no gate do rodar) — o viewer NAO pode fingir cobrir mais do que o rodar cobre.
+  # RISCO RESIDUAL declarado: trocar SO o modelo.txt de um kit ja criado nao muda esta integridade nem e'
+  # barrado pelo rodar — e' um furo do sistema (o checklist_hash nao cobre o modelo), nao deste viewer.
+  # Se bate -> 🟢 "bate com o cartao"; diverge/sem hash/motor ausente -> 🟡 (rebaixa, nunca fabrica verde).
+  local _integridade _hnow=""
+  if [ ! -f "$_chk" ]; then
+    _integridade='🟡 o checklist deste kit sumiu — o nb-kit-rodar vai recusar'
+  elif ! command -v _norte_prova_hash_arquivo >/dev/null 2>&1 || [ -z "$_hkit" ]; then
+    _integridade='🟡 nao consegui recomputar a integridade (motor de hash ausente ou cartao sem hash)'
+  else
+    _hnow="$(_norte_prova_hash_arquivo "$_chk" 2>/dev/null || true)"
+    if [ -n "$_hnow" ] && [ "$_hnow" = "$_hkit" ]; then
+      _integridade="🟢 bate com o cartao (hash ${_hkit})"
+    else
+      _integridade='🟡 ALTERADO desde a criacao — o nb-kit-rodar vai recusar'
+    fi
+  fi
+
+  # ============================ IMPRESSAO ============================
+  printf '📦 %s\n' "$_nome_reg"
+  printf '   tipo: %s · origem (gravada): %s · usos: %s · criado: %s\n' "$_tipo" "$_origem_reg" "$_usos" "$_quando"
+  printf '   integridade agora: %s\n' "$_integridade"
+
+  # --- CONFERE (as exigencias do checklist) — linhas de conteudo (ignora vazias/comentarios, igual ao motor). ---
+  # Cada linha "descricao :: ancora": mostra "descricao" + a "ancora" entre aspas. Sem "::", mostra a linha crua.
+  # STRIP de controle em TUDO que e' exibido. CAP de 50 linhas + "…e mais N" (N real).
+  local _cap=50
+  if [ -f "$_chk" ]; then
+    # 1a passada: conta as linhas de conteudo (pra o N real do cap).
+    local _total=0 _linha
+    while IFS= read -r _linha || [ -n "$_linha" ]; do
+      case "$_linha" in ''|'#'*) continue ;; esac
+      case "$(printf '%s' "$_linha" | tr -d '[:space:]')" in '') continue ;; esac
+      _total=$((_total+1))
+    done < "$_chk"
+
+    printf '   CONFERE (%s exigencia%s):\n' "$_total" "$([ "$_total" -eq 1 ] && printf '' || printf 's')"
+    # 2a passada: imprime ate o cap.
+    local _num=0 _desc _anc
+    while IFS= read -r _linha || [ -n "$_linha" ]; do
+      case "$_linha" in ''|'#'*) continue ;; esac
+      case "$(printf '%s' "$_linha" | tr -d '[:space:]')" in '') continue ;; esac
+      _num=$((_num+1))
+      [ "$_num" -gt "$_cap" ] && continue
+      # STRIP de controle na linha ANTES de fatiar/exibir (defesa do 1o despejo de conteudo na tela).
+      _linha="$(printf '%s' "$_linha" | _norte_kit_strip_controle)"
+      if printf '%s' "$_linha" | grep -q '::'; then
+        _desc="$(printf '%s' "$_linha" | sed -e 's/ *::.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        _anc="$(printf '%s' "$_linha" | sed -e 's/^[^:]*:: *//')"
+        printf '     %s. %s :: "%s"\n' "$_num" "$_desc" "$_anc"
+      else
+        printf '     %s. %s\n' "$_num" "$_linha"
+      fi
+    done < "$_chk"
+    if [ "$_total" -gt "$_cap" ]; then
+      printf '     …e mais %s\n' "$((_total - _cap))"
+    fi
+  else
+    printf '   CONFERE: 🟡 o checklist deste kit sumiu.\n'
+  fi
+
+  # --- GERA (as lacunas do modelo, se houver) — mostra SO os nomes das lacunas (nunca o modelo.txt inteiro). ---
+  if [ "$_tem_modelo" -eq 0 ] && command -v _norte_kit_modelo_campos >/dev/null 2>&1; then
+    local _campos_lista _k=0 _linha_campos=""
+    _campos_lista="$(_norte_kit_modelo_campos "$_mod" 2>/dev/null)"
+    local _campo
+    # monta "{{c1}} {{c2}} ..." e conta K. Aplica strip de controle (defesa; campos ja sao [a-z0-9_-]).
+    while IFS= read -r _campo || [ -n "$_campo" ]; do
+      [ -n "$_campo" ] || continue
+      _campo="$(printf '%s' "$_campo" | _norte_kit_strip_controle)"
+      _k=$((_k+1))
+      _linha_campos="${_linha_campos} {{${_campo}}}"
+    done <<EOF
+$_campos_lista
+EOF
+    printf '   GERA: sim — modelo com %s lacuna%s:%s\n' "$_k" "$([ "$_k" -eq 1 ] && printf '' || printf 's')" "$_linha_campos"
+    printf '         nb-kit-gerar %s <valores.txt> [saida]\n' "$_nome_reg"
+  else
+    printf '   GERA: nao (kit sem modelo.txt)\n'
+  fi
+
+  # --- como rodar a conferencia num doc novo ---
+  printf '   rodar: nb-kit-rodar %s <novo-doc>\n' "$_nome_reg"
+  return 0
+}

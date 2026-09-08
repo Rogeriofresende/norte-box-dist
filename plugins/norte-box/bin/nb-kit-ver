@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# nb-kit-ver — CARTAO READ-ONLY do que um kit faz (NRT-_746, fatia VER).
+#
+# O buraco que esta peca fecha: o nb-kit-gerar exige saber as lacunas "{{campo}}" do modelo, mas NENHUM comando
+# as mostra hoje; nem da pra ver o que um kit CONFERE sem abrir o arquivo no editor. Este comando fecha isso —
+# SO LE (read-only): o cartao (kit.txt) + o checklist (as exigencias) + as LACUNAS do modelo (nunca o modelo
+# inteiro). NAO escreve em kits/, NAO emite selo, NAO toca registro (anti-circular por construcao).
+#
+# SELO HONESTO: mostra "origem (gravada)" (REPRINT LITERAL do campo do kit.txt, NUNCA promovida a 🟢) SEPARADO
+# de "integridade agora" (o hash do checklist+modelo recomputado AGORA x o gravado na criacao). O viewer NUNCA
+# fabrica verde; no maximo REBAIXA a confianca (hash divergente -> 🟡 explicito: "o nb-kit-rodar vai recusar").
+#
+# USO:  nb-kit-ver <kit>
+#   <kit> = o nome de um kit ja criado (veja os que existem com: nb-kits).
+#
+# SAIDA (stdout, humano de padaria) -> exit 0. Recusa (kit inexistente / slug invalido / kill-switch) -> exit 2.
+# KILL-SWITCH: NORTE_KITS=0 (a familia toda) e NORTE_KIT_VER=0 (so este) desligam (recusa 🟡, exit 2).
+# SEGURANCA (1o comando que despeja conteudo do kit na tela): STRIP de chars de controle exceto TAB na exibicao;
+# cap de 50 linhas + "…e mais N". LEIS: fail-honest, set -u, o dado nunca vira comando (o <kit> e' slug).
+set -u
+
+_nome="${1:-}"
+
+if [ -z "$_nome" ]; then
+  printf '🟡 uso: nb-kit-ver <kit>\n'
+  printf '   exemplo: nb-kit-ver recibo   (veja os kits que existem com: nb-kits)\n'
+  exit 2
+fi
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kits.sh" ]; then
+  echo "🟡 nao consegui ver o kit: nao achei os kits nesta instalacao."
+  exit 2
+fi
+
+# _situacao.sh -> _norte_prova_hash_arquivo (base do hash — mora AQUI, nao em _provar.sh).
+# _kit_fabrica -> _norte_kit_modelo_relevante / _norte_kit_modelo_campos / _norte_kit_hash_com_modelo (lacunas+hash composto).
+# _kits.sh     -> _norte_kit_ver (o motor deste comando) + _norte_kit_slug_valido / _norte_kits_raiz / _norte_kit_usos.
+# Espelha a cadeia de carga do nb-kit-gerar (padrao validado); best-effort nos opcionais, obrigatorio no _kits.sh.
+# shellcheck source=/dev/null
+. "${_hooks}/_situacao.sh"     2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_provar.sh"       2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kit_fabrica.sh"  2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"
+
+command -v _norte_kit_ver >/dev/null 2>&1 || { echo "🟡 nao consegui ver o kit: motor incompleto."; exit 2; }
+
+_norte_kit_ver "$_nome"
+exit $?
