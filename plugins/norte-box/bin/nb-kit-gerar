@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# nb-kit-gerar — GERA um documento a partir do MODELO de um kit + os valores da pessoa (NRT-_746, DOC-MODELO).
+#
+# Um kit PODE carregar, alem do checklist, um modelo.txt (texto puro com lacunas "{{campo}}"). Este comando
+# preenche as lacunas com os valores de um arquivo "campo :: valor", GERA o documento (substituicao literal em
+# bash puro — SEM LLM, SEM eval) e entrega o resultado ao MOTOR REAL (nb-kit-rodar), que confere o doc gerado
+# contra o checklist do kit. O selo/registro/HMAC saem do motor — o 🟢, se vier, e' do motor, NUNCA da geracao.
+# O doc gerado nasce 🟡 (ainda nao conferido).
+#
+# USO:  nb-kit-gerar <nome> <valores.txt> [saida]
+#   <nome>        = um kit ja criado que TENHA um modelo.txt nao-vazio (veja os kits com: nb-kits).
+#   <valores.txt> = arquivo "campo :: valor" (uma por linha; valor = resto da linha, literal; ignora vazias e '#').
+#   [saida]       = (opcional) onde gravar. Default: ./<nome>-AAAA-MM-DD.txt na pasta atual.
+#
+# RECUSA (nada e' gravado antes de TODOS os checks passarem): kit sem modelo, campo do modelo sem valor,
+# valor sobrando (erro de digitacao), valor com controle/quebra ou "{{"/"}}", lacuna sobrando, saida dentro de
+# ~/.norte-box (anti-circular) ou saida ja existente (no-clobber).
+#
+# KILL-SWITCH: NORTE_KIT_MODELO=0 desliga (recusa, exit 2). Nada sai da maquina (privado por padrao).
+# LEIS: fail-honest, set -u, o dado nunca vira comando (o <nome> e' slug; os valores sao substituidos literalmente).
+set -u
+
+_nome="${1:-}"
+_valores="${2:-}"
+_saida="${3:-}"
+
+if [ -z "$_nome" ] || [ -z "$_valores" ]; then
+  printf '🟡 uso: nb-kit-gerar <nome> <valores.txt> [saida]\n'
+  printf '   exemplo: nb-kit-gerar recibo valores.txt ./recibo-cliente.txt\n'
+  exit 2
+fi
+
+# Carrega as libs (fonte unica). bin/ e hooks/ sao irmaos sob plugins/norte-box/.
+_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_hooks=""
+if [ -n "${_self_dir:-}" ] && [ -d "${_self_dir}/../hooks" ]; then
+  _hooks="${_self_dir}/../hooks"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -d "${CLAUDE_PLUGIN_ROOT}/hooks" ]; then
+  _hooks="${CLAUDE_PLUGIN_ROOT}/hooks"
+fi
+if [ -z "$_hooks" ] || [ ! -f "${_hooks}/_kit_fabrica.sh" ]; then
+  echo "🟡 nao consegui gerar: nao achei a fabrica de kits nesta instalacao."
+  exit 2
+fi
+
+# a esteira real que o gerar delega no fim: precisa de _situacao/_provar/_contrato_doc/_estreia/_kits carregados.
+# shellcheck source=/dev/null
+. "${_hooks}/_situacao.sh"     2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_provar.sh"       2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_contrato_doc.sh" 2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_estreia.sh"      2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kits.sh"         2>/dev/null || true
+# shellcheck source=/dev/null
+. "${_hooks}/_kit_fabrica.sh"
+
+command -v _norte_kit_gerar >/dev/null 2>&1 || { echo "🟡 nao consegui gerar: motor incompleto."; exit 2; }
+
+_norte_kit_gerar "$_nome" "$_valores" "$_saida"
+exit $?

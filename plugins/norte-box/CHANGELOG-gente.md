@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.26
+- Agora a fábrica também **gera o documento** — não só confere: você guarda um **modelo** (um texto com lacunas, tipo `{{cliente}}` e `{{valor}}`), passa os valores num arquivo simples (uma linha `campo :: valor`), e o `nb-kit-gerar <kit> <valores>` preenche e produz o documento pronto pra você. Ela ainda confere o gerado e te dá o selo honesto (o "verde" só vem quando a conferência fecha — nunca de graça). Tudo na sua máquina, sem internet.
+
 ## 0.3.25
 - Agora você pode **editar um kit que já existe**: em vez de começar do zero, o `nb-kit-editar <kit-existente> <nome-novo>` abre o checklist do kit original numa área de rascunho já pré-preenchida. Você ajusta o texto que quiser, roda o preview normal (`nb-kit-rascunho`) e aprova — e a nova versão fica salva com nome novo. O kit anterior continua intacto (nada é sobrescrito).
 
