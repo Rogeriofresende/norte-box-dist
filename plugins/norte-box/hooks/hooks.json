@@ -113,6 +113,12 @@
           },
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-oferta.sh\"",
+            "async": false,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
             "async": true,
             "shell": "bash"
@@ -120,6 +126,12 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
+            "async": true,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/update-check-async.sh\"",
             "async": true,
             "shell": "bash"
           }

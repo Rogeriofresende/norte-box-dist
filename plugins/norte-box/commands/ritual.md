@@ -44,13 +44,73 @@ fi
 Explique em 1 linha: o placar é SÓ contagem + rótulos da forma do ritual — nenhum arquivo,
 nenhum comando, nenhum texto do seu trabalho, e nada sai da sua máquina.
 
-## `apagar` - zera o placar e o estado (é seu)
+## `apagar` - zera o placar, o estado e os atalhos (é seu)
 
 ```bash
 rm -f "$HOME/.norte-box/ritual-contagem.json"
 rm -rf "$HOME/.norte-box/ritual-state"
+rm -f "$HOME/.norte-box/ritual-atalhos.json"
 echo "Observador em sombra ZERADO. A caixa nao guarda mais nenhuma contagem de voce."
+echo "Tambem apaguei o registro de atalhos (oferta/aceite/dias de retorno)."
 echo "A observacao continua no estado atual (ligada/desligada); pra DESLIGAR: /norte-box:ritual off"
+```
+
+## `atalho mandato_pr_v1` - ACEITAR o atalho (e USAR ele quando repetir)
+
+Registra o aceite (1ª vez), mostra o CHECKLIST da forma do ritual e — a cada vez que você
+roda de novo — anota o dia de USO (o sinal de valor é você VOLTAR em outro dia, sem empurrão).
+"Virar atalho" na menor versão é ISSO: registrar + lembrar a forma. NÃO gera kit ainda.
+
+```bash
+set -u
+# carrega as libs do plugin (lock/atomic/now do observador + gravacao do atalho)
+for D in "$CLAUDE_PLUGIN_ROOT/hooks" "$HOME/.claude/plugins/norte-box/hooks"; do
+  [ -f "$D/_ritual.sh" ] && . "$D/_ritual.sh" 2>/dev/null && LIBDIR="$D" && break
+done
+[ -n "${LIBDIR:-}" ] && [ -f "$LIBDIR/_atalho.sh" ] && . "$LIBDIR/_atalho.sh" 2>/dev/null
+if ! command -v _nb_atalho_marca_aceite >/dev/null 2>&1; then
+  echo "Nao encontrei a lib do atalho (CLAUDE_PLUGIN_ROOT). Nada foi gravado."
+else
+  JA="$(_nb_atalho_get .aceite_ts)"
+  _nb_atalho_marca_aceite
+  if [ -z "$JA" ]; then
+    echo "✅ Atalho ACEITO: ritual mandato→PR. A caixa vai lembrar a FORMA (nao gera kit ainda)."
+  else
+    echo "↻ Usando o atalho de novo (registrei o dia de hoje)."
+  fi
+  echo ""
+  echo "--- a FORMA do ritual (checklist, so os passos) ---"
+  echo "  1) mandato  — escreva/atualize o mandato em docs/mandatos/*.md"
+  echo "  2) teste/review — rode o teste (pytest/npm test/...) E/OU passe o /cto-review"
+  echo "  3) abrir PR — gh pr create"
+  echo ""
+  RET="$(_nb_atalho_teve_retorno)"
+  if [ "$RET" = "sim" ]; then
+    echo "🌱 Voce ja voltou a esse atalho em outro dia — sinal de que ajuda de verdade."
+  else
+    echo "(se voltar a rodar isso em outro dia, a caixa marca como retorno espontaneo — o unico teste de valor real.)"
+  fi
+fi
+```
+
+Explique em 1 linha: aceitar o atalho é só a caixa REGISTRAR e LEMBRAR a forma do ritual —
+nenhum kit é gerado, nada sai da máquina, e o que importa é você voltar a usar em outro dia.
+
+## `atalho-nao mandato_pr_v1` - RECUSAR (a caixa nunca mais oferece)
+
+```bash
+set -u
+for D in "$CLAUDE_PLUGIN_ROOT/hooks" "$HOME/.claude/plugins/norte-box/hooks"; do
+  [ -f "$D/_ritual.sh" ] && . "$D/_ritual.sh" 2>/dev/null && LIBDIR="$D" && break
+done
+[ -n "${LIBDIR:-}" ] && [ -f "$LIBDIR/_atalho.sh" ] && . "$LIBDIR/_atalho.sh" 2>/dev/null
+if ! command -v _nb_atalho_marca_recusa >/dev/null 2>&1; then
+  echo "Nao encontrei a lib do atalho (CLAUDE_PLUGIN_ROOT). Nada foi gravado."
+else
+  _nb_atalho_marca_recusa
+  echo "👍 Ok — a caixa NAO vai mais oferecer transformar esse ritual em atalho."
+  echo "Muda de ideia depois? /norte-box:ritual atalho mandato_pr_v1 aceita mesmo assim."
+fi
 ```
 
 ## `on` - liga o observador (opt-in explicito, fail-closed)
