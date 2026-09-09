@@ -68,32 +68,47 @@ fi
 _ja="$(jq -c '.statusLine // empty' "$SETTINGS" 2>/dev/null || true)"
 if [ -n "$_ja" ]; then
   _cmd_atual="$(jq -r '.statusLine.command // empty' "$SETTINGS" 2>/dev/null || true)"
-  # Ja aponta pro nosso binario? Entao esta feito, nada a fazer.
-  case "$_cmd_atual" in
-    *norte-statusline*) echo "Ja instalada e apontando pro Norte-box. Nada a fazer."; exit 0 ;;
-  esac
-  echo "ATENCAO: ja existe uma statusLine configurada:"
-  echo "   $_ja"
-  echo
-  if [ -z "$FORCAR" ]; then
-    # Sem terminal (rodando dentro de script/pipe) NAO da pra perguntar -> nunca sobrescreve
-    # calado: cancela e ensina o --forcar. So pergunta quando ha um TTY de verdade.
-    if [ -e /dev/tty ] && { exec 3</dev/tty; } 2>/dev/null; then
-      printf "Trocar pela barrinha do Norte-box? (backup sera feito) [s/N] "
-      read -r _resp <&3 2>/dev/null || _resp=""
-      exec 3<&- 2>/dev/null || true
-      case "$_resp" in
-        s|S|sim|SIM) : ;;
-        *) echo "Cancelado. Nada foi alterado."; exit 0 ;;
-      esac
-    else
-      echo "Sem terminal pra confirmar. Nada foi alterado."
-      echo "  Pra trocar mesmo assim: bash instalar-barrinha.sh \"$SETTINGS\" --forcar"
-      exit 0
-    fi
-  else
-    echo "(--forcar: trocando sem perguntar)"
+  if [ "$_cmd_atual" = "$BARRA" ]; then
+    # Ja aponta EXATAMENTE pro binario DESTA versao -> feito, nada a fazer.
+    echo "Ja instalada e apontando pro Norte-box (esta versao). Nada a fazer."
+    exit 0
   fi
+  case "$_cmd_atual" in
+    *norte-statusline*)
+      # E a NOSSA barra, mas pinada em OUTRO caminho -- tipico apos atualizar o plugin
+      # (ex: .../0.2.4/bin/norte-statusline depois da 0.3.18 chegar). NAO e barra de
+      # terceiro: re-aponta pro binario atual SEM exigir --forcar. O backup timestamped
+      # e a validacao jq logo abaixo continuam valendo. (NRT-_990539, bug do Ygor 31/08.)
+      echo "Barrinha do Norte-box ja instalada, mas apontando pra outro caminho (versao antiga?):"
+      echo "   de : $_cmd_atual"
+      echo "   pra: $BARRA"
+      echo "Re-apontando pro binario desta versao (backup sera feito antes de escrever)."
+      ;;
+    *)
+      echo "ATENCAO: ja existe uma statusLine configurada:"
+      echo "   $_ja"
+      echo
+      if [ -z "$FORCAR" ]; then
+        # Sem terminal (rodando dentro de script/pipe) NAO da pra perguntar -> nunca sobrescreve
+        # calado: cancela e ensina o --forcar. So pergunta quando ha um TTY de verdade.
+        if [ -e /dev/tty ] && { exec 3</dev/tty; } 2>/dev/null; then
+          printf "Trocar pela barrinha do Norte-box? (backup sera feito) [s/N] "
+          read -r _resp <&3 2>/dev/null || _resp=""
+          exec 3<&- 2>/dev/null || true
+          case "$_resp" in
+            s|S|sim|SIM) : ;;
+            *) echo "Cancelado. Nada foi alterado."; exit 0 ;;
+          esac
+        else
+          echo "Sem terminal pra confirmar. Nada foi alterado."
+          echo "  Pra trocar mesmo assim: bash instalar-barrinha.sh \"$SETTINGS\" --forcar"
+          exit 0
+        fi
+      else
+        echo "(--forcar: trocando sem perguntar)"
+      fi
+      ;;
+  esac
 fi
 
 # --- BACKUP com timestamp ANTES de escrever ---

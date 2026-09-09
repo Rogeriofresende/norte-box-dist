@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.28
+- Consertada a **barrinha de status** (o bug que o Ygor pegou): quando a caixa atualizava, a barrinha às vezes ficava presa apontando pra versão antiga — e podia sumir ou quebrar. Agora, ao atualizar, ela **se re-aponta sozinha** pra versão nova (fazendo backup antes), sem você precisar mexer em nada. Barrinha de outra ferramenta continua intocada (só troca se você mandar).
+
 ## 0.3.27
 - Agora dá pra **ver o que um kit faz** sem abrir arquivo: o `nb-kit-ver <kit>` mostra num cartão o que ele confere, se ele gera um documento (e quais lacunas você precisa preencher, tipo `{{cliente}}`) e se ele continua **íntegro** (se alguém mexeu, avisa). É só olhar — não muda nada.
 
