@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.29
+- A caixa agora pode **perceber quando você repete um mesmo tipo de tarefa** (por exemplo: escrever um mandato → rodar um teste → revisar → abrir um PR), pra mais pra frente oferecer transformar isso num atalho que economiza tempo. Ela olha só o **formato** (a sequência de passos), **nunca o que você escreve**; é **100% na sua máquina** (nada é enviado pra Norte nem pra ninguém); e **vem desligada** — você liga com `/norte-box:ritual on` e desliga com `off` quando quiser. Dá pra **ver e apagar** o que ela anotou a qualquer momento.
+
 ## 0.3.28
 - Consertada a **barrinha de status** (o bug que o Ygor pegou): quando a caixa atualizava, a barrinha às vezes ficava presa apontando pra versão antiga — e podia sumir ou quebrar. Agora, ao atualizar, ela **se re-aponta sozinha** pra versão nova (fazendo backup antes), sem você precisar mexer em nada. Barrinha de outra ferramenta continua intocada (só troca se você mandar).
 

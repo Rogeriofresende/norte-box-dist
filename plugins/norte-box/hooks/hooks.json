@@ -44,6 +44,12 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
             "async": true,
             "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-emit.sh\"",
+            "async": true,
+            "shell": "bash"
           }
         ]
       }
@@ -60,6 +66,12 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
+            "async": true,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-emit.sh\"",
             "async": true,
             "shell": "bash"
           }
