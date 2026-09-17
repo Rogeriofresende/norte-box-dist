@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.32
+- A tela de **conectar outra IA** ao `/conselho` ficou mais clara: cada opção agora tem um ícone e a que você escolhe **acende**, então dá pra ver na hora se está conectando o Gemini ou o ChatGPT. E, se você **não tem a chave**, tem um link discreto **"não tem a chave? veja como pegar"** que leva direto pra página certa de cada um — sem obrigar você a nada (o conselho grátis, só com o seu Claude, continua sendo o principal).
+
 ## 0.3.29
 - A caixa agora pode **perceber quando você repete um mesmo tipo de tarefa** (por exemplo: escrever um mandato → rodar um teste → revisar → abrir um PR), pra mais pra frente oferecer transformar isso num atalho que economiza tempo. Ela olha só o **formato** (a sequência de passos), **nunca o que você escreve**; é **100% na sua máquina** (nada é enviado pra Norte nem pra ninguém); e **vem desligada** — você liga com `/norte-box:ritual on` e desliga com `off` quando quiser. Dá pra **ver e apagar** o que ela anotou a qualquer momento.
 
