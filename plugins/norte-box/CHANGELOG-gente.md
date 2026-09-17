@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.33
+- O `/conselho` ficou mais **justo** e mais **econômico**: (1) quando você conecta outra IA pra ser o **juiz**, agora as vozes chegam pra ela **sem etiqueta e embaralhadas** — ela decide pelo argumento, não por qual IA falou (corta o "puxar sardinha" pro próprio lado num conselho de uma pessoa só). (2) Antes de montar o conselho inteiro, a caixa dá um **empurrãozinho**: se a pergunta é simples demais, ela responde na hora em vez de gastar um conselho — você economiza sem perder nada.
+
 ## 0.3.32
 - A tela de **conectar outra IA** ao `/conselho` ficou mais clara: cada opção agora tem um ícone e a que você escolhe **acende**, então dá pra ver na hora se está conectando o Gemini ou o ChatGPT. E, se você **não tem a chave**, tem um link discreto **"não tem a chave? veja como pegar"** que leva direto pra página certa de cada um — sem obrigar você a nada (o conselho grátis, só com o seu Claude, continua sendo o principal).
 

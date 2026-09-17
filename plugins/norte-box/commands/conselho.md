@@ -10,6 +10,13 @@ numa resposta só. Não chame nenhuma IA externa, não use ferramenta de rede �
 **segundo parecer**, NÃO "IAs independentes". NUNCA venda como opiniões independentes. Se ela quiser
 marcas diferentes discordando de verdade, isso é o **Nível 2** (conectar outra IA dela) — convide, não entregue aqui.
 
+## Antes de tudo: isso precisa mesmo de conselho? (empurrãozinho honesto)
+
+Se a pergunta é **trivial** — tem uma resposta óbvia, é um fato que dá pra checar, ou é um "sim/não" sem
+trade-off real — **responda direto em 1-2 linhas e diga**: *"isso eu te respondo na hora, não precisa
+gastar um conselho."* O conselho (3 papéis + juiz) é pra **decisão de verdade**: tem mais de um caminho
+razoável, tem risco, ou você está em dúvida. Gastar conselho no trivial só queima o seu limite do dia à toa.
+
 ## 0. Leve (padrão) ou fundo?
 
 Há dois modos:
@@ -62,10 +69,14 @@ Se existir `$HOME/.norte-box/conselho-ia2.json` (o usuário conectou outra IA de
    Inclua-a rotulada pela marca: **🌐 Voz de fora (seu ChatGPT/Gemini)**.
 
 2. **O juiz passa a ser o de fora** (independência real — outra marca fecha): junte num texto as vozes
-   (os 3 papéis do seu Claude + a voz de fora) e rode:
+   (os 3 papéis do seu Claude + a voz de fora), **uma por parágrafo (linha em branco entre elas)**, e rode:
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-conselho-juiz2.sh" "<a decisão>" "<texto das 4 vozes>"
    ```
+   **Julgamento às cegas (padrão):** o motor ESCONDE a marca de cada voz e EMBARALHA a ordem antes de
+   entregar ao juiz — ele vê "Voz A / Voz B / ..." e decide pelo argumento, não pelo crachá (corta o viés
+   de confirmação). O veredito dele fala em "Voz A/B"; ao apresentar, diga que **o juiz julgou sem saber
+   quem era quem**. (Kill-switch: `NORTE_CONSELHO_JUIZ_CEGO=0` volta o juiz que vê as marcas.)
    Use a saída dele como o **⚖️ Juiz de fora (sua outra IA)** — em vez do seu próprio juiz.
 
 - `IA2_NAO_CONECTADA` → é só Nível 1: você mesmo faz o juiz (o bullet acima). Segue normal.

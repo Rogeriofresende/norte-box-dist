@@ -17,8 +17,28 @@ const cfg = JSON.parse(fs.readFileSync(F, 'utf8'));
 function promptVoz(q) {
   return `Você é uma voz INDEPENDENTE num conselho sobre a decisão: "${q}". Você é de OUTRA IA (marca diferente do Claude do usuário) — traga um ângulo que um só modelo não veria e discorde com franqueza onde fizer sentido. Responda 2-3 linhas, pt-BR, começando pelo seu veredito.`;
 }
-function promptJuiz(q, vozes) {
-  return `Você é o JUIZ DE FORA (de OUTRA marca de IA) de um conselho sobre: "${q}". As vozes disseram:\n${vozes}\nComo juiz independente e cego, responda em pt-BR, curto: (1) veredito em 1 linha; (2) onde as vozes discordam; (3) o menor primeiro passo concreto. Não puxe pra nenhuma voz por ser de tal marca.`;
+// anonimizarVozes — esconde a MARCA/papel de cada voz e EMBARALHA a ordem, pra o juiz
+// decidir pelo argumento, não pelo crachá (corta o viés de confirmação num conselho de 1 pessoa).
+// Contrato: as vozes chegam separadas por linha em branco; tira o rótulo (o "🔨 Construtor: "
+// / "🌐 Voz de fora — Gemini: " antes do primeiro ':') e renomeia pra Voz A/B/C/D embaralhadas.
+function anonimizarVozes(vozes) {
+  const partes = String(vozes).split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+  if (partes.length < 2) return { texto: vozes, cego: false }; // 1 voz só: não há marca a esconder
+  const semRotulo = partes.map(p => p.replace(/^[^\n:]{1,80}?:\s*/, '').trim());
+  for (let i = semRotulo.length - 1; i > 0; i--) { // Fisher-Yates
+    const j = Math.floor(Math.random() * (i + 1));
+    [semRotulo[i], semRotulo[j]] = [semRotulo[j], semRotulo[i]];
+  }
+  const letras = 'ABCDEFGH';
+  const texto = semRotulo.map((v, i) => `Voz ${letras[i] || (i + 1)}: ${v}`).join('\n\n');
+  return { texto, cego: true };
+}
+
+function promptJuiz(q, vozes, cego) {
+  const abertura = cego
+    ? `Você é o JUIZ DE FORA (de OUTRA marca de IA) de um conselho sobre: "${q}". As vozes abaixo estão ANÔNIMAS e embaralhadas — você NÃO sabe qual IA nem qual papel escreveu cada uma. Julgue SÓ pelo argumento, jamais pelo crachá.`
+    : `Você é o JUIZ DE FORA (de OUTRA marca de IA) de um conselho sobre: "${q}". As vozes disseram:`;
+  return `${abertura}\n${vozes}\nComo juiz independente e cego, responda em pt-BR, curto: (1) veredito em 1 linha; (2) onde as vozes discordam; (3) o menor primeiro passo concreto.`;
 }
 
 async function call(cfg, prompt) {
@@ -42,7 +62,18 @@ async function call(cfg, prompt) {
 
 (async () => {
   try {
-    const prompt = modo === 'juiz' ? promptJuiz(q, vozes) : promptVoz(q);
+    let prompt;
+    if (modo === 'juiz') {
+      // kill-switch: NORTE_CONSELHO_JUIZ_CEGO=0 volta ao juiz que vê as marcas.
+      const cegoOn = process.env.NORTE_CONSELHO_JUIZ_CEGO !== '0';
+      const anon = cegoOn ? anonimizarVozes(vozes) : { texto: vozes, cego: false };
+      if (process.env.NORTE_CONSELHO_DEBUG) { // prova o antes/depois sem vazar no stdout
+        process.stderr.write('--- vozes ANÔNIMAS que o juiz vai receber (cego=' + anon.cego + ') ---\n' + anon.texto + '\n---\n');
+      }
+      prompt = promptJuiz(q, anon.texto, anon.cego);
+    } else {
+      prompt = promptVoz(q);
+    }
     console.log(await call(cfg, prompt));
   } catch (e) { console.log('IA2_ERRO: ' + (e && e.message || 'falha')); }
 })();
