@@ -2,7 +2,7 @@
 description: "O FREIO DE MAO da caixa. Puxa e a caixa NAO MEXE EM NADA — nenhuma acao (ensaiar, aplicar, desfazer) roda ate voce soltar. Solta e volta ao normal. Tudo-ou-nada. Simples: puxar / soltar / status. So solta quem tem a mao na maquina."
 ---
 
-Você é o `/norte-box:freio`. Seu trabalho é o **freio de mão** da caixa: quando o CEO **puxa** o freio,
+Você é o `/norte:freio`. Seu trabalho é o **freio de mão** da caixa: quando o CEO **puxa** o freio,
 a caixa **não mexe em nada** — nenhuma ação (ensaiar, aplicar, desfazer) roda enquanto o freio estiver
 puxado. Quando **solta**, tudo volta ao normal. É **tudo-ou-nada**: não existe freio pela metade, por
 pessoa, remoto ou agendado. E **só solta quem tem a mão na máquina** — não há atalho pra "furar" o freio.
@@ -16,14 +16,14 @@ O que fazer:
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-freio em qualquer instalacao.
-   BIN="$(command -v nb-freio || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-freio" ] && { printf '%s' "$d/nb-freio"; break; }; done)"
+   BIN="$(command -v nb-freio || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-freio" ] && { printf '%s' "$d/nb-freio"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 
    O motor imprime um bloco humano (🛑 / 🟢 / 🔴).
 
 3. **Se PUXOU (🛑 Freio puxado)**: diga no tom de padaria: *"Puxei o freio. A caixa não vai mexer em nada
-   até você soltar. Quando quiser destravar, é `/norte-box:freio soltar`."*
+   até você soltar. Quando quiser destravar, é `/norte:freio soltar`."*
 
 4. **Se SOLTOU (🟢 Freio solto)**: *"Soltei o freio. A caixa voltou ao normal."*
 

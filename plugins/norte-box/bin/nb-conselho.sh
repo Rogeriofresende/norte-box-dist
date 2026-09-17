@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# nb-conselho.sh — teto diário do /norte-box:conselho.
+# nb-conselho.sh — teto diário do /norte:conselho.
 # Uso: nb-conselho.sh [leve|fundo]   (default: leve)
 #   leve  = 1 pergunta ao Claude (3 papéis + juiz numa resposta). Teto CONSELHO_CAP (default 15).
 #   fundo = vozes em perguntas separadas + juiz cego (gasta ~5x). Teto CONSELHO_CAP_FUNDO (default 3).

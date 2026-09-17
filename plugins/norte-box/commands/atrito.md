@@ -2,11 +2,11 @@
 description: "Norte-box - VER (so rotulos) e APAGAR o pacote de atrito que a Norte captou de voce"
 ---
 
-Voce e o `/norte-box:atrito`. Da a VOCE transparencia e controle TOTAL sobre o "pacote de
+Voce e o `/norte:atrito`. Da a VOCE transparencia e controle TOTAL sobre o "pacote de
 atrito" — o que a Norte captou pra te AJUDAR (consertar travas/erros antes de a advocacia usar).
 
 O pacote carrega SO RÓTULOS e BITS, nunca o seu trabalho:
-- **comando**: só o VERBO de um `/norte-box:...` (ex `projeto`), NUNCA o que voce digitou depois.
+- **comando**: só o VERBO de um `/norte:...` (ex `projeto`), NUNCA o que voce digitou depois.
 - **trava**: só o NOME do freio que barrou (ex `secret-guard`), NUNCA a mensagem.
 - **erro**: só SIM/NÃO (deu-erro), NUNCA o texto do erro.
 

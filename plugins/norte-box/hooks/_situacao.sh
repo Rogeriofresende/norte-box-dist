@@ -169,7 +169,7 @@ _norte_situacao_objetivo_ok() {
   local _f; _f="$(_norte_situacao_path)"
   _norte_situacao_tem || { printf 'pulado:sem fichinha'; return 0; }
 
-  # O 2o portao so' vale pro objetivo DECLARADO por ato explicito (/norte-box:objetivo -> objetivo_declarado:true).
+  # O 2o portao so' vale pro objetivo DECLARADO por ato explicito (/norte:objetivo -> objetivo_declarado:true).
   # O rotulo AUTO da 1a fala (objetivo_declarado:false ou ausente) e um lembrete fraco, NAO o pedido soberano
   # da pessoa — nao faz sentido "conferir a entrega contra um rotulo que a maquina inventou". Sem declaracao
   # -> pulado com nota (nao bloqueia o verde; o provado manda). Isso tambem garante retro-compat total:
@@ -511,7 +511,7 @@ _norte_tipo_definir() {
 }
 
 # === MEMORIA FUNDA — PERFIL do negocio (NRT-_990212 passo 7) ===========================
-# O PERFIL e uma string UNICA que a PESSOA declara por ATO EXPLICITO (o comando /norte-box:perfil).
+# O PERFIL e uma string UNICA que a PESSOA declara por ATO EXPLICITO (o comando /norte:perfil).
 # A caixa guarda o texto CRU dela, char-por-char, + a data. NUNCA infere de conversa solta ("sou
 # dentista" numa fala qualquer NAO grava nada). NUNCA parafraseia/resume. O LLM NAO tem caminho de
 # escrita aqui — a gravacao e este codigo determinista que copia a string recebida via jq --arg (byte
@@ -561,7 +561,7 @@ _norte_perfil_definir() {
 }
 
 # --- MEMORIA DO OBJETIVO (NRT-_990419 Camada 3): a caixa lembra do objetivo ENTRE conversas. -------
-# O objetivo tem DUAS origens: (1) DECLARADO por ato explicito (/norte-box:objetivo "<palavras cruas>")
+# O objetivo tem DUAS origens: (1) DECLARADO por ato explicito (/norte:objetivo "<palavras cruas>")
 # -> .objetivo_declarado:true, o Stop NUNCA sobrescreve (soberania: so a pessoa reescreve); (2) rotulo
 # AUTO da 1a fala (o que _norte_situacao_gravar ja fazia) -> .objetivo_declarado:false, fraco, so um
 # lembrete. O leitor unico abaixo entrega o texto atual (declarado tem prioridade porque .objetivo ja

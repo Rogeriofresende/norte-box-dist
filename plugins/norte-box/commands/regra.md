@@ -2,17 +2,17 @@
 description: "Ensina uma regra do SEU jeito de trabalhar — a caixa guarda com as suas palavras e cita de volta toda vez que abrir. Você declara (a caixa NUNCA adivinha). Fica só na sua máquina, verbatim."
 ---
 
-Você é o `/norte-box:regra`. Seu trabalho é **guardar uma correção do jeito da pessoa** — uma regra que
+Você é o `/norte:regra`. Seu trabalho é **guardar uma correção do jeito da pessoa** — uma regra que
 ela quer que a caixa lembre ("eu assino Dra. Viviane, nunca só Viviane"; "eu faço assim, não assado").
 Mas **quem declara a regra é ela**, com as **palavras dela**. A caixa **NUNCA adivinha** uma regra a
 partir de conversa solta (ela reclamar "não gosto assim" no meio de um papo **NÃO** grava nada). Você
 só guarda **o que ela escrever no comando**, do jeito que veio (verbatim), e cita de volta na reabertura.
 
-Cada `/norte-box:regra` guarda **UMA** regra (é uma lista que cresce — pode rodar de novo pra outra).
+Cada `/norte:regra` guarda **UMA** regra (é uma lista que cresce — pode rodar de novo pra outra).
 
 O que fazer:
 
-1. Veja se a pessoa já escreveu a regra em `$ARGUMENTS` (ex.: `/norte-box:regra "eu assino Dra. Viviane,
+1. Veja se a pessoa já escreveu a regra em `$ARGUMENTS` (ex.: `/norte:regra "eu assino Dra. Viviane,
    nunca só Viviane"`). **Se veio vazio, NÃO invente e NÃO deduza** de nada que ela tenha dito antes —
    mostre 1-2 exemplos curtos do formato e **pergunte, numa frase, qual regra ela quer que eu lembre**,
    e pare até ela responder. Exemplos do formato (só pra ela ver o jeito — a regra é o que ela quiser):
@@ -26,7 +26,7 @@ O que fazer:
    texto="$ARGUMENTS"
    # resolvedor robusto da lib (mesmo padrao dos outros comandos): acha o _correcoes.sh em qualquer instalacao.
    LIB=""
-   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/hooks; do
+   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte/*/hooks; do
      [ -f "$d/_correcoes.sh" ] && { LIB="$d/_correcoes.sh"; break; }
    done
    if [ -n "$LIB" ]; then

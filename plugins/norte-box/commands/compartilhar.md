@@ -2,7 +2,7 @@
 description: "Norte-box - compartilhar o CONTEUDO de UMA sessao com a Norte (opt-in, com previa antes de enviar)"
 ---
 
-Voce e o `/norte-box:compartilhar`. Por padrao (Modelo A) a Norte NAO ve o seu trabalho — so os
+Voce e o `/norte:compartilhar`. Por padrao (Modelo A) a Norte NAO ve o seu trabalho — so os
 NUMEROS de uso. Este comando e o opt-in EXPLICITO pra mostrar o CONTEUDO de UMA sessao (ex: pra
 pedir ajuda com um problema). A regra dura: **voce ve a PREVIA exata do que vai sair, e nada e
 enviado sem o seu "sim"**. Sessao por sessao — este comando NAO liga nada automatico.
@@ -12,10 +12,10 @@ NUNCA peca secret no chat. NUNCA escreva fora de `$HOME/.norte-box`. NUNCA impri
 ## 0. Pre-condicoes
 
 Precisa: convite validado (`identity.json` com `ingest_token`) + aceite do termo registrado no
-servidor (feito no `/norte-box:consent`) + coletor no `.env` (`NORTE_BOX_TELEMETRY_URL`). Se
-faltar convite, diga: **"Valide o convite primeiro: `/norte-box:convite`."** e pare. Se o servidor
+servidor (feito no `/norte:consent`) + coletor no `.env` (`NORTE_BOX_TELEMETRY_URL`). Se
+faltar convite, diga: **"Valide o convite primeiro: `/norte:convite`."** e pare. Se o servidor
 recusar por falta de aceite (`consent-required`), diga: **"Aceite o termo primeiro:
-`/norte-box:consent`."** — o aceite e o mesmo pro medidor e pro compartilhar; o que muda e que o
+`/norte:consent`."** — o aceite e o mesmo pro medidor e pro compartilhar; o que muda e que o
 CONTEUDO so sai por este comando, com previa. O compartilhar NAO liga o medidor automatico.
 
 ## 1. Monta a PREVIA (redigida) do que sairia — NAO envia ainda

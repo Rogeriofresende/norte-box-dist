@@ -99,14 +99,14 @@ regra="$(cat <<'EOF'
    $CLAUDE_PLUGIN_ROOT vem VAZIA e o bin do plugin pode nao estar no PATH — entao NAO escreva
    "bash $CLAUDE_PLUGIN_ROOT/bin/nb-provar" (falha). Rode este RESOLVEDOR (acha o motor sozinho, em
    qualquer instalacao) e so entao chame-o:
-     NBP="$(command -v nb-provar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-provar" ] && { printf '%s' "$d/nb-provar"; break; }; done)"; bash "$NBP" <arquivo>
+     NBP="$(command -v nb-provar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-provar" ] && { printf '%s' "$d/nb-provar"; break; }; done)"; bash "$NBP" <arquivo>
    Se der certo (exit 0), o selo vira 🟢 e voce fecha o cartao com "✅ provei assim: rodei e deu exit 0,
    saida: <o que saiu>". Se quebrar, fica 🟡 e voce diz "falhou aqui: <o erro real>" — nunca esconda o
    erro nem pinte verde sem ter rodado. A prova fica LOCAL (nunca sai da maquina). Isto e o que torna o
    🟢 do rodape (regra 1) verdadeiro em vez de enfeite: so prova de execucao de verdade abre o verde.
 
 7. APONTE ONDE A ENTREGA RESPONDE AO OBJETIVO (so quando HA um objetivo declarado nesta caixa): se a
-   pessoa ja declarou um objetivo (via /norte-box:objetivo — a abertura te mostra "Seu objetivo: ..."),
+   pessoa ja declarou um objetivo (via /norte:objetivo — a abertura te mostra "Seu objetivo: ..."),
    ENTAO, ao FECHAR uma entrega, inclua na sua ultima resposta UMA linha, sozinha, EXATAMENTE assim:
      OBJETIVO-RESPONDE: <um trecho curto e LITERAL, copiado da propria entrega>
    O trecho tem que ser um pedaco REAL do que voce entregou (uma linha do arquivo, uma frase da pagina,

@@ -2,7 +2,7 @@
 // nb-post.js — POST JSON honesto e legivel pro coletor da Norte (zero dependencia).
 //
 // O QUE FAZ: um POST HTTPS normal com o stdlib do node (http/https), do jeito mais simples
-// possivel. Usado pelo /norte-box:convite, /norte-box:consent e pelo MEDIDOR de telemetria
+// possivel. Usado pelo /norte:convite, /norte:consent e pelo MEDIDOR de telemetria
 // (que manda SO numeros, ver hooks/telemetry-emit.sh — Modelo A: numeros por padrao).
 //
 // TRANSPARENTE POR DESIGN: se voce quiser ver EXATAMENTE o que este transporte manda, rode com

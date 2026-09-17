@@ -158,7 +158,7 @@ EOF
     if command -v _norte_diario_ultimas >/dev/null 2>&1; then
       _ult3="$(_norte_diario_ultimas 3 2>/dev/null || true)"
       if [ -n "$_ult3" ]; then
-        _ctx="$(printf '%s\n\n=== DIARIO — ultimas 3 do que ja construimos (lista viva, LOCAL) ===\nMOSTRE ao usuario, no inicio da resposta, estas ultimas entregas (uma por linha, do jeito que estao):\n%s\n(Se ela quiser ver a lista inteira, ha o comando /norte-box:diario. O selo de cada linha e honesto:\n 🟢 = provei; 🟡 = ainda nao provei — o padrao.)\n=== fim ===' "$_ctx" "$_ult3")"
+        _ctx="$(printf '%s\n\n=== DIARIO — ultimas 3 do que ja construimos (lista viva, LOCAL) ===\nMOSTRE ao usuario, no inicio da resposta, estas ultimas entregas (uma por linha, do jeito que estao):\n%s\n(Se ela quiser ver a lista inteira, ha o comando /norte:diario. O selo de cada linha e honesto:\n 🟢 = provei; 🟡 = ainda nao provei — o padrao.)\n=== fim ===' "$_ctx" "$_ult3")"
       fi
     fi
 
@@ -195,8 +195,8 @@ fi
 
 # 🧠 MEMORIA FUNDA (NRT-_990212 passo 7): a caixa passa a CITAR, na reabertura, o PERFIL do negocio + as
 # CORRECOES do jeito da pessoa — VERBATIM (o texto CRU que ela declarou por ATO EXPLICITO), com a data.
-# Fica FORA do if/else de objetivo DE PROPOSITO: a pessoa pode ensinar perfil/regra (via /norte-box:perfil
-# e /norte-box:regra) ANTES de fechar um objetivo — a memoria funda precisa aparecer em qualquer cartao
+# Fica FORA do if/else de objetivo DE PROPOSITO: a pessoa pode ensinar perfil/regra (via /norte:perfil
+# e /norte:regra) ANTES de fechar um objetivo — a memoria funda precisa aparecer em qualquer cartao
 # (1a vez, sem objetivo, ou com objetivo). So aparece quando HA memoria de que falar (_norte_memoria_funda
 # retorna vazio se nao ha perfil nem regra — nao inventa/nao polui o 1o uso). Cada texto passa pelo _redact
 # ANTES de exibir (pode conter secret). Kill-switch NORTE_MEMORIA=0 -> a funcao ecoa nada. Extra do cartao,

@@ -2,7 +2,7 @@
 description: "Ensaia uma edicao de verdade SEM tocar o arquivo real: copia o arquivo pra uma sombra local, aplica a troca (de -> para) SO na copia, mostra o antes->depois e prova por hash que o original ficou intocado. Deu certo -> 🟢 'arquivo real intocado'; qualquer risco -> vermelho honesto e nada e' aplicado. A sombra nunca sai da maquina."
 ---
 
-Você é o `/norte-box:sombra`. Seu trabalho é deixar a caixa **ENSAIAR uma ação** — editar um arquivo
+Você é o `/norte:sombra`. Seu trabalho é deixar a caixa **ENSAIAR uma ação** — editar um arquivo
 que já existe — **sem tocar o arquivo real**. Nesta fatia a caixa **só ensaia numa cópia** (a "sombra"):
 ela mostra *como ficaria* a mudança e **prova** que o arquivo original continua igualzinho. Nada é
 aplicado de verdade aqui.
@@ -19,8 +19,8 @@ O que fazer:
    intocado):
 
    ```bash
-   # resolvedor robusto (mesmo padrao do /norte-box:provar): acha o nb-sombra em qualquer instalacao.
-   BIN="$(command -v nb-sombra || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-sombra" ] && { printf '%s' "$d/nb-sombra"; break; }; done)"
+   # resolvedor robusto (mesmo padrao do /norte:provar): acha o nb-sombra em qualquer instalacao.
+   BIN="$(command -v nb-sombra || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-sombra" ] && { printf '%s' "$d/nb-sombra"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

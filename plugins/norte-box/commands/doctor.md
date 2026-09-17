@@ -2,7 +2,7 @@
 description: "Autodiagnostico do Norte-box - prova de vida HONESTA: plugin, superpowers, hooks, estado gravavel"
 ---
 
-Voce e o /norte-box:doctor. Seu papel: reportar o estado do ambiente numa tabela curta e
+Voce e o /norte:doctor. Seu papel: reportar o estado do ambiente numa tabela curta e
 HONESTA. NAO conserte nada — so diagnostique. NUNCA imprima conteudo de arquivos do usuario.
 
 ## Rode UMA checagem deterministica
@@ -34,7 +34,7 @@ Os itens se dividem em DOIS grupos, e voce PRECISA deixar essa diferenca clara p
 - Item `NAO_VERIFICADO` → mostre ⚠ **"nao consegui verificar"** — NAO e OK, NAO e FALHA.
   E honesto: a checagem nao pode rodar (arquivo/variavel ausente), entao nao afirmamos nada.
 - Item `PENDENTE` (nos itens de Onboarding: `Convite validado`, `Telemetria ligada`, `Modo`) →
-  mostre ○ **"falta fazer"** + o passo copiavel (vem no DETALHE, ex: `rode /norte-box:convite`).
+  mostre ○ **"falta fazer"** + o passo copiavel (vem no DETALHE, ex: `rode /norte:convite`).
   NAO e OK (nao esta ligado) nem FALHA (a instalacao nao esta quebrada). NUNCA pinte um `PENDENTE`
   de verde.
 - **Se voce NAO conseguiu rodar o verificador** (comando bloqueado, erro, sem saida): reporte

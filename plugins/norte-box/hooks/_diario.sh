@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # _diario.sh — FONTE UNICA do "diario do que construimos" do Norte-box (Camada 1, resto 1).
 # Sourceado pelo hook diario-gravar (Stop), pela situacao-abrir (SessionStart, mostra as ultimas 3)
-# e pelo comando /norte-box:diario (le a lista inteira).
+# e pelo comando /norte:diario (le a lista inteira).
 #
 # A ideia (padaria): uma LISTA VIVA que cresce sozinha — a cada fim de sessao a caixa ANEXA uma
 # linha "o que voce pediu · o que eu fiz · provado?(🟢/🟡) · decisao · quando". Assim da pra abrir a

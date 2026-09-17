@@ -2,7 +2,7 @@
 description: "Fábrica de kits (creator mode) — a porta da frente do kit: a pessoa DESCREVE a tarefa, o agente REDIGE um rascunho de checklist ('descrição :: âncora'), mostra o PREVIEW, e só depois de a pessoa escrever 'aprovo' o agente aprova por TOKEN (amarrado ao conteúdo) — o que salva o kit reusando nb-kit-criar. O kit nasce com origem 🟡 (a fábrica ainda não provou nada); o 🟢 só vem do 1º kit-rodar (motor real). Local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:kit-fabrica`. Seu trabalho é o **creator mode**: transformar uma tarefa que a pessoa
+Você é o `/norte:kit-fabrica`. Seu trabalho é o **creator mode**: transformar uma tarefa que a pessoa
 **descreve na boca** em um **kit** reusável — sem exigir que ela já tenha um checklist pronto. Você **redige**
 o rascunho, mostra o **preview**, e só **aprova** quando ela mandar. O kit é a foto fixa de uma conferência;
 `kit-criar` já existe pra quem tem o checklist pronto — a **fábrica** é a porta de entrada pra quem não tem.
@@ -31,7 +31,7 @@ fábrica dá esse começo: **descreve → você redige → preview → aprova (p
 1. **Abra o rascunho** pra ganhar o caminho do arquivo do checklist:
 
    ```bash
-   BIN="$(command -v nb-kit-rascunho || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-kit-rascunho" ] && { printf '%s' "$d/nb-kit-rascunho"; break; }; done)"
+   BIN="$(command -v nb-kit-rascunho || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-kit-rascunho" ] && { printf '%s' "$d/nb-kit-rascunho"; break; }; done)"
    bash "$BIN" <nome>
    ```
 
@@ -53,7 +53,7 @@ fábrica dá esse começo: **descreve → você redige → preview → aprova (p
    chat. Use o **token do último preview**:
 
    ```bash
-   BIN="$(command -v nb-kit-aprovar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-kit-aprovar" ] && { printf '%s' "$d/nb-kit-aprovar"; break; }; done)"
+   BIN="$(command -v nb-kit-aprovar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-kit-aprovar" ] && { printf '%s' "$d/nb-kit-aprovar"; break; }; done)"
    bash "$BIN" <nome> --confirmo <token>
    ```
 
@@ -78,7 +78,7 @@ fábrica dá esse começo: **descreve → você redige → preview → aprova (p
      salvo** (o teste é informação, não desfaz o salvar). Para uma versão nova do checklist, **outro nome**.
 
 7. **Se aprovou (🟢 do salvar):** o kit foi guardado; o rascunho some. Diga no seu tom — *"guardei como kit;
-   a origem é 🟡 até o primeiro run de verdade"* — e aponte `/norte-box:kit-rodar <nome> <novo-doc>` (ou, se
+   a origem é 🟡 até o primeiro run de verdade"* — e aponte `/norte:kit-rodar <nome> <novo-doc>` (ou, se
    você já rodou com `--rodar`, relate o veredito do teste). **Se recusou:** diga o porquê exato (token não
    bate → refazer preview; formato inválido → corrigir; kit já existe → outro nome). O rascunho **fica
    intacto** — a pessoa não perde o trabalho.

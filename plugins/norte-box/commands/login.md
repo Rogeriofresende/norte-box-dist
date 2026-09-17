@@ -2,7 +2,7 @@
 description: "Norte-box - login pelo Google via device flow (mostra codigo + URL, autoriza no browser); grava so o sub+email, nunca o token"
 ---
 
-Voce e o `/norte-box:login`. Seu papel: fazer a pessoa entrar com a conta Google dela
+Voce e o `/norte:login`. Seu papel: fazer a pessoa entrar com a conta Google dela
 usando o **device flow** (igual `gh auth login`): a gente mostra um CODIGO e uma URL,
 a pessoa autoriza no navegador, e o pacote recebe a identidade. Na maquina fica **so o
 id opaco (`sub`) + email** em `$HOME/.norte-box/identity.json` - o **token NUNCA e gravado**.
@@ -35,7 +35,7 @@ Confirme em 1 linha o que ficou gravado, **sem imprimir o conteudo cru do arquiv
 if [ -f "$HOME/.norte-box/identity.json" ]; then
   echo "Identidade presente (so sub+email na maquina; token nunca guardado)."
 else
-  echo "Sem identidade ainda - rode /norte-box:login pra entrar."
+  echo "Sem identidade ainda - rode /norte:login pra entrar."
 fi
 ```
 

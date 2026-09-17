@@ -8,7 +8,7 @@
 # MEDIDOR (pedidos, tokens aprox, tempo, espaco, contagem de comandos) — ZERO CONTEUDO.
 # NUNCA vai automatico: o que voce digita, a resposta da IA, nome/caminho de arquivo, diffs.
 # A Norte NAO VE o seu trabalho por padrao. O conteudo so sai por opt-in EXPLICITO, sessao a
-# sessao, com previa (comando /norte-box:compartilhar) — um caminho SEPARADO deste hook.
+# sessao, com previa (comando /norte:compartilhar) — um caminho SEPARADO deste hook.
 #
 # Este hook LE o prompt/tool_input/tool_response so pra CONTAR o tamanho (chars/4 ~= tokens),
 # e IMEDIATAMENTE DESCARTA o texto. O conteudo NUNCA entra na linha da fila nem no POST. A
@@ -91,7 +91,7 @@ if ! command -v _norte_pode_enviar >/dev/null 2>&1; then
 fi
 # PRE-CONDICAO DE ENVIO (furo MEDIO, Val): modo=compartilhavel E consent aceito na versao vigente.
 # Editar modo/URL/token/flag na mao SEM aceitar o termo NAO abre o envio (o consent e re-verificado
-# aqui, nao so no comando /norte-box:modo). Fail-closed: qualquer duvida -> nao emite.
+# aqui, nao so no comando /norte:modo). Fail-closed: qualquer duvida -> nao emite.
 _norte_pode_enviar || exit 0
 
 # --- Desligamento: telemetry off = sem flag = nao emite (o trabalho segue normal) ---

@@ -2,7 +2,7 @@
 description: "Virar rotina de verdade — roda a conferência de um KIT num documento NOVO pela esteira REAL (a mesma da estreia). Re-hasheia o checklist do kit: se foi alterado ou sumiu desde a criação, RECUSA 🟡 (o kit é imutável). Batendo, o selo/registro/assinatura saem do MOTOR REAL — 🟢 só quando a conferência fecha, NUNCA verde porque é kit. Local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:kit-rodar`. Seu trabalho é **rodar a rotina de um kit** num documento **novo** e
+Você é o `/norte:kit-rodar`. Seu trabalho é **rodar a rotina de um kit** num documento **novo** e
 **entregar provado** — o mesmo rigor da estreia, agora reaproveitando um checklist já guardado. A caixa
 pega o checklist do kit, roda a conferência item a item **pela esteira real** contra o documento novo e
 produz um **REGISTRO DE ENTREGA** com o rótulo `kit-<nome>` (que aparece na página viva por tarefa).
@@ -12,7 +12,7 @@ Um kit **nunca** carimba verde "porque é kit".
 
 ## O CONTRATO desta tarefa (declare pra pessoa antes de agir)
 
-- **Entrada esperada:** o **nome** do kit (veja os que existem com `/norte-box:kits`) + o **documento novo**
+- **Entrada esperada:** o **nome** do kit (veja os que existem com `/norte:kits`) + o **documento novo**
   a conferir.
 - **Integridade do kit:** antes de rodar, a caixa **re-hasheia** o checklist do kit e compara com o hash da
   criação. Se o checklist foi **alterado** ou **sumiu** desde então, **recusa** (🟡, exit 2) — não roda com
@@ -37,7 +37,7 @@ está juridicamente correto"*. Diga isso quando o contexto for sério; é parte 
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-kit-rodar em qualquer instalacao.
-   BIN="$(command -v nb-kit-rodar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-kit-rodar" ] && { printf '%s' "$d/nb-kit-rodar"; break; }; done)"
+   BIN="$(command -v nb-kit-rodar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-kit-rodar" ] && { printf '%s' "$d/nb-kit-rodar"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

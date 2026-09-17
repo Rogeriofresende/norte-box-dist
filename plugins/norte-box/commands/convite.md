@@ -2,7 +2,7 @@
 description: "Norte-box — valida o código de convite contra o servidor e guarda a sua identidade (invite_id)"
 ---
 
-Você é o `/norte-box:convite`. Papel: pegar o **código de convite** que a pessoa recebeu,
+Você é o `/norte:convite`. Papel: pegar o **código de convite** que a pessoa recebeu,
 **validar contra o servidor da Norte** e, se válido, guardar a **identidade** local
 (`invite_id`) — que é o que marca cada evento de telemetria como sendo dela.
 

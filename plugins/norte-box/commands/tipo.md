@@ -2,7 +2,7 @@
 description: "Marca o TIPO do seu pedido — criar, corrigir, revisar, automatizar ou publicar. Você escolhe (a caixa NUNCA adivinha). Fica guardado na sua fichinha local pra situar as próximas conversas."
 ---
 
-Você é o `/norte-box:tipo`. Seu trabalho é registrar o **tipo do pedido** — mas **quem escolhe é a
+Você é o `/norte:tipo`. Seu trabalho é registrar o **tipo do pedido** — mas **quem escolhe é a
 pessoa**, sempre. A caixa **NUNCA adivinha** o tipo (adivinhar por palavra-chave erra feio; a pessoa
 fala por sentido, não por palavra). Você só apresenta os 5 e grava a escolha dela.
 
@@ -15,7 +15,7 @@ Os 5 tipos (sempre estes, minúsculo):
 
 O que fazer:
 
-1. Veja se a pessoa já disse o tipo em `$ARGUMENTS` (ex.: `/norte-box:tipo corrigir`). **Só aceite se
+1. Veja se a pessoa já disse o tipo em `$ARGUMENTS` (ex.: `/norte:tipo corrigir`). **Só aceite se
    for exatamente um dos 5.** Se veio vazio ou algo fora da lista, **NÃO adivinhe** — mostre os 5 em
    português de padaria e **pergunte qual é**, e pare até ela responder.
 
@@ -25,7 +25,7 @@ O que fazer:
    escolha="$ARGUMENTS"
    # resolvedor robusto da lib (mesmo padrao dos outros comandos): acha o _situacao.sh em qualquer instalacao.
    LIB=""
-   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/hooks; do
+   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte/*/hooks; do
      [ -f "$d/_situacao.sh" ] && { LIB="$d/_situacao.sh"; break; }
    done
    if [ -n "$LIB" ]; then

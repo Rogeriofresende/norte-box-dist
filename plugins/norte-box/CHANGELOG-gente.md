@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.34
+- A Caixa agora se chama **▲ Norte** (o triângulo da marca aparece na tela) e os comandos ficaram mais curtos: onde antes era `/norte-box:` agora é **`/norte:`** (ex.: `/norte:conselho`, `/norte:vitrine`). Quem já tinha a Caixa instalada **migra sozinho** ao reabrir — não precisa fazer nada, e seus dados (memória, identidade) ficam intactos.
+
 ## 0.3.33
 - O `/conselho` ficou mais **justo** e mais **econômico**: (1) quando você conecta outra IA pra ser o **juiz**, agora as vozes chegam pra ela **sem etiqueta e embaralhadas** — ela decide pelo argumento, não por qual IA falou (corta o "puxar sardinha" pro próprio lado num conselho de uma pessoa só). (2) Antes de montar o conselho inteiro, a caixa dá um **empurrãozinho**: se a pergunta é simples demais, ela responde na hora em vez de gastar um conselho — você economiza sem perder nada.
 
@@ -15,7 +18,7 @@ vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 - A tela de **conectar outra IA** ao `/conselho` ficou mais clara: cada opção agora tem um ícone e a que você escolhe **acende**, então dá pra ver na hora se está conectando o Gemini ou o ChatGPT. E, se você **não tem a chave**, tem um link discreto **"não tem a chave? veja como pegar"** que leva direto pra página certa de cada um — sem obrigar você a nada (o conselho grátis, só com o seu Claude, continua sendo o principal).
 
 ## 0.3.29
-- A caixa agora pode **perceber quando você repete um mesmo tipo de tarefa** (por exemplo: escrever um mandato → rodar um teste → revisar → abrir um PR), pra mais pra frente oferecer transformar isso num atalho que economiza tempo. Ela olha só o **formato** (a sequência de passos), **nunca o que você escreve**; é **100% na sua máquina** (nada é enviado pra Norte nem pra ninguém); e **vem desligada** — você liga com `/norte-box:ritual on` e desliga com `off` quando quiser. Dá pra **ver e apagar** o que ela anotou a qualquer momento.
+- A caixa agora pode **perceber quando você repete um mesmo tipo de tarefa** (por exemplo: escrever um mandato → rodar um teste → revisar → abrir um PR), pra mais pra frente oferecer transformar isso num atalho que economiza tempo. Ela olha só o **formato** (a sequência de passos), **nunca o que você escreve**; é **100% na sua máquina** (nada é enviado pra Norte nem pra ninguém); e **vem desligada** — você liga com `/norte:ritual on` e desliga com `off` quando quiser. Dá pra **ver e apagar** o que ela anotou a qualquer momento.
 
 ## 0.3.28
 - Consertada a **barrinha de status** (o bug que o Ygor pegou): quando a caixa atualizava, a barrinha às vezes ficava presa apontando pra versão antiga — e podia sumir ou quebrar. Agora, ao atualizar, ela **se re-aponta sozinha** pra versão nova (fazendo backup antes), sem você precisar mexer em nada. Barrinha de outra ferramenta continua intocada (só troca se você mandar).
@@ -44,7 +47,7 @@ vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
 ## 0.3.19
 - Agora o seu time é DE VERDADE: a Ada (construir/subir), a Val (revisar e tentar quebrar) e o Max (juntar tudo) vieram embarcados na caixa — antes eram só nomes, agora respondem.
-- Comando novo `/norte-box:time-ordem "sua ordem"`: você dá UMA ordem e o time debate em paralelo, a Val tenta quebrar, e o Max te devolve UMA decisão recomendada (com o risco dela e o que precisa de você). A discordância é obrigatória — se todos concordam, ele te avisa que não valeu chamar o time.
+- Comando novo `/norte:time-ordem "sua ordem"`: você dá UMA ordem e o time debate em paralelo, a Val tenta quebrar, e o Max te devolve UMA decisão recomendada (com o risco dela e o que precisa de você). A discordância é obrigatória — se todos concordam, ele te avisa que não valeu chamar o time.
 - Detalhe honesto: chamar o time roda 3 agentes de uma vez, então gasta ~3x. Use quando a escolha tem dois lados; pra tarefa simples de uma pessoa só, chame um agente e pronto.
 
 ## 0.3.18

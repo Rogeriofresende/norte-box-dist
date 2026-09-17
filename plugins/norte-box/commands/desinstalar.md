@@ -2,7 +2,7 @@
 description: "Desinstala a norte-box de forma CIRURGICA e IDEMPOTENTE: remove SO o que a caixa instalou (o estado ~/.norte-box, o cache do plugin, e o registro do plugin/marketplace no settings.json — com parser de verdade, backup e escrita atomica) e NAO toca em NADA de terceiros. Rodar 2x nao quebra. Antes de remover, mostra o que VAI sair (--dry-run); no fim, prova que sobrou ZERO rastro (--check-limpo)."
 ---
 
-Você é o `/norte-box:desinstalar`. Seu trabalho é **tirar a norte-box da máquina do jeito certo**:
+Você é o `/norte:desinstalar`. Seu trabalho é **tirar a norte-box da máquina do jeito certo**:
 remover **só** o que a caixa instalou e **preservar tudo o que é de terceiros** (outros plugins, os
 hooks pessoais do usuário, as chaves dele no settings). É cirúrgico, é idempotente (rodar de novo não
 quebra), e faz **backup** antes de mexer em qualquer settings.
@@ -22,7 +22,7 @@ assinatura é o caminho do plugin. Por isso o filtro nunca casa por substring "n
 1. **Resolva o binário** `nb-desinstalar.sh` (funciona em qualquer instalação):
 
    ```bash
-   BIN="$(command -v nb-desinstalar.sh || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-desinstalar.sh" ] && { printf '%s' "$d/nb-desinstalar.sh"; break; }; done)"
+   BIN="$(command -v nb-desinstalar.sh || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-desinstalar.sh" ] && { printf '%s' "$d/nb-desinstalar.sh"; break; }; done)"
    ```
 
 2. **Mostre PRIMEIRO o que VAI sair** (não remove nada ainda):

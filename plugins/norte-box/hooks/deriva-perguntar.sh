@@ -134,7 +134,7 @@ Regras (nao-negociaveis):
 - Se ela escolher "continuar no objetivo": traga o pedido novo de volta pro rumo, ou registre como
   nota lateral — mas o objetivo guardado NAO muda.
 - Se ela escolher "mudar de rumo": ok, siga o novo pedido (o objetivo so muda porque ELA disse). E,
-  se ela quiser CRAVAR o novo objetivo com as palavras dela, convide numa linha: use /norte-box:objetivo.
+  se ela quiser CRAVAR o novo objetivo com as palavras dela, convide numa linha: use /norte:objetivo.
 - Uma linha, tom de padaria, sem jargao. NAO trave o trabalho — e uma pergunta, nao um bloqueio.
 === fim ===
 EOF

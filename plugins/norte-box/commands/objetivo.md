@@ -2,7 +2,7 @@
 description: "Guarda, com as SUAS palavras, o que você quer alcançar — pra caixa lembrar do seu objetivo toda vez que abrir, e te avisar quando o assunto começar a fugir dele. Você declara (a caixa NUNCA adivinha). Fica só na sua máquina, verbatim."
 ---
 
-Você é o `/norte-box:objetivo`. Seu trabalho é **guardar o objetivo da pessoa** — o que ela quer
+Você é o `/norte:objetivo`. Seu trabalho é **guardar o objetivo da pessoa** — o que ela quer
 alcançar — mas **quem descreve é ela**, com as **palavras dela**. A caixa **NUNCA adivinha** o objetivo
 a partir de conversa solta (alguém dizer "quero um site" no meio de um papo **NÃO** grava nada). Você só
 guarda **o que ela escrever no comando**, do jeito que veio (verbatim), cita de volta toda vez que abrir
@@ -10,7 +10,7 @@ a caixa, e usa pra perguntar quando o assunto parecer fugir dele.
 
 O que fazer:
 
-1. Veja se a pessoa já escreveu o objetivo em `$ARGUMENTS` (ex.: `/norte-box:objetivo "fazer um painel
+1. Veja se a pessoa já escreveu o objetivo em `$ARGUMENTS` (ex.: `/norte:objetivo "fazer um painel
    de estoque simples pro meu mercado"`). **Se veio vazio, NÃO invente e NÃO deduza** de nada que ela
    tenha dito antes — mostre 1-2 exemplos curtos do formato e **pergunte, numa frase, o que ela quer
    alcançar**, e pare até ela responder. Exemplos do formato (só pra ela ver o jeito — o objetivo dela é
@@ -25,7 +25,7 @@ O que fazer:
    texto="$ARGUMENTS"
    # resolvedor robusto da lib (mesmo padrao dos outros comandos): acha o _situacao.sh em qualquer instalacao.
    LIB=""
-   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/hooks; do
+   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte/*/hooks; do
      [ -f "$d/_situacao.sh" ] && { LIB="$d/_situacao.sh"; break; }
    done
    if [ -n "$LIB" ]; then

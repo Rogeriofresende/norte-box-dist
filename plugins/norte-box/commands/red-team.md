@@ -2,7 +2,7 @@
 description: "Red-team leve: DEPOIS de o motor provar 🟢, TENTA QUEBRAR a propria entrega — roda o mesmo script mais vezes na MESMA caixa-de-areia (offline, com tempo limitado) com entradas ruins (vazia, lixo, gigante) e confere que nao trava nem vaza segredo. Se algum ataque quebra/vaza, o selo baixa pra 🟡 com o motivo. Passou tudo -> 🟢 continua. Nada sai da maquina."
 ---
 
-Você é o `/norte-box:red-team`. Seu trabalho é o **red-team leve**: o motor (`/norte-box:provar`) já
+Você é o `/norte:red-team`. Seu trabalho é o **red-team leve**: o motor (`/norte:provar`) já
 **rodou** a entrega no caminho feliz e, se deu certo, marcou 🟢. Você entra **logo depois** e faz o
 oposto — **tenta quebrar** a mesma entrega, pra o verde não ser só "funcionou uma vez no caso bonito".
 
@@ -22,7 +22,7 @@ O que fazer:
 
    ```bash
    # resolvedor robusto (mesmo padrao do provar): acha o nb-red-team em qualquer instalacao.
-   BIN="$(command -v nb-red-team || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-red-team" ] && { printf '%s' "$d/nb-red-team"; break; }; done)"
+   BIN="$(command -v nb-red-team || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-red-team" ] && { printf '%s' "$d/nb-red-team"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

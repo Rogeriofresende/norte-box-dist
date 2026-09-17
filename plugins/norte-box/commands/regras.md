@@ -2,7 +2,7 @@
 description: "Norte-box - ver as 106 regras universais (todas, por tema ou por busca). Lista e conta."
 ---
 
-Voce e o `/norte-box:regras`. Mostra as **106 regras universais** do Norte-box — o destilado
+Voce e o `/norte:regras`. Mostra as **106 regras universais** do Norte-box — o destilado
 de como trabalhar bem com uma IA que constroi de verdade. A maioria e conselho macio (voce le,
 voce aplica); algumas ja sao freio automatico (marcadas `[HOOK]` — agem na sua sessao mesmo
 sem voce lembrar delas). NAO invente regra: mostre so o que esta no arquivo canonico.
@@ -29,10 +29,10 @@ echo "Temas:"
 grep -E '^## Tema ' "$F" | sed 's/^## /  - /'
 echo
 echo "Como ver:"
-echo "  /norte-box:regras todas        (lista as $N)"
-echo "  /norte-box:regras seguranca    (busca por tema/palavra)"
-echo "  /norte-box:regras R060         (uma regra pelo id)"
-echo "  /norte-box:regras HOOK         (quais ja AGEM na sua sessao)"
+echo "  /norte:regras todas        (lista as $N)"
+echo "  /norte:regras seguranca    (busca por tema/palavra)"
+echo "  /norte:regras R060         (uma regra pelo id)"
+echo "  /norte:regras HOOK         (quais ja AGEM na sua sessao)"
 ```
 
 Depois diga, em 1 frase: a maioria e conselho macio; as marcadas `[HOOK]` sao freios que ja
@@ -79,7 +79,7 @@ awk -v term="$TERM" '
 
 - Se saiu pelo menos 1 bloco — apresente as regras encontradas ao usuario, em linguagem
   simples, sem inventar nada alem do que veio do arquivo.
-- Se NAO saiu nada — diga: **"Nenhuma regra casou `<termo>`. Tente `/norte-box:regras todas`
+- Se NAO saiu nada — diga: **"Nenhuma regra casou `<termo>`. Tente `/norte:regras todas`
   ou um tema (seguranca, comunicacao, handoff, qualidade, foco, paralel)."** e pare.
 
 > As 106 saem do censo de regras universais da Norte (100 consolidadas + 6 de um gap-check).

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # _sombra.sh — FONTE UNICA do PORTAO SOMBRA (NRT-_990212 passo 9, "portoes de acao").
-# Sourceado pelo helper bin/nb-sombra (e futuramente pelo comando /norte-box:sombra).
+# Sourceado pelo helper bin/nb-sombra (e futuramente pelo comando /norte:sombra).
 #
 # A ideia (padaria): a caixa passa a poder AGIR — editar um arquivo que JA existe. MAS nesta fatia
 # fina ela SO ENSAIA numa COPIA (a "sombra"). O arquivo REAL nunca e' tocado. E' o "ver o antes"

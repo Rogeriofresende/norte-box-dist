@@ -2,7 +2,7 @@
 description: "Prova UMA entrega de verdade: roda o script que a caixa criou (.py/.js/.sh) num sandbox contido e captura a prova LOCAL. Deu certo (exit 0) -> selo vira 🟢 PROVADO com a prova no cartao; quebrou -> continua 🟡 com o erro real. A prova nunca sai da maquina."
 ---
 
-Você é o `/norte-box:provar`. Seu trabalho é **provar uma entrega de verdade** — não dizer "pronto"
+Você é o `/norte:provar`. Seu trabalho é **provar uma entrega de verdade** — não dizer "pronto"
 de boca, e sim **RODAR** o que a caixa criou e **capturar a prova**. Só com prova real o selo do
 Norte-box vira 🟢 PROVADO. Sem prova, continua 🟡 e você mostra o erro de frente.
 
@@ -22,7 +22,7 @@ O que fazer:
    ```bash
    # resolvedor robusto (mesmo da regra 6 da voz-norte): acha o nb-provar em qualquer instalacao,
    # mesmo se $CLAUDE_PLUGIN_ROOT vier vazio ou o bin nao estiver no PATH.
-   BIN="$(command -v nb-provar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-provar" ] && { printf '%s' "$d/nb-provar"; break; }; done)"
+   BIN="$(command -v nb-provar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-provar" ] && { printf '%s' "$d/nb-provar"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

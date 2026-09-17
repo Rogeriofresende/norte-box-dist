@@ -16,7 +16,7 @@
 set -u
 
 # Raiz do plugin. Preferencia: CLAUDE_PLUGIN_ROOT (setado pelo Claude Code quando o comando roda
-# via /norte-box:doctor). Mas o doctor tambem roda com essa var AUSENTE (ex: `bash doctor-check.sh`
+# via /norte:doctor). Mas o doctor tambem roda com essa var AUSENTE (ex: `bash doctor-check.sh`
 # solto, ou o Claude nao exportou a var pro subshell) — foi o que fez o CEO ver "Prova de vida" e
 # "Freios" como NAO_VERIFICADO com o plugin instalado e SAO na maquina (NRT-_1770). Resolvemos a
 # raiz por conta propria em cascata:
@@ -24,7 +24,7 @@ set -u
 #   2. o diretorio DESTE proprio script (o doctor-check.sh MORA na raiz do plugin) — sempre certo
 #      quando o script foi achado, e nao depende de env var nenhuma;
 #   3. a copia do marketplace (~/.norte-box/marketplace/plugins/norte-box) — o plugin roda de la;
-#   4. o cache de plugins do Claude (~/.claude/plugins/cache/norte-box/norte-box/<versao mais nova>).
+#   4. o cache de plugins do Claude (~/.claude/plugins/cache/norte-box/norte/<versao mais nova>).
 # So contamos como raiz um caminho que TEM o plugin.json — senao seguimos pro proximo candidato.
 _has_plugin() { [ -n "$1" ] && [ -f "$1/.claude-plugin/plugin.json" ]; }
 
@@ -42,7 +42,7 @@ do
 done
 # ultimo recurso: versao mais nova no cache de plugins do Claude
 if [ -z "$ROOT" ]; then
-  _cache_base="$HOME/.claude/plugins/cache/norte-box/norte-box"
+  _cache_base="$HOME/.claude/plugins/cache/norte-box/norte"
   if [ -d "$_cache_base" ]; then
     _newest="$(ls -1 "$_cache_base" 2>/dev/null | sort -V | tail -1)"
     _has_plugin "$_cache_base/$_newest" && ROOT="$_cache_base/$_newest"
@@ -172,19 +172,19 @@ if [ -f "$STATE/identity.json" ]; then
   if [ "$HASTOK" = "1" ]; then
     emit "Convite validado" "OK" "identity.json presente com token do convite"
   else
-    emit "Convite validado" "PENDENTE" "rode /norte-box:convite (identity.json existe mas sem token — revalide)"
+    emit "Convite validado" "PENDENTE" "rode /norte:convite (identity.json existe mas sem token — revalide)"
   fi
 else
-  emit "Convite validado" "PENDENTE" "rode /norte-box:convite (ainda nao validou o codigo de convite)"
+  emit "Convite validado" "PENDENTE" "rode /norte:convite (ainda nao validou o codigo de convite)"
 fi
 
 # 7. Consent dado / telemetria LIGADA? -> recibo consent.json + flag telemetry.enabled.
 if [ -f "$STATE/consent.json" ] && [ -f "$STATE/telemetry.enabled" ]; then
   emit "Telemetria ligada" "OK" "consent.json + telemetry.enabled presentes (coleta ON)"
 elif [ -f "$STATE/consent.json" ] || [ -f "$STATE/telemetry.enabled" ]; then
-  emit "Telemetria ligada" "PENDENTE" "aceite incompleto — rode /norte-box:consent (falta consent.json ou a flag)"
+  emit "Telemetria ligada" "PENDENTE" "aceite incompleto — rode /norte:consent (falta consent.json ou a flag)"
 else
-  emit "Telemetria ligada" "PENDENTE" "rode /norte-box:consent (termo nao aceito — coleta DESLIGADA)"
+  emit "Telemetria ligada" "PENDENTE" "rode /norte:consent (termo nao aceito — coleta DESLIGADA)"
 fi
 
 # 8. MODO (Fase 2) — reporta o modo E checa COERENCIA (o selo bate com o .env real): no privado
@@ -199,12 +199,12 @@ HAS_URL=0
 [ -f "$STATE/.env" ] && grep -q '^NORTE_BOX_TELEMETRY_URL=' "$STATE/.env" 2>/dev/null && HAS_URL=1
 # ONBOARDING COMPLETO? = consent aceito na versao vigente do termo (mesma regra do gate real de
 # envio _norte_consent_aceito). O fluxo do zero passa por: clone -> bootstrap (SEMPRE grava a URL
-# no .env) -> /norte-box:doctor ANTES do convite/consent. Nesse ponto o arquivo `modo` ainda nem
+# no .env) -> /norte:doctor ANTES do convite/consent. Nesse ponto o arquivo `modo` ainda nem
 # nasceu (so nasce no consent), entao o modo e privado (default) E o .env ja tem URL. Isso NAO e
 # defeito: e o estado NORMAL pos-bootstrap-pre-consent. A URL no disco aqui e INOCUA — o gate
 # _norte_pode_enviar exige modo compartilhavel E consent v5, entao nada envia. So depois do consent
 # a regra antiga (privado + URL = incoerencia) volta a valer: ai a URL residual sinaliza que a
-# reversao pra privado nao limpou (furo BAIXA #2, ja consertado no /norte-box:modo).
+# reversao pra privado nao limpou (furo BAIXA #2, ja consertado no /norte:modo).
 ONBOARDING_COMPLETO=0
 _NC_VER="${NORTE_CONSENT_VERSION:-5}"
 if [ -f "$STATE/consent.json" ]; then
@@ -219,15 +219,15 @@ if [ "$MODO" = "privado" ]; then
     emit "Modo" "OK" "privado — a Norte NAO ve este trabalho (sem endereco de coletor no disco)"
   elif [ "$ONBOARDING_COMPLETO" = 0 ]; then
     # pos-bootstrap-pre-consent: .env com URL + modo privado e ESPERADO (a URL e inocua ate o consent).
-    emit "Modo" "PENDENTE" "privado (pos-instalacao, antes do consent) — a URL no .env e inofensiva ate voce ligar; nada e enviado. Ligue com /norte-box:convite + /norte-box:consent"
+    emit "Modo" "PENDENTE" "privado (pos-instalacao, antes do consent) — a URL no .env e inofensiva ate voce ligar; nada e enviado. Ligue com /norte:convite + /norte:consent"
   else
     # onboarding JA feito porem modo privado + URL residual = incoerencia real (a reversao nao limpou).
-    emit "Modo" "FALHA" "diz privado MAS o .env ainda tem NORTE_BOX_TELEMETRY_URL — rode /norte-box:modo privado pra apagar"
+    emit "Modo" "FALHA" "diz privado MAS o .env ainda tem NORTE_BOX_TELEMETRY_URL — rode /norte:modo privado pra apagar"
   fi
 else
   if [ "$HAS_URL" = 1 ]; then
     emit "Modo" "OK" "compartilhavel — a Norte melhora este trabalho (coletor configurado)"
   else
-    emit "Modo" "FALHA" "diz compartilhavel MAS falta o endereco do coletor no .env — rode /norte-box:convite"
+    emit "Modo" "FALHA" "diz compartilhavel MAS falta o endereco do coletor no .env — rode /norte:convite"
   fi
 fi

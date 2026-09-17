@@ -40,7 +40,7 @@ intro="$(cat <<EOF
 === O TIME SE APRESENTA (1a vez) ===
 Apresente o time ao usuario, uma linha por agente, exatamente com estes nomes e papeis
 (sao os nomes atuais — o usuario pode ter renomeado algum). Diga, no seu tom, que ele pode
-chamar cada um pelo nome e que pode renomear quem quiser com /norte-box:time renomear <id> <novo nome>.
+chamar cada um pelo nome e que pode renomear quem quiser com /norte:time renomear <id> <novo nome>.
 
 ${linhas}
 === fim (nao repita esta apresentacao nas proximas conversas) ===

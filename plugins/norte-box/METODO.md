@@ -72,7 +72,7 @@ Sao a diferenca entre "quase pronto e perdido" e "pronto e provado".
 
 ## Como usar
 
-Rode **`/norte-box:projeto "<descricao do que voce quer construir>"`**. O comando
+Rode **`/norte:projeto "<descricao do que voce quer construir>"`**. O comando
 conduz as 4 fases na ordem, gravando spec e plano em `./norte-out/` e provando a 1a
-tarefa por fato. Ao trocar de sessao, `/norte-box:continuar` salva o handoff e
-`/norte-box:retomar` continua no mesmo lugar.
+tarefa por fato. Ao trocar de sessao, `/norte:continuar` salva o handoff e
+`/norte:retomar` continua no mesmo lugar.

@@ -2,19 +2,19 @@
 description: "Norte-box - ver e trocar o MODO (privado | compartilhavel). Default privado; ->compartilhavel exige o aceite."
 ---
 
-Voce e o `/norte-box:modo`. O Norte-box e UM produto com um INTERRUPTOR entre dois modos:
+Voce e o `/norte:modo`. O Norte-box e UM produto com um INTERRUPTOR entre dois modos:
 
 - **privado** (default) — a Norte **NAO ve** este trabalho. Nada e enviado (nem os numeros): no
   privado o box e ESTRUTURALMENTE incapaz de mandar telemetria (nao tem endereco nem token
   gravados, e um gate de modo fail-closed recusa mesmo que algo escape).
 - **compartilhavel** — liga o **MEDIDOR**: SO os NUMEROS de uso sobem (pedidos, tempo, tamanho),
   pra cobrar justo. **Modelo A: a Norte continua NAO vendo o seu trabalho** — o conteudo so sai
-  quando VOCE compartilha uma sessao (`/norte-box:compartilhar`, com previa). Exige aceite; ver
+  quando VOCE compartilha uma sessao (`/norte:compartilhar`, com previa). Exige aceite; ver
   `docs/TELEMETRIA.md`.
 
 **Reversibilidade assimetrica (regra dura):** trocar PARA **privado** e IMEDIATO (so apaga o
 endereco/token e grava o modo). Trocar PARA **compartilhavel** EXIGE o aceite do termo
-(`/norte-box:consent`) e um convite validado — sem isso, NAO vira compartilhavel.
+(`/norte:consent`) e um convite validado — sem isso, NAO vira compartilhavel.
 
 Argumento em `$ARGUMENTS` (vazio = so mostrar; `privado` ou `compartilhavel` = trocar).
 NUNCA escreva fora de `$HOME/.norte-box`. NUNCA imprima token/segredo.
@@ -43,11 +43,11 @@ else
   fi
 fi
 if [ "$M" = "compartilhavel" ]; then
-  echo "MODO ATUAL: compartilhavel — o MEDIDOR (SO numeros de uso) esta ligado. A Norte NAO ve o seu trabalho; pra mostrar uma sessao use /norte-box:compartilhar."
-  echo "Trocar pra privado (imediato): /norte-box:modo privado"
+  echo "MODO ATUAL: compartilhavel — o MEDIDOR (SO numeros de uso) esta ligado. A Norte NAO ve o seu trabalho; pra mostrar uma sessao use /norte:compartilhar."
+  echo "Trocar pra privado (imediato): /norte:modo privado"
 else
   echo "MODO ATUAL: privado — a Norte NAO ve este trabalho (nada e enviado)."
-  echo "Trocar pra compartilhavel (exige aceite): /norte-box:modo compartilhavel"
+  echo "Trocar pra compartilhavel (exige aceite): /norte:modo compartilhavel"
 fi
 ```
 
@@ -89,7 +89,7 @@ Confirme em 1 linha: "Pronto — modo privado. A Norte nao ve mais este trabalho
 
 > A fila local `telemetry-queue.jsonl` foi APAGADA na reversao (junto com endereco/token/flag).
 > Nao sobra residuo pra subir se voce reabrir compartilhavel depois. Pra ver/limpar a fila a
-> qualquer momento use `/norte-box:telemetry show`.
+> qualquer momento use `/norte:telemetry show`.
 
 ## Caso 3 — `$ARGUMENTS` = `compartilhavel`: TROCAR pra compartilhavel (exige aceite)
 
@@ -111,18 +111,18 @@ if [ -f "$STATE/identity.json" ] && command -v jq >/dev/null 2>&1; then
 fi
 if [ "$HAS_CONSENT" = 1 ] && [ "$HAS_TOKEN" = 1 ]; then
   printf 'compartilhavel\n' > "$STATE/modo"; chmod 600 "$STATE/modo" 2>/dev/null || true
-  echo "MODO: compartilhavel. O MEDIDOR (SO numeros de uso) esta ligado — a Norte NAO ve o seu trabalho. Pra mostrar uma sessao, use /norte-box:compartilhar."
+  echo "MODO: compartilhavel. O MEDIDOR (SO numeros de uso) esta ligado — a Norte NAO ve o seu trabalho. Pra mostrar uma sessao, use /norte:compartilhar."
 elif [ "$HAS_TOKEN" != 1 ]; then
-  echo "NAO troquei: falta um convite validado. Rode /norte-box:convite (e depois /norte-box:consent)."
+  echo "NAO troquei: falta um convite validado. Rode /norte:convite (e depois /norte:consent)."
 else
-  echo "NAO troquei: falta aceitar o termo. Rode /norte-box:consent — dai eu troco pra compartilhavel."
+  echo "NAO troquei: falta aceitar o termo. Rode /norte:consent — dai eu troco pra compartilhavel."
 fi
 ```
 
 - Se saiu `MODO: compartilhavel` — confirme em 1 linha e lembre que dá pra voltar pra privado a
-  qualquer momento com `/norte-box:modo privado`.
+  qualquer momento com `/norte:modo privado`.
 - Se saiu `NAO troquei:` — repita a instrucao ao usuario (rodar convite/consent) e pare.
 
 ## Caso 4 — `$ARGUMENTS` e qualquer outra coisa
 
-Diga: **"Modo invalido. Use `/norte-box:modo` (ver), `/norte-box:modo privado` ou `/norte-box:modo compartilhavel`."**
+Diga: **"Modo invalido. Use `/norte:modo` (ver), `/norte:modo privado` ou `/norte:modo compartilhavel`."**

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # _atalho.sh — biblioteca da FATIA "OFERECER DORMENTE" (NRT oferta-dormente).
 # NAO e um hook (nome com _ inicial, fora do hooks.json). E sourceada por ritual-oferta.sh
-# (SessionStart) e legivel pelo comando /norte-box:ritual (verbos atalho / atalho-nao).
+# (SessionStart) e legivel pelo comando /norte:ritual (verbos atalho / atalho-nao).
 #
 # ============================================================================================
 # O QUE ESTA FATIA FAZ (e o que NAO faz):
 #   - A caixa, DEPOIS que o OBSERVADOR (fatia anterior) contou >=3 rituais mandato_pr_v1
 #     COMPLETOS, OFERECE UMA VEZ, de forma SUTIL, na ABERTURA da sessao: "quer virar atalho?".
-#   - A pessoa ACEITA EXPLICITAMENTE rodando /norte-box:ritual atalho mandato_pr_v1.
+#   - A pessoa ACEITA EXPLICITAMENTE rodando /norte:ritual atalho mandato_pr_v1.
 #   - O dado registra se ela VOLTA ao atalho em OUTRO DIA (o sinal de valor NAO e o "sim" — e o
 #     RETORNO espontaneo em dia civil distinto).
 #   - NAO gera kit. NAO envia nada. NAO le conteudo. So rotulos do vocab fechado + timestamps

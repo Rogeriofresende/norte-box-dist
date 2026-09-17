@@ -14,7 +14,7 @@
 #   - Cria um $HOME descartavel em /tmp (mktemp -d), com um "inquilino inocente" plantado
 #     (um settings do usuario + outro plugin no cache) pra o CEO VER que isso NAO some.
 #   - INSTALA o footprint da norte-box derivado do pacote REAL da tag (git archive) — nunca a arvore suja.
-#   - Roda o nb-desinstalar.sh REAL (o mesmo binario do /norte-box:desinstalar).
+#   - Roda o nb-desinstalar.sh REAL (o mesmo binario do /norte:desinstalar).
 #   - LE O DISCO antes e depois e mostra que o retrato bateu (o juiz e o diff, nao a narracao).
 #   - trap ... EXIT apaga a casa de mentira MESMO se o CEO apertar Ctrl-C.
 #   - Banner de fecho HONESTO: so pinta 🟢 se o diff do HOME der VAZIO de verdade (norte-box saiu
@@ -141,8 +141,8 @@ TARBALL="$LAB/pkg.tar.gz"
 ( cd "$_repo" && git archive --format=tar.gz -o "$TARBALL" "$TAG" ) 2>/dev/null
 _VER="$(python3 -c "import json,tarfile,io;t=tarfile.open('$TARBALL');f=t.extractfile('plugins/norte-box/.claude-plugin/plugin.json');print(json.load(f)['version'])" 2>/dev/null)"
 [ -n "$_VER" ] || _VER="0.0.0"
-mkdir -p "$FAKE_HOME/.norte-box" "$FAKE_HOME/.claude/plugins/cache/norte-box/norte-box/$_VER"
-tar -xzf "$TARBALL" -C "$FAKE_HOME/.claude/plugins/cache/norte-box/norte-box/$_VER" 2>/dev/null
+mkdir -p "$FAKE_HOME/.norte-box" "$FAKE_HOME/.claude/plugins/cache/norte-box/norte/$_VER"
+tar -xzf "$TARBALL" -C "$FAKE_HOME/.claude/plugins/cache/norte-box/norte/$_VER" 2>/dev/null
 # ~/.norte-box (arquivos REAIS que convite/bootstrap/telemetria criam — conteudo fake, nunca token real)
 printf 'NORTE_BOX_TELEMETRY_URL=https://COLETOR-EXEMPLO.invalido/ingest\n' > "$FAKE_HOME/.norte-box/.env"; chmod 600 "$FAKE_HOME/.norte-box/.env" 2>/dev/null || true
 echo "deadbeefcafef00d0011223344556677" > "$FAKE_HOME/.norte-box/device_id"
@@ -164,12 +164,12 @@ json.dump(d,open(f,"w"),indent=2)
 PYEOF
 echo "   Instalei. Agora o computador de mentira tem, ALEM do que era seu:"
 echo "     - ~/.norte-box/ (o estado da caixa: .env, identity, modo, fila...)"
-echo "     - ~/.claude/plugins/cache/norte-box/norte-box/$_VER/ (o plugin)"
+echo "     - ~/.claude/plugins/cache/norte-box/norte/$_VER/ (o plugin)"
 echo "     - a caixa registrada no settings.json (enabledPlugins + marketplace)"
 echo
 
 # ---------------------------------------------------------------------------
-# PASSO 3: desinstala DE VERDADE (o mesmo binario do /norte-box:desinstalar)
+# PASSO 3: desinstala DE VERDADE (o mesmo binario do /norte:desinstalar)
 # ---------------------------------------------------------------------------
 _enter "Aperte Enter pra eu DESINSTALAR (rodando o desinstalador de verdade)... "
 echo "--- o que o desinstalador diz que fez (isso e' so relato; o juiz vem depois) ---"

@@ -73,7 +73,7 @@ _norte_freio_ativo() {
 #   Se solto: devolve 0 (a acao segue).
 _norte_freio_checa() {
   if _norte_freio_ativo; then
-    printf '🛑 O freio esta puxado — nao vou mexer em nada. Pra soltar: /norte-box:freio soltar\n'
+    printf '🛑 O freio esta puxado — nao vou mexer em nada. Pra soltar: /norte:freio soltar\n'
     return 1
   fi
   return 0

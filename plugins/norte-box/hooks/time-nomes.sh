@@ -2,7 +2,7 @@
 # time-nomes.sh — CLI do time: VER os agentes e RENOMEAR quem a pessoa quiser.
 # O nome novo PERSISTE ($HOME/.norte-box/agentes-nomes.json) e vale nas proximas sessoes.
 #
-# Uso (via /norte-box:time):
+# Uso (via /norte:time):
 #   time-nomes.sh ver                         # lista id -> nome atual + papel
 #   time-nomes.sh renomear <id> <novo nome>   # troca o nome de exibicao de <id>
 #   time-nomes.sh resetar <id>                # volta <id> pro nome padrao
@@ -30,8 +30,8 @@ _ver() {
     printf '  %-5s -> %-14s %s\n' "$id" "$(nome_agente "$id")" "$(_papel_de "$id")"
   done
   echo
-  echo "Renomear:  /norte-box:time renomear <id> <novo nome>   (ex: renomear leo Leozinho)"
-  echo "Resetar:   /norte-box:time resetar <id>   |   resetar-tudo"
+  echo "Renomear:  /norte:time renomear <id> <novo nome>   (ex: renomear leo Leozinho)"
+  echo "Resetar:   /norte:time resetar <id>   |   resetar-tudo"
 }
 
 _gravar() {
@@ -63,7 +63,7 @@ case "$cmd" in
     id="${2:-}"; shift 2 2>/dev/null || shift $#
     novo="$*"
     if [ -z "$id" ] || [ -z "$novo" ]; then
-      echo "uso: /norte-box:time renomear <id> <novo nome>"; echo; _ver; exit 0
+      echo "uso: /norte:time renomear <id> <novo nome>"; echo; _ver; exit 0
     fi
     if ! _is_id "$id"; then
       echo "id desconhecido: '$id'. ids validos: $AGENTE_IDS"; exit 0
@@ -75,7 +75,7 @@ case "$cmd" in
   resetar)
     id="${2:-}"
     if [ -z "$id" ] || ! _is_id "$id"; then
-      echo "uso: /norte-box:time resetar <id>  (ids: $AGENTE_IDS)"; exit 0
+      echo "uso: /norte:time resetar <id>  (ids: $AGENTE_IDS)"; exit 0
     fi
     _gravar "$id" ""
     echo "ok: '$id' voltou pro nome padrao ($(_nome_padrao "$id"))."

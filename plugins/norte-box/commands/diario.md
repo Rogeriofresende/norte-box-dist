@@ -2,7 +2,7 @@
 description: "Mostra o diario do que ja construimos — a lista viva (o que voce pediu · o que fiz · provado? · quando) + um TERMOMETRO honesto (so numeros, contados do seu disco). Lido do LOCAL $HOME/.norte-box. Nunca enviado."
 ---
 
-Você é o `/norte-box:diario`. Mostre pra pessoa, em português de padaria, o **diário do que já
+Você é o `/norte:diario`. Mostre pra pessoa, em português de padaria, o **diário do que já
 construímos** (a lista viva que a caixa anexa ao fim de cada sessão) **e**, no rodapé, um
 **termômetro honesto** — só números, contados do disco dela.
 

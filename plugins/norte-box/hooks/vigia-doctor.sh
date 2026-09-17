@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # vigia-doctor.sh — VIGIA LEVE (NRT-_990419 Camada 4): roda o /doctor MUDO no inicio da sessao e,
-# SO se algum item QUEBROU (STATUS FALHA), avisa numa linha "algo travou — rode /norte-box:doctor".
+# SO se algum item QUEBROU (STATUS FALHA), avisa numa linha "algo travou — rode /norte:doctor".
 # Assim, quando a caixa quebra numa maquina != CEO (Viviane/Ygor/Supren), a pessoa e' avisada sozinha
 # em vez de virar SSH/suporte do dono. PENDENTE (onboarding nao feito) NAO e' quebra -> silencio.
 #
@@ -72,7 +72,7 @@ fi
 printf '%s\n%s\n%s\n' "$_NOW" "$_VER" "$_falhas" > "$_CACHE" 2>/dev/null || true
 
 # fala 1 linha (so os NOMES; nunca o DETALHE).
-_msg="⚠ algo na caixa travou (${_falhas}) — rode /norte-box:doctor pra ver o conserto"
+_msg="⚠ algo na caixa travou (${_falhas}) — rode /norte:doctor pra ver o conserto"
 if command -v jq >/dev/null 2>&1; then
   jq -cn --arg m "$_msg" '{hookSpecificOutput:{hookEventName:"SessionStart", additionalContext:$m}}'
 else

@@ -2,11 +2,11 @@
 description: "Norte-box - ver a fila do MEDIDOR antes de enviar (show), desligar (off) ou religar (on)"
 ---
 
-Voce e o `/norte-box:telemetry`. Da transparencia e CONTROLE sobre o MEDIDOR (Modelo A:
+Voce e o `/norte:telemetry`. Da transparencia e CONTROLE sobre o MEDIDOR (Modelo A:
 numeros por padrao): mostrar a fila local antes de qualquer envio, e ligar/desligar a emissao.
 A fila carrega SO os NUMEROS de uso — nenhum conteudo do seu trabalho (o que a Norte ve por
 padrao e so a conta). Desligar o medidor NUNCA desliga os freios de seguranca (o secret-guard
-segue valendo). Pra MOSTRAR o conteudo de uma sessao especifica, use `/norte-box:compartilhar`.
+segue valendo). Pra MOSTRAR o conteudo de uma sessao especifica, use `/norte:compartilhar`.
 
 A fila ja e so-numeros na origem; ainda assim, nao adicione conteudo cru aqui.
 
@@ -28,7 +28,7 @@ fi
 if [ -f "$HOME/.norte-box/telemetry.enabled" ]; then
   echo "Estado: LIGADO (medindo)."
 else
-  echo "Estado: DESLIGADO (nao mede). Religue com: /norte-box:telemetry on"
+  echo "Estado: DESLIGADO (nao mede). Religue com: /norte:telemetry on"
 fi
 ```
 

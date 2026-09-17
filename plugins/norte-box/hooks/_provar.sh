@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # _provar.sh — FONTE UNICA do "motor de prova" (Val de bolso) do Norte-box.
-# Sourceado pelo helper bin/nb-provar e pelo comando /norte-box:provar.
+# Sourceado pelo helper bin/nb-provar e pelo comando /norte:provar.
 #
 # A ideia (padaria): antes de a caixa dizer "pronto", ela RODA a entrega e CAPTURA a prova. So com
 # a prova capturada o selo do passo 1 vira 🟢 PROVADO. Sem prova -> continua 🟡 NAO-PROVADO com o

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # _medidor.sh — FONTE UNICA do "medidor honesto" do Norte-box (termometro de qualidade LOCAL, NRT-_990212
-# passo 8). Sourceado pelo comando /norte-box:diario (mostra o bloco no rodape) e por qualquer superficie
+# passo 8). Sourceado pelo comando /norte:diario (mostra o bloco no rodape) e por qualquer superficie
 # que queira o termometro. So LE o disco local; nunca escreve; nunca envia nada.
 #
 # A ideia (padaria): abrir a caixa e ver um termometro do PROPRIO trabalho — "quantas coisas ja pedi,
@@ -133,7 +133,7 @@ EOF
 }
 
 # _norte_medidor_termometro — ecoa o bloco de numeros JA em portugues de padaria (pra o rodape do
-# comando /norte-box:diario). Reusa _norte_medidor_numeros (a fonte honesta) e so traduz as chaves pra
+# comando /norte:diario). Reusa _norte_medidor_numeros (a fonte honesta) e so traduz as chaves pra
 # frases. SO NUMEROS. Nao imprime caminho. Retorna 0 se ecoou; 1 se desligado (kill-switch).
 _norte_medidor_termometro() {
   case "${NORTE_MEDIDOR:-1}" in 0|no|nao|off|false) return 1 ;; esac

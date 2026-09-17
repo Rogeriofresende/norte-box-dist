@@ -6,7 +6,7 @@
 # ZERO conteudo — mesmo Modelo A do medidor. NUNCA o texto livre, args, mensagem de gate ou stack.
 #
 # O QUE CAPTURA:
-#   - cmd:   o VERBO de um /norte-box:<verbo> por ALLOWLIST FECHADA (args descartados).
+#   - cmd:   o VERBO de um /norte:<verbo> por ALLOWLIST FECHADA (args descartados).
 #   - travas: os ROTULOS dos gates que barraram NESTE tick (breadcrumb deixado pelos gates).
 #   - erro:  1 BIT (true) quando o tool_response tem forma de erro (PostToolUse).
 #

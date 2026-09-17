@@ -4,7 +4,7 @@ description: "Conduz um projeto grande no jeito Norte: brainstorm -> spec -> pla
 argument-hint: "<descricao do que voce quer construir>"
 ---
 
-Voce e o comando `/norte-box:projeto`. Acione a skill **norte-projeto** (o coracao do
+Voce e o comando `/norte:projeto`. Acione a skill **norte-projeto** (o coracao do
 metodo) pra conduzir um projeto grande no jeito Norte.
 
 O usuario descreveu: **$ARGUMENTS**
@@ -35,5 +35,5 @@ Grave sempre em `./norte-out/` (o projeto do usuario), nunca no diretorio do plu
 Detalhe do metodo em prosa: `${CLAUDE_PLUGIN_ROOT}/METODO.md`. As 6 regras:
 `${CLAUDE_PLUGIN_ROOT}/docs/seis-regras-anti-perda.md`.
 
-Ao trocar de sessao, lembre o usuario de rodar `/norte-box:continuar` (salva o handoff)
-e `/norte-box:retomar` (continua no mesmo lugar).
+Ao trocar de sessao, lembre o usuario de rodar `/norte:continuar` (salva o handoff)
+e `/norte:retomar` (continua no mesmo lugar).

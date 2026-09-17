@@ -2,7 +2,7 @@
 description: "Pacote exportável: aponta pra UMA entrega JÁ SELADA (o registro da estreia) e monta uma PASTA pronta pra cliente — artefato + prova/ + LEIA-ME + RISCOS. Só empacota e limpa; NÃO reconfere nada. O guarda principal: só vira pacote 🟢 uma entrega REALMENTE provada (carimbo 🟢 E a evidência do próprio registro não contradiz); registro 🟡, ou carimbo virado 🟢 na mão sobre evidência reprovada, são RECUSADOS — nunca um pacote com cara de provado sem ser. Antes de declarar 🟢 roda um gate anti-vazamento (secret_pii + e-mail) sobre a pasta: se achar PII/segredo/e-mail/IP interno, RECUSA fail-closed (apaga a pasta) — o dado sensível costuma vir da descrição de um item do checklist ou do rótulo. NÃO leva o documento original (só o hash). Tudo local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:exportar-pacote`. Seu trabalho é **pegar uma entrega que a estreia já selou** e
+Você é o `/norte:exportar-pacote`. Seu trabalho é **pegar uma entrega que a estreia já selou** e
 **montar o pacote que vai pro cliente** — não conferir de novo, não rodar o motor de novo: só **empacotar
 o que já foi provado** e **limpar** o que não pode sair. A entrada é **um registro de entrega**
 (o `entrega-*.txt` que a estreia gravou). A saída é uma **pasta `pacote-cliente-<id>/`** com **4 partes**.
@@ -57,7 +57,7 @@ o `entrega-*.txt` que a **própria estreia** gravou nesta máquina, não um text
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-exportar-pacote em qualquer instalacao.
-   BIN="$(command -v nb-exportar-pacote || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-exportar-pacote" ] && { printf '%s' "$d/nb-exportar-pacote"; break; }; done)"
+   BIN="$(command -v nb-exportar-pacote || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-exportar-pacote" ] && { printf '%s' "$d/nb-exportar-pacote"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

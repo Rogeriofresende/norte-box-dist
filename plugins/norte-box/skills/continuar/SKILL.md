@@ -1,6 +1,6 @@
 ---
 name: continuar
-description: "Salva um handoff por-projeto quando o contexto esta enchendo ou uma etapa terminou, para que a proxima sessao continue exatamente de onde parou. Acionada por /norte-box:continuar, ou frases como 'salva o estado', 'cria handoff', 'preciso pausar', 'o contexto esta enchendo', 'guarda a memoria'. Escreve ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md + atualiza ULTIMO.md. Irma de norte-retomar (que LE o handoff de volta)."
+description: "Salva um handoff por-projeto quando o contexto esta enchendo ou uma etapa terminou, para que a proxima sessao continue exatamente de onde parou. Acionada por /norte:continuar, ou frases como 'salva o estado', 'cria handoff', 'preciso pausar', 'o contexto esta enchendo', 'guarda a memoria'. Escreve ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md + atualiza ULTIMO.md. Irma de norte-retomar (que LE o handoff de volta)."
 ---
 
 # continuar
@@ -19,7 +19,7 @@ outra maquina, outro colaborador — todos veem o mesmo bilhete.
 - Uma etapa grande terminou (varios arquivos editados, um bug fechado, uma decisao de arquitetura).
 - Proativamente, apos trabalho substancial (5+ edicoes de arquivo, debug complexo): sugira
   "Fizemos bastante progresso. Vale salvar um handoff pra proxima sessao continuar sem ambiguidade.
-  Diga `/norte-box:continuar` quando quiser."
+  Diga `/norte:continuar` quando quiser."
 
 ## Passo 1 — Junte o contexto (leitura, nao suposicao)
 
@@ -144,7 +144,7 @@ Reporte ao usuario, nesta ordem:
 1. **Handoff salvo:** o path do `.md` + o objetivo em 1 frase.
 2. **Ponteiro:** `ULTIMO.md` -> aponta pro novo.
 3. **Primeiro passo pra proxima sessao:** o "Proximo passo" que voce gravou.
-4. **Como retomar:** "na proxima sessao, rode `/norte-box:retomar` — ele le este handoff,
+4. **Como retomar:** "na proxima sessao, rode `/norte:retomar` — ele le este handoff,
    confere o mundo e diz onde continuar."
 
 ## Degradacao (nunca trava o trabalho)

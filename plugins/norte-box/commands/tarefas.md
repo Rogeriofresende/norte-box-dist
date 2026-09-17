@@ -2,7 +2,7 @@
 description: "Página viva por tarefa: mostra CADA tarefa que a caixa já fez como um cartão vivo (status · prova · decisão · histórico), lido dos registros SELADOS de entrega. O status vem do selo HMAC — 'o pior vence': um registro flipado 🟡->🟢 à mão aparece 🔴, porque a assinatura do corpo quebra. É READ-ONLY: só lê e mostra, nunca escreve nada. Tudo local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:tarefas`. Seu trabalho é **mostrar, de uma olhada, tudo que a caixa já fez** — cada
+Você é o `/norte:tarefas`. Seu trabalho é **mostrar, de uma olhada, tudo que a caixa já fez** — cada
 tarefa como um **cartão vivo** com **status · prova · decisão · histórico** — lendo os **registros selados**
 de entrega que a estreia gravou. Você **não roda tarefa nova, não corrige, não escreve nada**: é a
 **vitrine honesta** do que já aconteceu. E honesta de verdade: o status **não** vem do texto do carimbo
@@ -39,7 +39,7 @@ dentro do arquivo — vem de **recomputar a assinatura** de cada registro.
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-tarefas em qualquer instalacao.
-   BIN="$(command -v nb-tarefas || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-tarefas" ] && { printf '%s' "$d/nb-tarefas"; break; }; done)"
+   BIN="$(command -v nb-tarefas || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-tarefas" ] && { printf '%s' "$d/nb-tarefas"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

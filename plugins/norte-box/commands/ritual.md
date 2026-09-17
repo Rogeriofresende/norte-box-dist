@@ -2,7 +2,7 @@
 description: "Norte-box - VER, APAGAR, LIGAR/DESLIGAR o observador em sombra do ritual (so contagem, 100% local, nada sai da maquina)"
 ---
 
-Voce e o `/norte-box:ritual`. Da a VOCE transparencia e controle TOTAL sobre o "observador em
+Voce e o `/norte:ritual`. Da a VOCE transparencia e controle TOTAL sobre o "observador em
 sombra" — a caixa apenas CONTA quantas vezes voce completou um ritual repetido de trabalho
 (mandato -> teste/review -> abrir PR). Nada mais.
 
@@ -24,7 +24,7 @@ Argumento em `$ARGUMENTS` (default: `ver`):
 ```bash
 C="$HOME/.norte-box/ritual-contagem.json"
 FLAG="$HOME/.norte-box/ritual-observador.enabled"
-if [ -f "$FLAG" ]; then echo "Observador: LIGADO"; else echo "Observador: DESLIGADO (ligue com: /norte-box:ritual on)"; fi
+if [ -f "$FLAG" ]; then echo "Observador: LIGADO"; else echo "Observador: DESLIGADO (ligue com: /norte:ritual on)"; fi
 if [ -f "$C" ] && command -v jq >/dev/null 2>&1; then
   echo "--- placar do ritual mandato_pr_v1 ---"
   jq -r '
@@ -52,7 +52,7 @@ rm -rf "$HOME/.norte-box/ritual-state"
 rm -f "$HOME/.norte-box/ritual-atalhos.json"
 echo "Observador em sombra ZERADO. A caixa nao guarda mais nenhuma contagem de voce."
 echo "Tambem apaguei o registro de atalhos (oferta/aceite/dias de retorno)."
-echo "A observacao continua no estado atual (ligada/desligada); pra DESLIGAR: /norte-box:ritual off"
+echo "A observacao continua no estado atual (ligada/desligada); pra DESLIGAR: /norte:ritual off"
 ```
 
 ## `atalho mandato_pr_v1` - ACEITAR o atalho (e USAR ele quando repetir)
@@ -109,7 +109,7 @@ if ! command -v _nb_atalho_marca_recusa >/dev/null 2>&1; then
 else
   _nb_atalho_marca_recusa
   echo "👍 Ok — a caixa NAO vai mais oferecer transformar esse ritual em atalho."
-  echo "Muda de ideia depois? /norte-box:ritual atalho mandato_pr_v1 aceita mesmo assim."
+  echo "Muda de ideia depois? /norte:ritual atalho mandato_pr_v1 aceita mesmo assim."
 fi
 ```
 
@@ -119,7 +119,7 @@ fi
 mkdir -p "$HOME/.norte-box" 2>/dev/null
 : > "$HOME/.norte-box/ritual-observador.enabled"
 echo "Observador em sombra LIGADO. A caixa vai CONTAR seus rituais (mandato -> teste/review -> pr)."
-echo "So contagem, 100% local, nada sai da maquina. Pra ver: /norte-box:ritual ver"
+echo "So contagem, 100% local, nada sai da maquina. Pra ver: /norte:ritual ver"
 ```
 
 ## `off` - desliga o observador (para de contar na hora)
@@ -128,7 +128,7 @@ echo "So contagem, 100% local, nada sai da maquina. Pra ver: /norte-box:ritual v
 rm -f "$HOME/.norte-box/ritual-observador.enabled"
 echo "Observador em sombra DESLIGADO. Nenhuma contagem nova (fail-closed: sem a flag, nao observa)."
 echo "Kill-switch imediato pra qualquer sessao: exporte NORTE_RITUAL_OFF=1 no seu shell."
-echo "O placar ja contado continua ate voce mandar: /norte-box:ritual apagar"
+echo "O placar ja contado continua ate voce mandar: /norte:ritual apagar"
 ```
 
 > O observador é local (na sua maquina). Nesta fatia ele SÓ conta e mostra pra voce — não

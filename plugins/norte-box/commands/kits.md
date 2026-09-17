@@ -2,7 +2,7 @@
 description: "Catálogo dos kits — lista cada rotina que a caixa já sabe repetir: nome, tipo, quando, origem (🟢/🟡) e USOS. Os usos são DERIVADOS do dado real (conta os registros de entrega com rótulo kit-<nome>), não um contador próprio. Read-only: lê e mostra, nunca escreve. Local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:kits`. Seu trabalho é **mostrar o catálogo** — cada **kit** que a caixa já sabe
+Você é o `/norte:kits`. Seu trabalho é **mostrar o catálogo** — cada **kit** que a caixa já sabe
 repetir, como um cartão curto: **nome**, **tipo**, **quando** foi criado, a **origem** (🟢/🟡) e quantas
 vezes já foi **usado**.
 
@@ -23,13 +23,13 @@ o número verdadeiro do que aconteceu na esteira.
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-kits em qualquer instalacao.
-   BIN="$(command -v nb-kits || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-kits" ] && { printf '%s' "$d/nb-kits"; break; }; done)"
+   BIN="$(command -v nb-kits || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-kits" ] && { printf '%s' "$d/nb-kits"; break; }; done)"
    bash "$BIN"
    ```
 
 2. Mostre a lista no seu tom de padaria. Se houver kits, aponte o próximo passo natural: *"pra rodar um
-   kit num documento novo: `/norte-box:kit-rodar <nome> <novo-doc>`"*. Se estiver vazio, diga que dá pra
-   criar o primeiro a partir de uma tarefa provada com `/norte-box:kit-criar`.
+   kit num documento novo: `/norte:kit-rodar <nome> <novo-doc>`"*. Se estiver vazio, diga que dá pra
+   criar o primeiro a partir de uma tarefa provada com `/norte:kit-criar`.
 
 3. **Não invente números.** A contagem de usos é o que o comando imprimiu (derivada dos registros). Se um
    kit mostra **🟡** na origem, é honesto — significa que a origem dele não foi confirmada, não que ele

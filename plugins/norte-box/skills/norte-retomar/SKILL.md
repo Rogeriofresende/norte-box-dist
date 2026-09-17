@@ -1,6 +1,6 @@
 ---
 name: norte-retomar
-description: "Numa sessao NOVA, le o handoff mais recente do projeto (./norte-out/handoffs/) com rigor critico ANTES de qualquer execucao: escala por idade (FRESH/SLIGHTLY_STALE/STALE/VERY_STALE), valida o mundo (o que mudou desde o handoff), detecta acoes ja-disparadas e entrega objetivo + onde parou + proximo passo. Acionada por /norte-box:retomar, ou frases como 'retoma', 'continua de onde parei', 'carrega o handoff', 'onde a gente estava'. Irma de continuar (que CRIA o handoff)."
+description: "Numa sessao NOVA, le o handoff mais recente do projeto (./norte-out/handoffs/) com rigor critico ANTES de qualquer execucao: escala por idade (FRESH/SLIGHTLY_STALE/STALE/VERY_STALE), valida o mundo (o que mudou desde o handoff), detecta acoes ja-disparadas e entrega objetivo + onde parou + proximo passo. Acionada por /norte:retomar, ou frases como 'retoma', 'continua de onde parei', 'carrega o handoff', 'onde a gente estava'. Irma de continuar (que CRIA o handoff)."
 ---
 
 # norte-retomar
@@ -15,14 +15,14 @@ viaja com o repo. Sem diretorio global, sem estado escondido na maquina.
 
 ## Acionamento
 
-- **Comando:** `/norte-box:retomar` (sem argumento = handoff mais recente do projeto, via `ULTIMO.md`;
+- **Comando:** `/norte:retomar` (sem argumento = handoff mais recente do projeto, via `ULTIMO.md`;
   com slug ou path = handoff especifico).
 - **Linguagem natural:** "retoma", "continua de onde parei", "carrega o handoff", "onde a gente estava".
 
 ## Pre-condicoes
 
 - **`./norte-out/handoffs/` nao existe** -> "Nenhum handoff neste projeto. Ao terminar uma sessao,
-  rode `/norte-box:continuar` pra criar um." E pare (nao e erro — e o estado normal de projeto novo).
+  rode `/norte:continuar` pra criar um." E pare (nao e erro — e o estado normal de projeto novo).
 - **Path passado como argumento nao existe** -> "Handoff nao encontrado em `<path>`" e liste os
   disponiveis (`ls -t ./norte-out/handoffs/*.md`).
 - **Varios handoffs recentes e nenhum argumento** -> use o `ULTIMO.md`; se nao houver ponteiro,
@@ -265,6 +265,6 @@ Termine apresentando o **Proximo passo (com intencao)** como ultima mensagem —
 
 ## Prova (teste real)
 
-Com o handoff criado por `continuar` no disco, uma sessao nova roda `/norte-box:retomar` e reporta o
+Com o handoff criado por `continuar` no disco, uma sessao nova roda `/norte:retomar` e reporta o
 **mesmo objetivo** e o **mesmo proximo passo** que o handoff gravou — provando que a memoria viajou entre
 sessoes.

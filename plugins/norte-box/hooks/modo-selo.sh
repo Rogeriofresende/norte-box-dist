@@ -28,8 +28,8 @@ else
 fi
 
 if [ "$_m" = "compartilhavel" ]; then
-  printf '%s\n' "🔗 Norte-box · Modo compartilhavel — MEDIDOR ligado (SO os numeros de uso). A Norte NAO ve o seu trabalho; pra mostrar uma sessao: /norte-box:compartilhar. Trocar: /norte-box:modo privado"
+  printf '%s\n' "🔗 Norte-box · Modo compartilhavel — MEDIDOR ligado (SO os numeros de uso). A Norte NAO ve o seu trabalho; pra mostrar uma sessao: /norte:compartilhar. Trocar: /norte:modo privado"
 else
-  printf '%s\n' "🔒 Norte-box · Modo privado — a Norte NAO ve este trabalho (nada e enviado). Trocar: /norte-box:modo compartilhavel"
+  printf '%s\n' "🔒 Norte-box · Modo privado — a Norte NAO ve este trabalho (nada e enviado). Trocar: /norte:modo compartilhavel"
 fi
 exit 0

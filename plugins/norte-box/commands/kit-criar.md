@@ -2,9 +2,9 @@
 description: "Virar rotina — guarda uma tarefa provada como KIT reusável: copia o checklist pra um kit privado ($HOME/.norte-box/kits/<nome>/) pra rodar a MESMA conferência em documentos novos. O kit é IMUTÁVEL (criar com nome que já existe recusa; use outro nome pra uma versão nova). Origem 🟢 só com prova real (3 gates: checklist_hash bate + registro verde + assinatura confere); senão 🟡 honesto. Local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:kit-criar`. Seu trabalho é **transformar uma conferência que já foi provada em uma
+Você é o `/norte:kit-criar`. Seu trabalho é **transformar uma conferência que já foi provada em uma
 rotina reusável** — um **kit**. Um kit guarda o **checklist** (a foto fixa das exigências) + um cartão de
-identidade, pra depois o `/norte-box:kit-rodar` rodar a **mesma** conferência em documentos **novos** sem
+identidade, pra depois o `/norte:kit-rodar` rodar a **mesma** conferência em documentos **novos** sem
 reconstruir nada.
 
 **Por que o kit RECEBE o checklist como argumento:** o conteúdo do checklist **não fica salvo** em lugar
@@ -34,12 +34,12 @@ uma tarefa já feita — o kit é quem **passa a guardá-lo**.
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-kit-criar em qualquer instalacao.
-   BIN="$(command -v nb-kit-criar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-kit-criar" ] && { printf '%s' "$d/nb-kit-criar"; break; }; done)"
+   BIN="$(command -v nb-kit-criar || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-kit-criar" ] && { printf '%s' "$d/nb-kit-criar"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 
 3. **Se deu 🟢 (exit 0):** o kit foi criado. Diga no seu tom de padaria — *"guardei essa conferência como
-   kit; agora dá pra rodar em documentos novos com `/norte-box:kit-rodar <nome> <novo-doc>`"* — e mostre a
+   kit; agora dá pra rodar em documentos novos com `/norte:kit-rodar <nome> <novo-doc>`"* — e mostre a
    **origem** que saiu (🟢 se conferiu, 🟡 se não deu pra confirmar). Não invente origem verde.
 
 4. **Se deu 🟡 (exit 2):** **não** foi criado. Diga o porquê exato que o comando imprimiu — nome inválido,
@@ -53,4 +53,4 @@ uma tarefa já feita — o kit é quem **passa a guardá-lo**.
   (`../x`, `a; touch ...`) é barrado e **nada** é criado fora de `kits/` nem executado.
 - **Honesto por padrão:** a origem 🟢 **só** com prova real (os 3 gates). Na dúvida, 🟡.
 - **Kill-switch:** `NORTE_KITS=0` desliga (recusa, exit 2).
-- Você **só guarda** aqui; **conferir** documento novo é o `/norte-box:kit-rodar`, e o selo vem do motor.
+- Você **só guarda** aqui; **conferir** documento novo é o `/norte:kit-rodar`, e o selo vem do motor.

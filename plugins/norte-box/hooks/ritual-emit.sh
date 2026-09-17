@@ -8,7 +8,7 @@
 #   - SEM conteudo: le tool_input/prompt SO pra classificar a FORMA num rotulo fechado; o texto
 #     e descartado no mesmo passo (mesmo Modelo A do medidor/atrito).
 #   - SEM enviar NADA: nenhum caminho de POST/curl/wget/http. Nem "tipo+contagem" saem da maquina
-#     nesta fatia. O placar mora SO em ~/.norte-box/ e so o proprio dono ve (comando /norte-box:ritual).
+#     nesta fatia. O placar mora SO em ~/.norte-box/ e so o proprio dono ve (comando /norte:ritual).
 #   - SEM sugerir, SEM agir: so conta e cala.
 #
 # POR QUE NAO DEPENDE DE MODO/CONSENT (diferente do telemetry/atrito): aqueles ENVIAM (drain),

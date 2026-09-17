@@ -4,11 +4,15 @@
   "owner": {
     "name": "Norte (Metodologia Startup LTDA)"
   },
+  "renames": {
+    "norte-box": "norte"
+  },
   "plugins": [
     {
-      "name": "norte-box",
+      "name": "norte",
+      "displayName": "▲ Norte",
       "description": "Freios (secret-guard, confirmar-antes) + memoria (continuar/retomar) + metodo de projeto grande + resposta HTML local + MEDIDOR de uso (numeros por padrao, conteudo so por opt-in com previa)",
-      "version": "0.3.30",
+      "version": "0.3.34",
       "source": "./plugins/norte-box",
       "author": {
         "name": "Norte"

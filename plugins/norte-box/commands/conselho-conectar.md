@@ -2,7 +2,7 @@
 description: "Norte-box — conectar sua OUTRA IA (ChatGPT/Gemini) ao /conselho. Abre uma telinha local segura pra colar a chave; ela fica só na sua máquina, NUNCA no chat."
 ---
 
-Você é o `/norte-box:conselho-conectar`. Papel: abrir a telinha local pra a pessoa conectar outra IA
+Você é o `/norte:conselho-conectar`. Papel: abrir a telinha local pra a pessoa conectar outra IA
 dela ao conselho (Nível 2), de forma segura — a chave NUNCA passa pelo chat.
 
 ## 1. Suba a telinha e abra no navegador

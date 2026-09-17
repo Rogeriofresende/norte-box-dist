@@ -125,7 +125,7 @@ _norte_tarefas_lista() {
   local _raiz; _raiz="$(_norte_tarefas_raiz)"
   # diretorio vazio/inexistente -> mensagem honesta, exit 0.
   if [ ! -d "$_raiz" ] || [ -z "$(ls -1 "$_raiz"/entrega-*.txt 2>/dev/null)" ]; then
-    printf 'nenhuma entrega registrada ainda. Rode uma tarefa (/norte-box:estreia) e ela aparece aqui.\n'
+    printf 'nenhuma entrega registrada ainda. Rode uma tarefa (/norte:estreia) e ela aparece aqui.\n'
     return 0
   fi
 

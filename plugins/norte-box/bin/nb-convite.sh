@@ -37,7 +37,7 @@ for _cand in "${CLAUDE_PLUGIN_ROOT:-}" "$_root_from_self" "$HOME/.norte-box/mark
   if _has_lib "$_cand"; then ROOT="$_cand"; break; fi
 done
 if [ -z "$ROOT" ]; then
-  _cache_base="$HOME/.claude/plugins/cache/norte-box/norte-box"
+  _cache_base="$HOME/.claude/plugins/cache/norte-box/norte"
   if [ -d "$_cache_base" ]; then
     _newest="$(ls -1 "$_cache_base" 2>/dev/null | sort -V | tail -1)"
     _has_lib "$_cache_base/$_newest" && ROOT="$_cache_base/$_newest"
@@ -63,7 +63,7 @@ command -v jq   >/dev/null 2>&1 || { echo "CONVITE_ERRO: jq ausente. No Windows 
 if [ ! -f "$STATE/.env" ] || ! grep -q '^NORTE_BOX_TELEMETRY_URL=' "$STATE/.env" 2>/dev/null; then
   _NB_SUB="vela-norte."; _NB_NET="tail30df4f.ts.net"; _NB_HOST="${_NB_SUB}${_NB_NET}"
   {
-    printf '# norte-box - endereco do coletor (NAO e secret; o token nasce no /norte-box:convite)\n'
+    printf '# norte-box - endereco do coletor (NAO e secret; o token nasce no /norte:convite)\n'
     printf 'NORTE_BOX_TELEMETRY_URL=https://%s/ingest\n' "$_NB_HOST"
   } >> "$STATE/.env"
   chmod 600 "$STATE/.env" 2>/dev/null || true

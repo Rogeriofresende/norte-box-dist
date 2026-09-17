@@ -1,7 +1,7 @@
 # Termo de Privacidade e Uso de Dados — MEDIDOR de uso + compartilhar sessao (Modelo A — texto honesto)
 
 Este documento e o detalhamento completo do **Termo de Privacidade e Uso de Dados** do Norte-box
-(o mesmo que voce aceita em `/norte-box:consent`, versao 5, Modelo A).
+(o mesmo que voce aceita em `/norte:consent`, versao 5, Modelo A).
 
 O Norte-box e um pacote FECHADO por convite que usa o Claude da Norte. **Por padrao a Norte NAO
 ve o seu trabalho** — so recebe um MEDIDOR de uso (numeros), pra cobrar de forma justa. O
@@ -12,7 +12,7 @@ uma sessao, com previa antes de enviar. Este documento e a verdade sobre o que i
 
 O Norte-box tem UM produto com um **interruptor** entre dois modos, gravado em
 `~/.norte-box/modo` (uma palavra: `privado` ou `compartilhavel`). Veja/troque com
-`/norte-box:modo`. O **selo** no inicio de cada sessao mostra em qual modo voce esta.
+`/norte:modo`. O **selo** no inicio de cada sessao mostra em qual modo voce esta.
 
 - **privado (DEFAULT, fail-closed)** — a Norte **NAO ve** nada, nem os numeros. Nada e coletado,
   enfileirado ou enviado. Nao e "desliguei o envio": no privado o box e **estruturalmente
@@ -23,9 +23,9 @@ O Norte-box tem UM produto com um **interruptor** entre dois modos, gravado em
   valor EXATO `compartilhavel` liga o medidor.
 - **compartilhavel** — liga o **MEDIDOR**: SO os NUMEROS de uso sobem automaticamente. **A Norte
   continua NAO vendo o seu trabalho.** So se entra aqui apos **aceitar o termo**
-  (`/norte-box:consent`) com um **convite validado** (`/norte-box:convite`).
+  (`/norte:consent`) com um **convite validado** (`/norte:convite`).
 
-**Reversibilidade assimetrica:** voltar PARA privado e **imediato** (`/norte-box:modo privado`
+**Reversibilidade assimetrica:** voltar PARA privado e **imediato** (`/norte:modo privado`
 apaga o endereco/token/flag do disco na hora); ir PARA compartilhavel **exige o aceite** — sem
 consent + convite, o box NAO troca.
 
@@ -65,7 +65,7 @@ escreve no corpo — entao ninguem grava evento se passando por outra pessoa.
 ## Compartilhar UMA sessao (opt-in explicito, com previa)
 
 Quando voce quiser mostrar o conteudo de uma sessao pra Norte (ex: pedir ajuda), rode
-**`/norte-box:compartilhar`**. Ele:
+**`/norte:compartilhar`**. Ele:
 
 1. Le a conversa da sessao atual e monta uma **PREVIA redigida** (o mesmo redator do secret-guard
    tira secret/CPF/CNPJ/nome-de-arquivo que reconhece — fail-closed);
@@ -118,8 +118,8 @@ antes de enviar, a decisao final e sua: na duvida, nao compartilhe a sessao.
   la dentro NUNCA executa (furo #2).
 - **Offline corta em 7 dias**: o buffer local tem TTL - o que nao subiu em 7 dias e descartado.
 - **NUNCA trava o seu trabalho** (fail-open): se a telemetria falhar, o Claude segue normal.
-- Voce pode **ver a fila antes de enviar** (`/norte-box:telemetry show`) e **desligar o medidor**
-  (`/norte-box:telemetry off`) — desligar funciona de verdade e nao afeta o secret-guard.
+- Voce pode **ver a fila antes de enviar** (`/norte:telemetry show`) e **desligar o medidor**
+  (`/norte:telemetry off`) — desligar funciona de verdade e nao afeta o secret-guard.
 
 O painel/relatorio pro dono sai do `server/report.js`, que roda ONDE a chave privada mora (a
 maquina do dono), NUNCA no coletor.

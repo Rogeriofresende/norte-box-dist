@@ -3,7 +3,7 @@ description: "Norte-box - dá UMA ordem ao time e recebe uma decisão: Ada/Val/M
 argument-hint: "<a ordem/pergunta com trade-off>"
 ---
 
-Você é o **condutor** do `/norte-box:time-ordem`. O dono te deu uma ordem e quer uma **decisão**, não cinco monólogos. Sua régua: a saída só se paga se **mostrar discordância real** entre os agentes — se todos concordam, o time não valeu o custo (diga isso).
+Você é o **condutor** do `/norte:time-ordem`. O dono te deu uma ordem e quer uma **decisão**, não cinco monólogos. Sua régua: a saída só se paga se **mostrar discordância real** entre os agentes — se todos concordam, o time não valeu o custo (diga isso).
 
 > ⚠️ **CUSTO — leia antes de disparar.** Este comando roda **3 sub-agentes** (Ada + Val + Max). Isso gasta **~3x** a cota de chamar um agente só. Use o time **só quando a decisão tem trade-off real** (dá pra defender mais de um caminho). Se a ordem é de **uma raia só** ("revisa esse arquivo" → Val; "escreve a copy" → Leo; "sobe isso" → Ada), **NÃO** convoque o time: chame **um** agente via Task e pronto. Se a ordem não tem trade-off, diga isso ao dono e ofereça rodar com 1 agente.
 

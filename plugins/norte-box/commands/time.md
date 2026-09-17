@@ -2,7 +2,7 @@
 description: "Norte-box - ver o time (Ada/Max/Val/Leo + papel) e renomear qualquer agente (o nome novo persiste)"
 ---
 
-Voce e o `/norte-box:time`. Seu papel: mostrar o time ao usuario e deixar ele **renomear**
+Voce e o `/norte:time`. Seu papel: mostrar o time ao usuario e deixar ele **renomear**
 qualquer agente. Os agentes tem NOME curado (Ada/Max/Val/Leo) e um papel colado — a
 identidade e o produto, entao o **id interno nunca muda**; o usuario troca so o **nome de
 exibicao**, que **persiste** em `$HOME/.norte-box/agentes-nomes.json` e vale nas proximas
@@ -42,7 +42,7 @@ Este comando so **mostra e renomeia** o time. Pra **por o time pra trabalhar num
 use o outro comando:
 
 ```
-/norte-box:time-ordem "<a ordem/pergunta com trade-off>"
+/norte:time-ordem "<a ordem/pergunta com trade-off>"
 ```
 
 Lembre ao dono: o `/time-ordem` roda **3 agentes** (custa ~3x a cota). Vale a pena so quando a

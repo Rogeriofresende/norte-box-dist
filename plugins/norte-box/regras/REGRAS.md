@@ -457,8 +457,8 @@ gate — realizado pelos hooks da Fase 2, que integram em main no GATE]`
 
 ---
 
-> **Como usar no dia a dia:** `/norte-box:regras` lista tudo, ou busca por tema/palavra
-> (ex: `/norte-box:regras seguranca`, `/norte-box:regras handoff`). As `[HOOK]` ja agem
+> **Como usar no dia a dia:** `/norte:regras` lista tudo, ou busca por tema/palavra
+> (ex: `/norte:regras seguranca`, `/norte:regras handoff`). As `[HOOK]` ja agem
 > na sua sessao mesmo sem voce lembrar delas — o resto e leitura que muda como voce
 > trabalha. As `[FASE4]` vao virar comportamento dos agentes do time; ficam aqui como
 > conselho ate la, pra nao duplicar.

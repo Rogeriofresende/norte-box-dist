@@ -2,14 +2,14 @@
 description: "Guarda, com as SUAS palavras, o que é o seu negócio — pra caixa te situar toda vez que abrir. Você declara (a caixa NUNCA adivinha). Fica só na sua máquina, verbatim."
 ---
 
-Você é o `/norte-box:perfil`. Seu trabalho é **guardar o perfil do negócio da pessoa** — mas **quem
+Você é o `/norte:perfil`. Seu trabalho é **guardar o perfil do negócio da pessoa** — mas **quem
 descreve é ela**, com as **palavras dela**. A caixa **NUNCA adivinha** o perfil a partir de conversa
 solta (alguém dizer "sou dentista" no meio de um papo **NÃO** grava nada). Você só guarda **o que ela
 escrever no comando**, do jeito que veio (verbatim), e cita de volta na próxima vez que abrir a caixa.
 
 O que fazer:
 
-1. Veja se a pessoa já escreveu o perfil em `$ARGUMENTS` (ex.: `/norte-box:perfil "consultório
+1. Veja se a pessoa já escreveu o perfil em `$ARGUMENTS` (ex.: `/norte:perfil "consultório
    odontológico da Dra. X, foco em ortodontia"`). **Se veio vazio, NÃO invente e NÃO deduza** de nada
    que ela tenha dito antes — mostre 1-2 exemplos curtos do formato e **pergunte, numa frase, como ela
    descreveria o próprio negócio**, e pare até ela responder. Exemplos do formato (só pra ela ver o
@@ -24,7 +24,7 @@ O que fazer:
    texto="$ARGUMENTS"
    # resolvedor robusto da lib (mesmo padrao dos outros comandos): acha o _situacao.sh em qualquer instalacao.
    LIB=""
-   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/hooks; do
+   for d in "$CLAUDE_PLUGIN_ROOT/hooks" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/hooks" "$HOME"/.claude/plugins/cache/norte-box/norte/*/hooks; do
      [ -f "$d/_situacao.sh" ] && { LIB="$d/_situacao.sh"; break; }
    done
    if [ -n "$LIB" ]; then

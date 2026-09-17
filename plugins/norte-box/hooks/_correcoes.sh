@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # _correcoes.sh — FONTE UNICA das "correcoes do jeito da pessoa" do Norte-box (memoria funda, NRT-_990212
-# passo 7). Sourceado pelo comando /norte-box:regra (append) e pela situacao-abrir (SessionStart, cita as
+# passo 7). Sourceado pelo comando /norte:regra (append) e pela situacao-abrir (SessionStart, cita as
 # regras gravadas na reabertura).
 #
 # A ideia (padaria): alem do OBJETIVO (situacao.json) e do DIARIO (diario.jsonl), a caixa passa a guardar
@@ -10,7 +10,7 @@
 # duas portas.
 #
 # A LEI (o coracao — a armadilha nº1): FAIL-HONEST / ANTI-INVENCAO.
-#   - SO GRAVA POR ATO EXPLICITO: quem chama e o comando /norte-box:regra (a pessoa rodou). Conversa
+#   - SO GRAVA POR ATO EXPLICITO: quem chama e o comando /norte:regra (a pessoa rodou). Conversa
 #     comum ("nao gosto assim", "acho que...") NAO grava NADA. Sem texto passado -> nada e escrito.
 #   - VERBATIM: grava o texto CRU da pessoa, char-por-char (jq --arg copia a string byte a byte), + a
 #     data + qual conversa. ZERO resumo, ZERO deducao, ZERO campo inferido. O LLM NAO tem caminho de

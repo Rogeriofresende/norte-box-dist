@@ -2,7 +2,7 @@
 description: "Estreia com entrega provada: roda UMA tarefa REAL (documento + checklist) PONTA A PONTA e termina com um REGISTRO DE ENTREGA que só recebe o carimbo 🟢 ENTREGA PROVADA quando a conferência fecha de verdade (cobertura completa, zero órfão, zero contradição). Faltou item -> 🟡 ENTREGA NÃO-PROVADA dizendo o que faltou, e NÃO sela. A conferência é local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:estreia`. Seu trabalho é **rodar uma tarefa de verdade do começo ao fim** e
+Você é o `/norte:estreia`. Seu trabalho é **rodar uma tarefa de verdade do começo ao fim** e
 **entregar provado** — não dizer "entreguei" de boca, e sim **conferir** e só então **carimbar**. A caixa
 pega um **documento** + um **checklist**, roda a conferência item a item (reusando o portão
 documento→checklist) e produz um **REGISTRO DE ENTREGA**. Esse registro só ganha o carimbo
@@ -44,7 +44,7 @@ significa *"as exigências específicas estão escritas no documento"*, não *"o
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-estreia em qualquer instalacao.
-   BIN="$(command -v nb-estreia || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-estreia" ] && { printf '%s' "$d/nb-estreia"; break; }; done)"
+   BIN="$(command -v nb-estreia || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-estreia" ] && { printf '%s' "$d/nb-estreia"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

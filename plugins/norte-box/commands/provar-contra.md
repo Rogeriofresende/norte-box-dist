@@ -2,10 +2,10 @@
 description: "Prova que o CONFERIDOR TEM DENTES: roda o mesmo checker contra um caso BOM (tem que passar) E contra um dado SABIDAMENTE ERRADO (tem que reprovar). O PAR passa-no-bom-E-reprova-no-ruim -> 🟢 PROVA FORTE (o selo confia no checker); aprovou o errado -> 🟡 RECUSA (checker frouxo); quebrou/travou no ruim -> 🟡 amarelo honesto (quebrou, não reprovou de propósito); só o ruim, sem caso bom -> 🟡 indício fraco (pode estar só quebrado). Moldura honesta: prova UM erro + aprova UM bom, não cobertura total. Local e privado."
 ---
 
-Você é o `/norte-box:provar-contra`. Seu trabalho é o **controle negativo da prova**: descobrir se o
+Você é o `/norte:provar-contra`. Seu trabalho é o **controle negativo da prova**: descobrir se o
 conferidor (checker) que a caixa vai confiar **tem dentes** — ou seja, se ele **sabe reprovar um erro**.
 
-Por quê isto existe: o motor `/norte-box:provar` confia no exit-code do checker (checker deu certo →
+Por quê isto existe: o motor `/norte:provar` confia no exit-code do checker (checker deu certo →
 🟢). Mas um checker **frouxo ou vazio** que sempre sai 0 aprova **qualquer coisa** — e ninguém percebe.
 Um verde desses é um verde que mente. Esta peça fecha o buraco: você roda o **mesmo checker** contra um
 dado **sabidamente errado** (um "erro plantado") e **exige** que ele **falhe**.
@@ -24,9 +24,9 @@ O que fazer:
 2. Rode a peça no shell (ela roda o checker no sandbox contido e captura o veredito):
 
    ```bash
-   # resolvedor robusto (mesmo padrao do /norte-box:provar): acha o nb-provar-contra em qualquer
+   # resolvedor robusto (mesmo padrao do /norte:provar): acha o nb-provar-contra em qualquer
    # instalacao, mesmo se $CLAUDE_PLUGIN_ROOT vier vazio ou o bin nao estiver no PATH.
-   BIN="$(command -v nb-provar-contra || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-provar-contra" ] && { printf '%s' "$d/nb-provar-contra"; break; }; done)"
+   BIN="$(command -v nb-provar-contra || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-provar-contra" ] && { printf '%s' "$d/nb-provar-contra"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 

@@ -1,6 +1,6 @@
 ---
 name: norte-projeto
-description: "O metodo Norte de projeto grande. Use quando o trabalho e maior que escrever uma funcao — um produto, sistema, feature multi-parte, ou o usuario disser 'projeto grande', 'construir do zero', 'me ajuda a planejar isso', '/norte-box:projeto'. Conduz brainstorm -> spec -> plano -> tarefas provadas por fato, orquestrando o superpowers por NOME e aplicando as 6 regras anti-perda. Degrada com aviso claro se o superpowers nao estiver instalado."
+description: "O metodo Norte de projeto grande. Use quando o trabalho e maior que escrever uma funcao — um produto, sistema, feature multi-parte, ou o usuario disser 'projeto grande', 'construir do zero', 'me ajuda a planejar isso', '/norte:projeto'. Conduz brainstorm -> spec -> plano -> tarefas provadas por fato, orquestrando o superpowers por NOME e aplicando as 6 regras anti-perda. Degrada com aviso claro se o superpowers nao estiver instalado."
 ---
 
 # Norte-projeto — o metodo de projeto grande (o coracao)
@@ -82,8 +82,8 @@ Correndo por cima das 4 fases (detalhe em `${CLAUDE_PLUGIN_ROOT}/docs/seis-regra
 3. **Spec antes de codar** — Fase 2 antes de qualquer codigo.
 4. **Provar cada passo por fato** — evidencia externa, nunca criterio interno de quem construiu.
 5. **Esqueleto vivo antes de conteudo** — o minimo que roda primeiro, riqueza depois.
-6. **Checkpoint/handoff a cada troca de sessao** — ao trocar de sessao, `/norte-box:continuar`
-   salva o handoff e `/norte-box:retomar` continua no mesmo lugar. Um `[x]` so vale com prova no disco.
+6. **Checkpoint/handoff a cada troca de sessao** — ao trocar de sessao, `/norte:continuar`
+   salva o handoff e `/norte:retomar` continua no mesmo lugar. Um `[x]` so vale com prova no disco.
 
 ## Estado que grava
 
@@ -93,7 +93,7 @@ que a execucao produzir. **Nunca** grave no diretorio do plugin. Nunca escreva f
 
 ## Prova (o que "pronto" significa aqui)
 
-Num repo-brinquedo, `/norte-box:projeto "conversor de CSV"` produz no disco: uma spec
+Num repo-brinquedo, `/norte:projeto "conversor de CSV"` produz no disco: uma spec
 (`./norte-out/SPEC.md`) + um plano em passos (`./norte-out/PLANO.md`) + **1 tarefa
 verificada** (com a saida do teste dela colada). Verificavel por `ls ./norte-out/` e
 abrindo os arquivos.

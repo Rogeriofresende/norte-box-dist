@@ -56,7 +56,7 @@ _objetivo="$(printf '%s' "$_objetivo" | tr '\n\r\t' '   ' | sed 's/^[[:space:]]*
 [ -n "$_objetivo" ] || exit 0
 
 # entregou/proximo: a gravacao automatica nao sabe RESUMIR o que foi feito (bash nao le a intencao).
-# Deixamos vazios aqui — a skill /norte-box:continuar (que pede o resumo ao modelo) e o lugar certo
+# Deixamos vazios aqui — a skill /norte:continuar (que pede o resumo ao modelo) e o lugar certo
 # pra enriquecer isso depois. O importante do 1.1 (nunca ficar no branco) ja e coberto pelo objetivo.
 NB_SIT_OBJETIVO="$_objetivo" NB_SIT_ENTREGOU="" NB_SIT_PROXIMO="" _norte_situacao_gravar || exit 0
 

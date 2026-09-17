@@ -1,6 +1,6 @@
 ---
 name: vitrine
-description: Transforma uma entrega em markdown num unico arquivo .html auto-contido (CSS inline, zero rede) em ./norte-out/ e abre no navegador (open no macOS, xdg-open no Linux, start no Windows/Git Bash) — a VITRINE, o lugar onde voce VE a entrega. Use quando o usuario pede "vitrine", "mostra na vitrine", "gera a resposta em HTML", "manda como pagina local", "quero ver a entrega num arquivo", ou os comandos /norte-box:vitrine ou /norte-box:resposta (apelido retrocompat). Slug ASCII sempre (acento/espaco no nome quebra a abertura). Nao usa servidor, nao busca nada da rede.
+description: Transforma uma entrega em markdown num unico arquivo .html auto-contido (CSS inline, zero rede) em ./norte-out/ e abre no navegador (open no macOS, xdg-open no Linux, start no Windows/Git Bash) — a VITRINE, o lugar onde voce VE a entrega. Use quando o usuario pede "vitrine", "mostra na vitrine", "gera a resposta em HTML", "manda como pagina local", "quero ver a entrega num arquivo", ou os comandos /norte:vitrine ou /norte:resposta (apelido retrocompat). Slug ASCII sempre (acento/espaco no nome quebra a abertura). Nao usa servidor, nao busca nada da rede.
 ---
 
 # vitrine — a entrega como HTML local, sem servidor

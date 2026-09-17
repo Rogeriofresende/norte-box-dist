@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # _agentes-nomes.sh — helper COMPARTILHADO: resolve o nome de exibicao de cada agente do time.
-# Reusado pela auto-apresentacao (SessionStart) e pelo comando de rename (/norte-box:time).
+# Reusado pela auto-apresentacao (SessionStart) e pelo comando de rename (/norte:time).
 #
 # Fonte da verdade dos NOMES novos: $HOME/.norte-box/agentes-nomes.json = { "<id>": "<nome novo>" }.
 # Se o arquivo nao existe / jq ausente / id nao tem override -> cai no nome padrao (curado).

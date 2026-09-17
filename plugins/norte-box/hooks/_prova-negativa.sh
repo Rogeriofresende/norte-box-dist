@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # _prova-negativa.sh — PROVA QUE REPROVA (negative control da prova) do Norte-box (NRT-_990429).
-# Sourceado pelo helper bin/nb-provar-contra e pelo comando /norte-box:provar-contra.
+# Sourceado pelo helper bin/nb-provar-contra e pelo comando /norte:provar-contra.
 #
 # O BURACO QUE ESTA PECA FECHA: o motor _provar.sh / _norte_provar_planilha CONFIA no exit-code do
 # conferidor (checker): checker exit 0 = "provou" (verde). O proprio _provar.sh:214 grifa "A ARMADILHA

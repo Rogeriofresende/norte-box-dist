@@ -2,7 +2,7 @@
 # norte-login.sh - login pelo Google via DEVICE FLOW (igual "gh auth login").
 #
 # NAO e um hook registrado (nao esta no hooks.json): mora em hooks/ so por causa
-# da allowlist de *.sh. E o script do comando /norte-box:login.
+# da allowlist de *.sh. E o script do comando /norte:login.
 #
 # O QUE FAZ (device flow de "installed app", OAuth 2.0 Google):
 #   1. POST https://oauth2.googleapis.com/device/code (scope: openid email)
@@ -181,7 +181,7 @@ while [ "$_elapsed" -lt "$_expires" ]; do
     authorization_pending) continue ;;                 # ainda nao autorizou
     slow_down) _interval=$(( _interval + 5 )); continue ;;  # o Google pediu pra ir mais devagar
     access_denied)  echo "(login) autorizacao negada no navegador. Nada foi gravado."; exit 0 ;;
-    expired_token)  echo "(login) o codigo expirou antes de autorizar. Rode /norte-box:login de novo."; exit 0 ;;
+    expired_token)  echo "(login) o codigo expirou antes de autorizar. Rode /norte:login de novo."; exit 0 ;;
     '' ) : ;;                                           # sem erro -> provavel sucesso
     * )  echo "(login) o Google retornou: ${_tk_err}. Nada foi gravado."; exit 0 ;;
   esac
@@ -193,7 +193,7 @@ while [ "$_elapsed" -lt "$_expires" ]; do
 done
 
 if [ -z "$_id_token" ]; then
-  echo "(login) tempo esgotado sem autorizacao. Rode /norte-box:login de novo quando quiser. Nada travou."
+  echo "(login) tempo esgotado sem autorizacao. Rode /norte:login de novo quando quiser. Nada travou."
   exit 0
 fi
 

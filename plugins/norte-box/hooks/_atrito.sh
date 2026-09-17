@@ -4,7 +4,7 @@
 # pelos gates (secret-guard/consent-gate/confirmar-antes) pra deixar o breadcrumb de trava.
 #
 # O QUE O PACOTE CAPTURA (so rotulos + bits, ZERO conteudo — mesmo Modelo A do medidor):
-#   - cmd:   o VERBO de um /norte-box:<verbo> por ALLOWLIST FECHADA. Args descartados. Fora da
+#   - cmd:   o VERBO de um /norte:<verbo> por ALLOWLIST FECHADA. Args descartados. Fora da
 #            allowlist -> NADA (nunca o texto livre da pessoa).
 #   - trava: o ROTULO do gate que barrou (secret-guard/consent-gate/confirmar-antes) por
 #            allowlist fechada. Nunca a mensagem do gate.
@@ -20,20 +20,20 @@ _NB_ATRITO_CMD_ALLOW=" compartilhar consent convite doctor login modo projeto re
 _NB_ATRITO_GATE_ALLOW=" secret-guard consent-gate confirmar-antes "
 
 # _atrito_cmd_da_allowlist <prompt-cru>
-#   Ecoa SO o verbo se o prompt COMECA com "/norte-box:<verbo>" E <verbo> esta na allowlist.
+#   Ecoa SO o verbo se o prompt COMECA com "/norte:<verbo>" E <verbo> esta na allowlist.
 #   Senao ecoa vazio. NUNCA ecoa args nem texto livre. Trim de espaco inicial primeiro.
 _atrito_cmd_da_allowlist() {
   local _p="$1" _first _verb
-  # trim do inicio (a pessoa pode digitar " /norte-box:...")
+  # trim do inicio (a pessoa pode digitar " /norte:...")
   _p="${_p#"${_p%%[![:space:]]*}"}"
-  # tem que comecar EXATAMENTE com /norte-box:
+  # tem que comecar EXATAMENTE com /norte:
   case "$_p" in
-    /norte-box:*) : ;;
+    /norte:*) : ;;
     *) printf ''; return 0 ;;
   esac
-  # 1o token (ate o 1o espaco/tab/nova-linha) = "/norte-box:<verbo>"; corta os args fora
+  # 1o token (ate o 1o espaco/tab/nova-linha) = "/norte:<verbo>"; corta os args fora
   _first="${_p%%[[:space:]]*}"
-  _verb="${_first#/norte-box:}"
+  _verb="${_first#/norte:}"
   # o verbo pode vir com args colados por argumento posicional? nao: paramos no espaco acima.
   # sanidade: verbo so pode ser [a-z-] (senao descarta). Corta qualquer sujeira apos.
   case "$_verb" in

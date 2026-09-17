@@ -72,7 +72,7 @@ _pediu="$(printf '%s' "$_pediu" | tr '\n\r\t' '   ' | sed 's/^[[:space:]]*//;s/[
 [ -n "$_pediu" ] || exit 0
 
 # "o que fiz" e "decisao": a gravacao automatica nao sabe RESUMIR o trabalho (bash nao le intencao).
-# Ficam vazios aqui — a linha ja e util com pedido + selo + data. A skill /norte-box:continuar (que
+# Ficam vazios aqui — a linha ja e util com pedido + selo + data. A skill /norte:continuar (que
 # pede o resumo ao modelo) e o lugar de enriquecer isso depois, se quisermos.
 NB_DIA_PEDIU="$_pediu" NB_DIA_FIZ="" NB_DIA_DECISAO="" NB_DIA_SESSAO="$_sessao" _norte_diario_anexar || exit 0
 exit 0

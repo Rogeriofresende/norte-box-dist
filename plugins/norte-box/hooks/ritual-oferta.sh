@@ -49,7 +49,7 @@ command -v _nb_atalho_reivindica_oferta >/dev/null 2>&1 || exit 0
 # imprime e NAO trava a abertura da sessao (falha pro SILENCIO; oferta na proxima abertura).
 if [ "$(_nb_atalho_reivindica_oferta 20 2>/dev/null || printf '0')" = "1" ]; then
   # 1 linha discreta. Texto FIXO — nenhum path/comando/conteudo do trabalho.
-  printf '%s\n' "💡 Norte-box · Voce ja fechou o ritual mandato→PR 3× — quer transformar num atalho? Rode: /norte-box:ritual atalho mandato_pr_v1  (ou dispense: /norte-box:ritual atalho-nao mandato_pr_v1)"
+  printf '%s\n' "💡 Norte-box · Voce ja fechou o ritual mandato→PR 3× — quer transformar num atalho? Rode: /norte:ritual atalho mandato_pr_v1  (ou dispense: /norte:ritual atalho-nao mandato_pr_v1)"
 fi
 
 exit 0

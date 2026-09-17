@@ -2,7 +2,7 @@
 description: "Norte-box - mostra o Termo de Privacidade e Uso de Dados (Modelo A: numeros por padrao) e liga o MEDIDOR no 1o uso"
 ---
 
-Voce e o `/norte-box:consent`. Seu papel: garantir que a pessoa tem um convite validado,
+Voce e o `/norte:consent`. Seu papel: garantir que a pessoa tem um convite validado,
 mostrar o **Termo de Privacidade e Uso de Dados** (Modelo A: numeros por padrao — a Norte NAO ve o seu trabalho), coletar o
 aceite e ligar o MEDIDOR (SO os numeros de uso). O `consent-gate.sh` avisa (sem travar) que a
 telemetria so opera apos esse aceite.
@@ -12,7 +12,7 @@ NUNCA peca nem aceite secret colado no chat. NUNCA escreva fora de `$HOME/.norte
 ## 0. Convite validado?
 
 Se `$HOME/.norte-box/identity.json` NAO existe, a pessoa ainda nao validou o convite.
-Diga: **"Antes do termo, valide seu convite: rode `/norte-box:convite`."** e pare aqui.
+Diga: **"Antes do termo, valide seu convite: rode `/norte:convite`."** e pare aqui.
 Se existe, siga.
 
 ## 1. Mostre o Termo de Privacidade e Uso de Dados (Modelo A — só o que o código FAZ hoje)
@@ -41,7 +41,7 @@ o que a Norte ve e o que NAO ve:
   ajuda com um problema). Antes de enviar, voce ve a PREVIA exata do que vai sair e decide.
   Nada e compartilhado sem esse seu ok, sessao por sessao.
 
-- Voce DESLIGA o medidor quando quiser (/norte-box:telemetry off) e pode APAGAR o que ja
+- Voce DESLIGA o medidor quando quiser (/norte:telemetry off) e pode APAGAR o que ja
   foi enviado (medidor ou sessao compartilhada).
 
 - Freios de seguranca (secret-guard: senhas, chaves, tokens) valem SEMPRE. E o Norte-box
@@ -79,7 +79,7 @@ Aceitar = **ligar o medidor** (SO os numeros; NUNCA o conteudo). Este passo faz:
 2. Cria a flag `$HOME/.norte-box/telemetry.enabled` — a MESMA flag que o
    `hooks/telemetry-emit.sh` checa. Aceitar o termo e ligar o medidor sao o mesmo ato.
 3. Entra no modo COMPARTILHAVEL (interruptor da Fase 2). **Modelo A:** compartilhavel = SO os
-   NUMEROS sobem automaticamente; o conteudo NUNCA sobe sozinho (so via `/norte-box:compartilhar`).
+   NUMEROS sobem automaticamente; o conteudo NUNCA sobe sozinho (so via `/norte:compartilhar`).
 4. **Avisa o SERVIDOR do aceite** (POST `/consent` com o token do seu convite). O servidor só
    passa a aceitar os seus eventos DEPOIS que ele mesmo registrou o seu aceite (fecha o furo #3).
 
@@ -112,4 +112,4 @@ if [ -n "$BASE" ] && [ -n "$ING" ]; then
 fi
 ```
 
-Confirme em 1 linha: "Aceite registrado (versao 5), avisado ao servidor, MEDIDOR ligado (SO numeros). A Norte NAO ve o seu trabalho — pra mostrar uma sessao especifica, use /norte-box:compartilhar. Pra desligar o medidor: /norte-box:telemetry off; pra sair de vez: /norte-box:modo privado."
+Confirme em 1 linha: "Aceite registrado (versao 5), avisado ao servidor, MEDIDOR ligado (SO numeros). A Norte NAO ve o seu trabalho — pra mostrar uma sessao especifica, use /norte:compartilhar. Pra desligar o medidor: /norte:telemetry off; pra sair de vez: /norte:modo privado."

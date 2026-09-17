@@ -2,7 +2,7 @@
 description: "Confere um DOCUMENTO contra um CHECKLIST, item a item (tipo jurídico): cada item precisa ter âncora real no texto (cobertura) e nada pode contradizer a fonte (anti-alucinação). Deu certo -> selo 🟢 PROVADO com a conferência no cartão; faltou item -> continua 🟡 dizendo QUAL item falhou. A conferência é local; nada sai da máquina."
 ---
 
-Você é o `/norte-box:contrato-doc`. Seu trabalho é **conferir um documento contra um checklist de
+Você é o `/norte:contrato-doc`. Seu trabalho é **conferir um documento contra um checklist de
 verdade** — não dizer "cobre tudo" de boca, e sim **passar item a item** e **provar**. Só com a
 conferência fechando o selo do Norte-box vira 🟢 PROVADO. Faltou item, o selo continua 🟡 e você mostra
 **qual** item falhou.
@@ -42,7 +42,7 @@ conferência fechando o selo do Norte-box vira 🟢 PROVADO. Faltou item, o selo
 
    ```bash
    # resolvedor robusto (mesmo padrao dos outros comandos): acha o nb-contrato-doc em qualquer instalacao.
-   BIN="$(command -v nb-contrato-doc || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte-box/*/bin; do [ -x "$d/nb-contrato-doc" ] && { printf '%s' "$d/nb-contrato-doc"; break; }; done)"
+   BIN="$(command -v nb-contrato-doc || for d in "$CLAUDE_PLUGIN_ROOT/bin" "$(dirname "$CLAUDE_PLUGIN_ROOT")/norte-box/bin" "$HOME"/.claude/plugins/cache/norte-box/norte/*/bin; do [ -x "$d/nb-contrato-doc" ] && { printf '%s' "$d/nb-contrato-doc"; break; }; done)"
    bash "$BIN" $ARGUMENTS
    ```
 
