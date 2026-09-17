@@ -13,7 +13,8 @@
 # O QUE ESTA PECA FAZ: recebe o TEXTO do bilhete (rascunho) e, pra CADA linha "- [x] ..." da secao
 # "## Onde estamos", EXTRAI a referencia de artefato citada e CONFERE no disco (no cwd do projeto):
 #   - CAMINHO DE ARQUIVO (token com "/" ou terminando em .py/.js/.ts/.sh/.md/.json/.html/.csv/.txt/...):
-#     `test -e` no cwd. Existe -> mantem [x] + "✓ conferido: existe". Nao existe -> REBAIXA pra
+#     Existe com conteudo -> mantem [x] + "✓ conferido: existe". Vazio/stub -> [ ] 🟡.
+#     Nao existe -> REBAIXA pra
 #     "- [ ] ⚠ nao achei no disco: <ref>" ANTES de gravar (o NUCLEO da peca — mata o "soma.py" fabricado).
 #   - COMMIT (hex de 7..40, ou "commit <sha>"): `git cat-file -e <sha>^{commit}` no repo do cwd.
 #     Existe -> mantem [x] + "✓ conferido". Nao existe -> REBAIXA (mata o "PR #42" com sha inventado).
@@ -21,10 +22,12 @@
 #     NAO rebaixa o que nao da pra checar, mas TAMBEM nao abencoa). Honesto.
 #   - [x] SEM nenhum artefato conferivel (vago, "implementei a logica") -> MANTEM a linha mas ANEXA
 #     "(sem prova no disco pra conferir)". Honesto: nao pune, nao abencoa.
+#   - Alegacao de teste/build sem alvo checavel -> [ ] 🟡 diz que passa — nao conferi.
+#     NUNCA roda o comando citado no texto.
 #
 # MOLDURA HONESTA (licao das pecas anteriores — NAO overclaim): esta peca so atesta que "o arquivo/
 # commit CITADO existe E o bilhete o cita". NAO atesta que o trabalho foi feito CERTO — um artefato
-# real mas IRRELEVANTE passa (existe soma.py, mas soma.py pode estar vazio/errado). A copy diz so isso.
+# real mas IRRELEVANTE passa; vazio/stub obvio e sinalizado, mas conteudo errado nao e detectado.
 # O selo mata a MENTIRA OBVIA (citou algo que nem existe), nao mede corretude.
 #
 # LEIS (nao-negociaveis):
@@ -33,7 +36,7 @@
 #   - FAIL-HONEST (fail-CLOSED da confianca): so mantem [x] quando o artefato citado EXISTE de fato.
 #     Na duvida do que da pra checar, marca 🟡 nao-verificavel (nem rebaixa nem abencoa).
 #   - FAIL-OPEN da sessao: se ESTA peca quebra (sem git, erro de parse, sem os utilitarios), NAO trava
-#     o /continuar — devolve o rascunho anotado como nao-verificavel e segue. A peca nunca prende o bilhete.
+#     o /continuar — devolve o rascunho INTACTO e segue. A peca nunca prende o bilhete.
 #   - DADO E DADO, NUNCA COMANDO: a referencia extraida vira ARGUMENTO de `test -e` / `git cat-file -e`.
 #     Um payload de shell / path traversal DENTRO da ref NUNCA e executado. `set -u`, sem eval, sem
 #     expandir a ref como comando. Path traversal que ESCAPA o projeto (../.. , caminho absoluto fora
@@ -94,7 +97,7 @@ _nbs_e_commit() {
   [ "$_n" -ge 7 ] && [ "$_n" -le 40 ]
 }
 
-# _nbs_confere_uma <tipo> <valor> — confere UMA ref no disco. Ecoa "ok" | "nao" | "naover".
+# _nbs_confere_uma <tipo> <valor> — ecoa "ok" | "nao" | "stub" | "naover".
 #   path   -> test -e no cwd (traversal fora do projeto -> naover, nunca ok).
 #   commit -> git cat-file -e <sha>^{commit} (sem git -> naover).
 # So le o disco. DADO E DADO: <valor> e argumento de test -e / git cat-file, NUNCA comando.
@@ -103,7 +106,22 @@ _nbs_confere_uma() {
   case "$_tipo" in
     path)
       if _nbs_e_traversal "$_val"; then printf 'naover\n'; return 0; fi
-      if [ -e "./$_val" ] || [ -e "$_val" ]; then printf 'ok\n'; else printf 'nao\n'; fi
+      if [ ! -e "./$_val" ]; then printf 'nao\n'; return 0; fi
+      # Nunca leia links ou arquivos especiais (FIFO poderia prender o /continuar).
+      if [ -L "./$_val" ]; then printf 'naover\n'; return 0; fi
+      if [ -f "./$_val" ]; then
+        # Le como DADO, sem source/eval/exec. So marcadores isolados (ou branco)
+        # sao stubs; TODO em codigo real nao basta para rebaixar.
+        awk '
+          { gsub(/^[[:space:]]+|[[:space:]]+$/, "") }
+          $0 != "" && $0 != "TODO" && $0 != "pass" && $0 != "..." { real=1; exit }
+          END { print real ? "ok" : "stub" }
+        ' "./$_val" || return 1
+      elif [ -d "./$_val" ]; then
+        printf 'ok\n'
+      else
+        printf 'naover\n'
+      fi
       ;;
     commit)
       if _nbs_repo_ok; then
@@ -123,7 +141,9 @@ _nbs_confere_uma() {
 #   nao    -> ALGUM artefato conferivel (caminho/commit) foi CITADO e NAO existe no disco. GANHA de
 #             tudo: um PR nao-verificavel na MESMA linha NAO resgata um arquivo/commit fabricado.
 #             (ref_visivel = o primeiro que faltou.) -> a skill REBAIXA a linha.
+#   stub   -> algum arquivo e vazio/stub; vence ok, mas nao vence ausente.
 #   ok     -> tem PELO MENOS UM conferivel e TODOS os conferiveis existem. -> mantem [x] "✓ conferido".
+#   teste  -> alega teste/build sem alvo checavel; nunca executa o texto.
 #   naover -> nao ha nenhum conferivel, mas ha ref que nao da pra checar local (PR, traversal, sem git).
 #             -> mantem [x] "🟡 nao-verificavel".
 #   vago   -> nenhuma ref (nem conferivel, nem PR). -> mantem [x] "(sem prova no disco pra conferir)".
@@ -131,11 +151,13 @@ _nbs_confere_uma() {
 _nbs_avaliar_linha() {
   local _corpo="${1:-}"
   local _prev="" _w _clean _r
-  local _falta_ref="" _tem_ok=0 _tem_naover=0
+  local _falta_ref="" _stub_ref="" _tem_ok=0 _tem_naover=0 _tokens _alega
   # normaliza separadores comuns em espaco pra tokenizar. set -f desliga glob (o "*" do dado nao expande).
+  _tokens="$(printf '%s' "$_corpo" | tr ',();:[]"'"'"'`<>' '           ')" || return 1
+  _alega="$(printf '%s' "$_tokens" | tr '[:upper:]' '[:lower:]' | tr '.!?[:space:]' ' ' | tr -s ' ')" || return 1
   set -f
   # shellcheck disable=SC2086
-  set -- $(printf '%s' "$_corpo" | tr ',();:[]"'"'"'`<>' '           ')
+  set -- $_tokens
   set +f
 
   for _w in "$@"; do
@@ -143,9 +165,9 @@ _nbs_avaliar_linha() {
     # (a) commit rotulado: "commit <sha>" | "sha <sha>".
     case "$_prev" in
       commit|Commit|COMMIT|sha|SHA|Sha)
-        _clean="$(printf '%s' "$_w" | tr -d '#')"
+        _clean="$(printf '%s' "$_w" | tr -d '#')" || return 1
         if _nbs_e_commit "$_clean"; then
-          _r="$(_nbs_confere_uma commit "$_clean")"
+          _r="$(_nbs_confere_uma commit "$_clean")" || return 1
           case "$_r" in
             ok) _tem_ok=1 ;;
             nao) [ -z "$_falta_ref" ] && _falta_ref="$_clean" ;;
@@ -161,10 +183,11 @@ _nbs_avaliar_linha() {
     esac
     # (c) token que parece caminho de arquivo.
     if _nbs_parece_caminho "$_w"; then
-      _r="$(_nbs_confere_uma path "$_w")"
+      _r="$(_nbs_confere_uma path "$_w")" || return 1
       case "$_r" in
         ok) _tem_ok=1 ;;
         nao) [ -z "$_falta_ref" ] && _falta_ref="$_w" ;;
+        stub) [ -z "$_stub_ref" ] && _stub_ref="$_w" ;;
         naover) _tem_naover=1 ;;
       esac
       _prev="$_w"; continue
@@ -172,7 +195,7 @@ _nbs_avaliar_linha() {
     # (d) sha solto (7..40 hex) — so conta como commit se NAO parece uma palavra comum. Ja cobrimos
     # o rotulado em (a); aqui pega "entregue em a1b2c3d4e5" sem rotulo. Exige repo pra virar conferivel.
     if _nbs_e_commit "$_w"; then
-      _r="$(_nbs_confere_uma commit "$_w")"
+      _r="$(_nbs_confere_uma commit "$_w")" || return 1
       case "$_r" in
         ok) _tem_ok=1 ;;
         nao) [ -z "$_falta_ref" ] && _falta_ref="$_w" ;;
@@ -184,7 +207,12 @@ _nbs_avaliar_linha() {
 
   # O PIOR HONESTO VENCE.
   if [ -n "$_falta_ref" ]; then printf 'nao|%s\n' "$_falta_ref"; return 0; fi
+  if [ -n "$_stub_ref" ]; then printf 'stub|%s\n' "$_stub_ref"; return 0; fi
   if [ "$_tem_ok" -eq 1 ]; then printf 'ok|\n'; return 0; fi
+  case " $_alega " in
+    *" teste passa "*|*" testes passam "*|*" pytest "*|*" npm test "*|*" build ok "*)
+      printf 'teste|\n'; return 0 ;;
+  esac
   if [ "$_tem_naover" -eq 1 ]; then printf 'naover|\n'; return 0; fi
   printf 'vago|\n'
   return 0
@@ -215,6 +243,8 @@ _nbs_despir_nota() {
   # (nao) rebaixamento REAL da peca: o passo original esta apos a ULTIMA " — era: ".
   case "$_r" in
     "⚠ nao achei no disco: "*" — era: "*) printf '%s' "${_r##* — era: }"; return 0 ;;
+    "🟡 existe mas parece vazio/stub: "*" — era: "*) printf '%s' "${_r#* — era: }"; return 0 ;;
+    "🟡 diz que passa — não conferi (sem alvo checável) — era: "*) printf '%s' "${_r#* — era: }"; return 0 ;;
   esac
   # (ok)
   case "$_r" in
@@ -242,7 +272,7 @@ _nbs_despir_nota() {
 #     nas "- [ ] ⚠ nao achei no disco: ..." que a PROPRIA peca ja rebaixou (pra re-avaliar: se o
 #     arquivo passou a existir, PROMOVE de volta pra [x] ✓).
 #   - fora da secao, ou linhas que nao sao esses dois tipos, passam INTACTAS.
-#   - fail-open: qualquer erro inesperado -> devolve o que der; nunca trava (o /continuar precisa gravar).
+#   - fail-open: analise isolada; so publica a saida completa se nao houver erro.
 #   - A NOTA E FUNCAO PURA DO DISCO, NUNCA DO TEXTO: pra cada linha, DESPE a nota que a peca teria
 #     escrito (recupera o passo original), RE-AVALIA o original pelo disco e reescreve a nota CORRETA
 #     por cima. Isso MATA o furo do "✓ conferido" escrito a mao num arquivo inexistente (o relato
@@ -256,8 +286,33 @@ _norte_bilhete_selar() {
     return 0
   fi
 
-  local _in
-  _in="$(cat 2>/dev/null)" || { printf '%s' ""; return 0; }
+  # read builtin preserva inclusive as quebras finais do rascunho (sem command substitution).
+  local _in="" _out _rc
+  IFS= read -r -d '' _in || :
+  _out="$(
+    ( set -o pipefail; _nbs_processar "$_in" )
+    _rc=$?
+    printf '.'
+    exit "$_rc"
+  )"
+  _rc=$?
+  if [ "$_rc" -eq 0 ]; then
+    _out="${_out%.}"
+    # O processador emite uma quebra por linha; respeita a ultima linha sem quebra.
+    case "$_in" in
+      *$'\n') ;;
+      *) _out="${_out%$'\n'}" ;;
+    esac
+    printf '%s' "$_out"
+  else
+    printf '%s' "$_in"
+    printf '🟡 erro no selo do bilhete: devolvendo o rascunho intacto.\n' >&2
+  fi
+  return 0
+}
+
+_nbs_processar() {
+  local _in="$1"
 
   local _n_ok=0 _n_nao=0 _n_naover=0 _n_vago=0
   local _dentro=0
@@ -292,6 +347,14 @@ _norte_bilhete_selar() {
         _pre="${_linha%%] *}] "
         _resto="${_linha#*] }"
         ;;
+      "- [ ] 🟡 "*" — era: "*|"-[ ] 🟡 "*" — era: "*|"  - [ ] 🟡 "*" — era: "*)
+        _pre="${_linha%%] *}] "
+        _resto="${_linha#*] }"
+        case "$_resto" in
+          "🟡 existe mas parece vazio/stub: "*|"🟡 diz que passa — não conferi (sem alvo checável) — era: "*) ;;
+          *) printf '%s\n' "$_linha"; continue ;;
+        esac
+        ;;
       *)
         printf '%s\n' "$_linha"; continue ;;
     esac
@@ -303,10 +366,10 @@ _norte_bilhete_selar() {
     #      nao o "[x]"/"[ ]" que estava escrito). Um "✓" a mao num arquivo inexistente vira rebaixado;
     #      um rebaixamento mentiroso num arquivo que existe volta pra ✓. Idempotencia = NATURAL.
     local _orig _prelimpo _pren
-    _orig="$(_nbs_despir_nota "$_resto")"
-    _prelimpo="$(printf '%s' "$_pre" | sed 's/\[[ xX]\]/[x]/')"
+    _orig="$(_nbs_despir_nota "$_resto")" || return 1
+    _prelimpo="$(printf '%s' "$_pre" | sed 's/\[[ xX]\]/[x]/')" || return 1
 
-    _vered="$(_nbs_avaliar_linha "$_orig")"
+    _vered="$(_nbs_avaliar_linha "$_orig")" || return 1
     _estado="${_vered%%|*}"
     _refvis="${_vered#*|}"
 
@@ -317,9 +380,17 @@ _norte_bilhete_selar() {
       nao)
         # O NUCLEO DA PECA: citou artefato que NAO existe no disco -> REBAIXA pra [ ] ⚠ ANTES de gravar.
         # troca "[x]" por "[ ]" no prefixo normalizado, preservando indentacao/traco.
-        _pren="$(printf '%s' "$_prelimpo" | sed 's/\[[xX]\]/[ ]/')"
+        _pren="$(printf '%s' "$_prelimpo" | sed 's/\[[xX]\]/[ ]/')" || return 1
         printf -- '%s⚠ nao achei no disco: %s (o bilhete marcava feito, mas o disco nao mostra) — era: %s\n' "$_pren" "$_refvis" "$_orig"
         _n_nao=$((_n_nao+1)) ;;
+      stub|teste)
+        _pren="$(printf '%s' "$_prelimpo" | sed 's/\[[xX]\]/[ ]/')" || return 1
+        if [ "$_estado" = stub ]; then
+          printf '%s🟡 existe mas parece vazio/stub: %s — era: %s\n' "$_pren" "$_refvis" "$_orig"
+        else
+          printf '%s🟡 diz que passa — não conferi (sem alvo checável) — era: %s\n' "$_pren" "$_orig"
+        fi
+        _n_naover=$((_n_naover+1)) ;;
       naover)
         printf -- '%s%s — 🟡 nao-verificavel (nao da pra conferir aqui)\n' "$_prelimpo" "$_orig"
         _n_naover=$((_n_naover+1)) ;;
@@ -327,9 +398,7 @@ _norte_bilhete_selar() {
         printf -- '%s%s (sem prova no disco pra conferir)\n' "$_prelimpo" "$_orig"
         _n_vago=$((_n_vago+1)) ;;
     esac
-  done <<EOF
-$_in
-EOF
+  done < <(printf '%s' "$_in")
 
   printf 'selo do bilhete: %s conferidas ✓, %s rebaixadas ⚠, %s nao-verificaveis 🟡, %s sem prova.\n' \
     "$_n_ok" "$_n_nao" "$_n_naover" "$_n_vago" >&2

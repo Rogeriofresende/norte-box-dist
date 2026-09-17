@@ -21,7 +21,8 @@
 #
 # MOLDURA HONESTA (nao overclaim): "✓ conferido" = "o arquivo/commit CITADO existe E o bilhete o cita",
 # NAO "o trabalho foi feito certo". Um artefato real mas irrelevante passa. O selo mata a mentira obvia
-# (citou algo que nem existe), nao mede corretude.
+# (citou algo que nem existe), sinaliza vazio/stub e teste sem alvo, nao mede corretude.
+# Conteudo e lido como dado: NUNCA executa teste/comando citado no bilhete.
 #
 # LEIS: LOCAL/zero rede (o bilhete e do proprio projeto do usuario e nunca sai da maquina) · fail-honest
 # (so mantem [x] com artefato existente) · fail-open da sessao (peca quebrada nao trava o /continuar) ·

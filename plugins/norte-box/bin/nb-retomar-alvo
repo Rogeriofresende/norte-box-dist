@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# nb-retomar-alvo <dir-base> [janela_segundos] — decide QUAL bilhete retomar, sem chutar.
+#
+# Fecha o furo do ULTIMO.md COMPARTILHADO (NRT-_991398, teste 16/09): quando 2+ sessões salvam na
+# MESMA pasta, o ULTIMO.md aponta pro que salvou por ÚLTIMO — então a retomada pega a sessão ERRADA
+# (os arquivos sobrevivem, mas você cai na conversa errada). Aqui: se houver 2+ ASSUNTOS diferentes
+# salvos recentemente, NÃO devolve cego o último — devolve AMBIGUO + a lista, pra a skill PERGUNTAR.
+# Um assunto só (mesmo salvo várias vezes) NÃO é ambíguo — retoma o mais novo, sem encher o saco.
+#
+# Uso:   nb-retomar-alvo "$DIR" [janela_seg]     # $DIR = saída do nb-resolve-outdir; janela padrão 6h
+# Saída (contrato):
+#   VAZIO                                         -> nenhum bilhete (cai na pré-condição da skill)
+#   ALVO <path>                                   -> um assunto recente só; retome esse
+#   AMBIGUO                                        -> 2+ assuntos recentes; a skill LISTA e pergunta:
+#   CANDIDATO<TAB><path><TAB><slug><TAB><data>       (uma linha por assunto recente, mais novo primeiro)
+# LOCAL, sem rede. Fail-open: sem python3, devolve ALVO do mais novo por mtime (nunca trava a retomada).
+set -u
+DIR="${1:?uso: nb-retomar-alvo <dir-base> [janela_seg]}"
+JAN="${2:-21600}"   # 6h
+HDIR="$DIR/handoffs"
+
+if command -v python3 >/dev/null 2>&1; then
+python3 - "$HDIR" "$JAN" <<'PY'
+import os, sys, re, time
+hdir, jan = sys.argv[1], int(sys.argv[2])
+if not os.path.isdir(hdir):
+    print("VAZIO"); sys.exit(0)
+files = []
+for f in os.listdir(hdir):
+    if not f.endswith(".md") or f.startswith("ULTIMO"):
+        continue
+    p = os.path.join(hdir, f)
+    try:
+        files.append((os.path.getmtime(p), p, f))
+    except OSError:
+        continue
+if not files:
+    print("VAZIO"); sys.exit(0)
+files.sort(reverse=True)
+
+def slug_of(name):
+    base = name[:-3] if name.endswith(".md") else name
+    return re.sub(r"-\d{8}-\d{4,6}(-\d+)?$", "", base) or base
+
+now = time.time()
+ref = max(now, files[0][0])
+recent = [(m, p, f) for (m, p, f) in files if ref - m <= jan]
+por_slug = {}
+for m, p, f in recent:
+    s = slug_of(f)
+    if s not in por_slug or m > por_slug[s][0]:
+        por_slug[s] = (m, p, f)
+
+if len(por_slug) <= 1:
+    alvo = recent[0][1] if recent else files[0][1]
+    print("ALVO " + alvo)
+else:
+    print("AMBIGUO")
+    for s, (m, p, f) in sorted(por_slug.items(), key=lambda x: -x[1][0]):
+        print("CANDIDATO\t%s\t%s\t%s" % (p, s, time.strftime("%Y-%m-%d %H:%M", time.localtime(m))))
+PY
+else
+  # fail-open sem python3: devolve o .md mais novo por mtime (modo antigo), nunca trava
+  newest="$(ls -t "$HDIR"/*.md 2>/dev/null | grep -v '/ULTIMO' | head -1)"
+  if [ -n "$newest" ]; then printf 'ALVO %s\n' "$newest"; else printf 'VAZIO\n'; fi
+fi

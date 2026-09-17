@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# nb-resolve-outdir — a REGRA ÚNICA de "onde a norte-box salva/lê o bilhete" (NRT-_991398, Fase 2 costura).
+#
+# Uma fonte só pra continuar + retomar + abre-sozinho (antes cada um cravava ./norte-out na mão).
+# É o que destrava o "fora de projeto" (furo achado pelo conselho): fora de um repo, cai no global
+# e nunca fica sem onde gravar — cobrindo o que o /continuar do assento fazia.
+#
+# Ordem (regra 3 do contrato):
+#   1) $NORTE_OUT_DIR setado            -> usa ele (override explícito)
+#   2) cwd é repo git OU já tem ./norte-out -> ./norte-out (a memória viaja com o projeto; melhor)
+#   3) senão (cwd solto)                -> ~/.norte-out (fallback global)
+#
+# Imprime só o caminho do DIR-base (sem /handoffs). Fail-open: em dúvida, ~/.norte-out.
+if [ -n "${NORTE_OUT_DIR:-}" ]; then
+  printf '%s\n' "$NORTE_OUT_DIR"
+elif git rev-parse --is-inside-work-tree >/dev/null 2>&1 || [ -d ./norte-out ]; then
+  printf '%s\n' "./norte-out"
+else
+  printf '%s\n' "$HOME/.norte-out"
+fi

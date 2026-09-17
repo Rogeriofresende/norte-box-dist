@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# nb-abrir-sozinho — frente P1 do /continuar da norte-box (NRT-_991398)
+#
+# "Abre sozinho" SEM mágica de tela (o CEO cortou o assento). Duas camadas:
+#   1) GARANTIA portátil (qualquer máquina): a retomada é 1 comando -> /norte-box:retomar.
+#      Esta camada NUNCA falha — é o que o conselho (Feel) exigiu: "1 comando à prova de bala".
+#   2) BÔNUS best-effort (só na máquina local): SE reconhecer o ambiente, oferece abrir sozinho.
+#      Se não reconhecer, DEGRADA honesto pro comando manual — nunca um auto-open que falha às vezes
+#      (que o Feel disse ser PIOR que o manual).
+#
+# Resolve ONDE está o bilhete pela MESMA regra 3 do contrato (fallback "fora de projeto"):
+#   $NORTE_OUT_DIR  ->  ./norte-out (se for repo/projeto)  ->  ~/.norte-out (global).
+# Fail-open: qualquer erro, cai no comando manual. LOCAL, sem rede.
+#
+# Uso:  nb-abrir-sozinho            (mostra a garantia + detecta auto-open; NÃO abre nada — seguro)
+#       nb-abrir-sozinho --abrir    (tenta o auto-open best-effort; degrada honesto se não der)
+set -u
+
+resolve_dir() {
+  # regra ÚNICA (costura Fase 2): usa o nb-resolve-outdir ao lado; fallback inline se faltar
+  here="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+  if [ -n "$here" ] && [ -x "$here/nb-resolve-outdir" ]; then "$here/nb-resolve-outdir"; return; fi
+  if [ -n "${NORTE_OUT_DIR:-}" ]; then printf '%s\n' "$NORTE_OUT_DIR"; return; fi
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1 || [ -d ./norte-out ]; then printf '%s\n' "./norte-out"; return; fi
+  printf '%s\n' "$HOME/.norte-out"
+}
+
+ABRIR=0
+[ "${1:-}" = "--abrir" ] && ABRIR=1
+
+DIR="$(resolve_dir)"
+ULT="$DIR/handoffs/ULTIMO.md"
+
+if [ ! -f "$ULT" ]; then
+  echo "abrir-sozinho: sem bilhete pra retomar em $DIR/handoffs/"
+  echo "  (rode /norte-box:continuar nesta conversa antes de trocar)"
+  exit 0
+fi
+
+# resolve o alvo real (ULTIMO.md costuma ser symlink pro bilhete mais novo; fallback = ele mesmo)
+alvo="$(readlink "$ULT" 2>/dev/null || true)"
+if [ -n "$alvo" ]; then
+  case "$alvo" in /*) BILHETE="$alvo" ;; *) BILHETE="$DIR/handoffs/$alvo" ;; esac
+else
+  BILHETE="$ULT"
+fi
+
+echo "== abrir-sozinho =="
+echo "bilhete: $BILHETE"
+echo ""
+echo "GARANTIA (qualquer máquina) — a próxima sessão retoma com 1 comando:"
+echo "    /norte-box:retomar"
+echo ""
+
+# --- detecção do auto-open best-effort (honesta) ---
+if command -v code >/dev/null 2>&1; then
+  CAP="vscode"; COMO="abrir uma aba nova no VS Code rodando a retomada"
+elif [ "${TERM_PROGRAM:-}" = "Apple_Terminal" ] || [ "${TERM_PROGRAM:-}" = "iTerm.app" ]; then
+  CAP="terminal"; COMO="abrir uma aba nova no $TERM_PROGRAM rodando a retomada"
+else
+  CAP="nenhum"; COMO=""
+fi
+
+if [ "$CAP" = "nenhum" ]; then
+  echo "AUTO-OPEN: máquina não reconhecida -> DEGRADA pro comando manual acima (honesto, sem mágica de tela)."
+  exit 0
+fi
+
+if [ "$ABRIR" = "0" ]; then
+  echo "AUTO-OPEN: dá pra abrir sozinho aqui ($CAP: $COMO)."
+  echo "  (rode com --abrir pra tentar; sem --abrir eu não abro nada — seguro por padrão)"
+  exit 0
+fi
+
+# --abrir: só reporta a intenção; o spawn real fica gated (P1 fatia 2), pra nunca entregar auto-open frágil
+echo "AUTO-OPEN (--abrir): tentaria $COMO."
+echo "  [gated] o disparo real entra na fatia 2 do P1, só quando estiver 100% liso (regra do conselho)."
+echo "  por ora, a garantia acima (1 comando) é o caminho à prova de bala."
+exit 0

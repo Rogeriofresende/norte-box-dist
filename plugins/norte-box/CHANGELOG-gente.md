@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.35
+- O **`/norte:continuar`** ficou à prova de perder bilhete: (1) agora ele **sempre tem onde salvar** — dentro do seu projeto (a memória viaja junto) ou, se você estiver numa pasta solta sem projeto, numa pasta sua global — então nunca fica sem gravar; (2) o nome do bilhete **nunca sobrescreve outro**: se dois salvamentos caem no mesmo minuto, ele cria um nome novo (`-2`, `-3`…) em vez de apagar o anterior. Um jeito só de continuar, sem sumiço.
+
 ## 0.3.34
 - A Caixa agora se chama **▲ Norte** (o triângulo da marca aparece na tela) e os comandos ficaram mais curtos: onde antes era `/norte-box:` agora é **`/norte:`** (ex.: `/norte:conselho`, `/norte:vitrine`). Quem já tinha a Caixa instalada **migra sozinho** ao reabrir — não precisa fazer nada, e seus dados (memória, identidade) ficam intactos.
 

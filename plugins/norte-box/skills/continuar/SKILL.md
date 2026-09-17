@@ -9,9 +9,18 @@ Salva um **bilhete curto e completo** (handoff) desta conversa, **por-projeto**,
 uma sessao nova nasca sabendo exatamente onde parar e continuar — sem tomar o controle da
 maquina e sem o usuario precisar abrir ou anexar nada.
 
-O handoff mora em **`./norte-out/handoffs/`** (dentro do repo do projeto do usuario, o cwd),
-NAO num diretorio global da maquina. Assim a memoria **viaja com o projeto**: outro clone,
-outra maquina, outro colaborador — todos veem o mesmo bilhete.
+**ONDE SALVAR (regra unica — rode ISTO primeiro e use `$DIR/handoffs/` no lugar de `./norte-out/handoffs/`
+em TODOS os comandos abaixo):**
+
+```bash
+DIR="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-resolve-outdir")"   # ./norte-out (em projeto) OU ~/.norte-out (fora)
+```
+
+- **Dentro de um projeto** (é repo git ou já tem `./norte-out`) -> `$DIR = ./norte-out` — a memoria **viaja
+  com o projeto** (outro clone/maquina/colaborador veem o mesmo bilhete). É o caso comum e o melhor.
+- **Fora de um projeto** (cwd solto, sem repo) -> `$DIR = ~/.norte-out` (**fallback global**) — assim o
+  `/continuar` NUNCA fica sem onde gravar, cobrindo o que o antigo /continuar "do assento" fazia (NRT-_991398).
+- Override: `$NORTE_OUT_DIR` manda em tudo, se setado.
 
 ## Quando usar
 
@@ -39,7 +48,7 @@ Deriva os campos do handoff:
 - **slug** = titulo curto do objetivo, transformado em `[a-z0-9-]` — **ASCII sempre**
   (acento/espaco no nome do arquivo quebra a leitura depois). Ex: "Conversor de CSV" -> `conversor-de-csv`.
 - **continues-from** = o handoff anterior deste projeto, se existir:
-  `ls -t ./norte-out/handoffs/*.md 2>/dev/null | head -1` (ou `-` se for o primeiro).
+  `ls -t "$DIR"/handoffs/*.md 2>/dev/null | grep -v ULTIMO | head -1` (ou `-` se for o primeiro).
 - **timestamp** = `date +"%Y-%m-%d %H:%M"` e o sufixo do arquivo `date +"%Y%m%d-%H%M"`.
 - **carimbo de validade** (o "prazo do bilhete" — a `norte-retomar` usa isto pra avisar se o
   bilhete envelheceu). Deriva de COMANDO, nao de opiniao:
@@ -52,8 +61,17 @@ Deriva os campos do handoff:
 
 ## Passo 2 — Escreva o handoff
 
-Arquivo: **`./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md`** (nunca sobrescreva um existente —
-o timestamp garante nome novo). Use exatamente estas 6 secoes:
+**Nome do arquivo (À PROVA DE PERDA — rode ISTO; NUNCA monte o nome na mao):** o nome com precisao
+de minuto COLIDE se dois salvamentos caem no mesmo minuto com o mesmo assunto — o segundo sobrescreve
+o primeiro e um bilhete SOME (furo provado NRT-_991398, 16/09). O helper devolve um caminho
+**garantidamente novo** (segundos + nunca sobrescreve; se colidir, cria `-2`, `-3`…) e ja cria a pasta:
+
+```bash
+NOVO="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-path" "$DIR" "$slug")"
+```
+
+Escreva o handoff em **`$NOVO`** (use `$NOVO` em TODOS os comandos abaixo, no lugar de
+`./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md`). Use exatamente estas 6 secoes:
 
 ```markdown
 # Handoff — <titulo curto>
@@ -103,9 +121,10 @@ grave a **versao conferida** (nunca o rascunho cru):
 
 ```bash
 # rode do CWD do projeto (onde os arquivos/commits do bilhete moram)
-printf '%s' "$RASCUNHO" | "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-selo" - > ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md
+# $NOVO foi definido no Passo 2 (caminho garantidamente unico — nunca sobrescreve outro bilhete)
+printf '%s' "$RASCUNHO" | "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-selo" - > "$NOVO"
 # (ou, se ja escreveu um rascunho em arquivo:)
-#   "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-selo" rascunho.md > ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md
+#   "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-selo" rascunho.md > "$NOVO"
 ```
 
 O que o selo faz, linha a linha, na secao **`## Onde estamos`** (so ali):
@@ -132,11 +151,16 @@ Aponte `./norte-out/handoffs/ULTIMO.md` pro handoff recem-criado (e o que `norte
 primeiro). Symlink de preferencia, com fallback pra copia (nem todo filesystem faz symlink):
 
 ```bash
-mkdir -p ./norte-out/handoffs
-NOVO="./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md"
-ln -sf "$(basename "$NOVO")" ./norte-out/handoffs/ULTIMO.md 2>/dev/null \
-  || cp "$NOVO" ./norte-out/handoffs/ULTIMO.md
+mkdir -p "$DIR/handoffs"
+# $NOVO ja foi definido no Passo 2 (caminho garantidamente unico) — NAO remonte o nome aqui
+ln -sf "$(basename "$NOVO")" "$DIR/handoffs/ULTIMO.md" 2>/dev/null \
+  || cp "$NOVO" "$DIR/handoffs/ULTIMO.md"
 ```
+
+> **Nota (2 sessoes na mesma pasta):** o `ULTIMO.md` e um ponteiro unico — se outra sessao salvar depois,
+> ele passa a apontar pro bilhete DELA. Nenhum arquivo se perde (cada bilhete tem nome unico, Passo 2),
+> mas por isso a `norte-retomar` NAO confia cega no `ULTIMO.md`: ela usa o `nb-retomar-alvo`, que
+> desambigua quando ha 2+ assuntos recentes na mesma pasta.
 
 ## Passo 4 — Confirme
 

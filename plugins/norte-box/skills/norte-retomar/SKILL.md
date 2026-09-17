@@ -10,8 +10,16 @@ sessao que retoma alcance paridade de contexto com a que salvou, **antes de exec
 
 Evita o anti-padrao central: *"le o handoff por cima -> acha que entendeu -> executa errado."*
 
-O "projeto" e o **cwd** (a pasta onde voce esta). A fonte e **`./norte-out/handoffs/`** — portatil,
-viaja com o repo. Sem diretorio global, sem estado escondido na maquina.
+**ONDE LER (regra unica — rode ISTO primeiro e use `$DIR/handoffs/` no lugar de `./norte-out/handoffs/`
+em TODOS os comandos abaixo, inclusive o `ULTIMO.md`):**
+
+```bash
+DIR="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-resolve-outdir")"   # a MESMA regra que o /continuar usou pra salvar
+```
+
+- **Dentro de um projeto** -> `$DIR = ./norte-out` (a memoria viaja com o repo — caso comum).
+- **Fora de um projeto** -> `$DIR = ~/.norte-out` (**fallback global**) — acha o bilhete que o /continuar
+  salvou fora de repo (NRT-_991398). Override: `$NORTE_OUT_DIR`. Assim retomar e continuar NUNCA se perdem.
 
 ## Acionamento
 
@@ -25,21 +33,26 @@ viaja com o repo. Sem diretorio global, sem estado escondido na maquina.
   rode `/norte:continuar` pra criar um." E pare (nao e erro — e o estado normal de projeto novo).
 - **Path passado como argumento nao existe** -> "Handoff nao encontrado em `<path>`" e liste os
   disponiveis (`ls -t ./norte-out/handoffs/*.md`).
-- **Varios handoffs recentes e nenhum argumento** -> use o `ULTIMO.md`; se nao houver ponteiro,
-  liste os 5 mais recentes com data e peca pro usuario escolher.
+- **Varios handoffs recentes e nenhum argumento** -> o `nb-retomar-alvo` (Passo 1) decide: se for um
+  assunto so, retoma ele; se 2+ assuntos salvaram recentemente na mesma pasta, ele devolve AMBIGUO +
+  a lista (slug + data), e voce PERGUNTA qual retomar — nunca escolhe sozinho (evita retomar a errada).
 
 ## Passo 1 — Localize o handoff
 
 ```bash
-# Sem argumento: o ponteiro ULTIMO.md aponta pro mais recente
-cat ./norte-out/handoffs/ULTIMO.md 2>/dev/null | head -1   # confere que tem conteudo
-# Fallback (sem ponteiro): o mais recente por mtime
-ls -t ./norte-out/handoffs/*.md 2>/dev/null | grep -v ULTIMO.md | head -1
+# Sem argumento: NAO pegue cego o "ultimo" — o helper desambigua se 2+ assuntos salvaram
+# recentemente na MESMA pasta (senao a retomada pega a sessao ERRADA — furo provado NRT-_991398).
+bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-retomar-alvo" "$DIR"
+#   -> "ALVO <path>"  = um assunto recente so; use esse como HANDOFF_PATH.
+#   -> "AMBIGUO" + linhas "CANDIDATO <path> <slug> <data>" = 2+ assuntos recentes:
+#        LISTE os candidatos pro usuario (slug + data) e PERGUNTE qual retomar. NAO escolha sozinho.
+#   -> "VAZIO" = nenhum bilhete (cai na pre-condicao acima).
 # Com argumento (slug parcial):
-ls ./norte-out/handoffs/*<slug>*.md 2>/dev/null
+ls "$DIR"/handoffs/*<slug>*.md 2>/dev/null
 ```
 
-Fixe `HANDOFF_PATH` para os proximos passos. Leia o arquivo **inteiro** com o tool `Read` (nao `cat`).
+Fixe `HANDOFF_PATH` para os proximos passos (o `ALVO`, ou o candidato que o usuario escolheu no caso
+AMBIGUO). Leia o arquivo **inteiro** com o tool `Read` (nao `cat`).
 
 ## Passo 2 — Detecte o staleness (idade + commits desde)
 
@@ -209,13 +222,26 @@ Formato pelo staleness:
    Sao dois avisos diferentes e complementares (o selo desmente conteudo; o carimbo alerta idade); mostre
    os dois quando existirem, sem duplicar.
 
-**Depois dos avisos, a ancora e SEMPRE a proxima coisa** (nunca comprima nem pule, mesmo em FRESH):
+**Depois dos avisos e ANTES das perguntas, o bloco "De onde viemos" é OBRIGATÓRIO**, no chat e no
+arquivo de chegada (nunca comprima nem pule, mesmo em FRESH). São só três linhas em português de
+padaria, tiradas do PRÓPRIO bilhete lido; não despeje a cadeia inteira:
 
+```text
+De onde viemos
+Origem: <objetivo/porquê perene de "## Objetivo (1 frase)", em palavras simples>
+Conversa anterior: <o que a última sessão fez e onde parou, conforme o bilhete>
+Agora: Você está numa sessão nova, retomando <este assunto, conforme o objetivo do bilhete>.
 ```
-De onde viemos: <objetivo herdado LITERAL do handoff>
-Conversa anterior: <o que a ultima sessao fez, em palavras — via continues-from, ou "- (primeiro handoff)">
-Agora: <o que esta sessao vai continuar>
-```
+
+Para preencher **Conversa anterior**, resuma os itens `[x]` de `## Onde estamos` e o que ficou
+para depois em `## Próximo passo` (também escrito `## Proximo passo`). Não transforme pendência
+em trabalho feito nem apresente linha rebaixada pelo selo como concluída. NUNCA use só slug,
+número ou caminho como resumo da conversa.
+
+**Regra honesta:** se o bilhete não trouxer o dado, escreva `(primeira sessão deste assunto)`
+na linha correspondente. Em **Conversa anterior**, use essa frase também quando `continues-from`
+estiver ausente ou for `-`; NÃO invente uma conversa anterior. **Agora** situa a pessoa na nova
+sessão; não promete executar o próximo passo antes da validação do mundo.
 
 Depois, o cartao:
 
