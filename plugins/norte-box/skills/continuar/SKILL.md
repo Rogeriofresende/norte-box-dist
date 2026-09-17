@@ -1,6 +1,6 @@
 ---
 name: continuar
-description: "Salva um handoff por-projeto quando o contexto esta enchendo ou uma etapa terminou, para que a proxima sessao continue exatamente de onde parou. Acionada por /norte:continuar, ou frases como 'salva o estado', 'cria handoff', 'preciso pausar', 'o contexto esta enchendo', 'guarda a memoria'. Escreve ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md + atualiza ULTIMO.md. Irma de norte-retomar (que LE o handoff de volta)."
+description: "Salva um handoff por-projeto quando o contexto esta enchendo ou uma etapa terminou, para que a proxima sessao continue exatamente de onde parou. Acionada por /norte:continuar, ou frases como 'salva o estado', 'cria handoff', 'preciso pausar', 'o contexto esta enchendo', 'guarda a memoria'. Escreve ./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md + atualiza ULTIMO.md. Quando roda no assento local da Norte, tambem TROCA a conversa no mesmo lugar (fora do assento, so salva o bilhete). Irma de norte-retomar (que LE o handoff de volta)."
 ---
 
 # continuar
@@ -170,6 +170,55 @@ Reporte ao usuario, nesta ordem:
 3. **Primeiro passo pra proxima sessao:** o "Proximo passo" que voce gravou.
 4. **Como retomar:** "na proxima sessao, rode `/norte:retomar` — ele le este handoff,
    confere o mundo e diz onde continuar."
+
+## Passo 5 — Trocar a conversa no lugar (o "assento") — SO quando local
+
+> **Auto-detecta o ambiente.** Este passo SO roda quando a sessao esta no "assento" da Norte
+> (a tela que troca a conversa no mesmo lugar) E as pecas locais da troca existem. Fora disso
+> (quem recebe a caixa, outra maquina, terminal comum) ele e PULADO — o bilhete dos Passos 1-4
+> ja e a entrega completa. Nunca trava, nunca abre janela pra quem nao tem o assento.
+
+**Passo 5.1 — so siga se (a) o Passo 4 confirmou o bilhete salvo E (b) ISTO imprimir `PODE-TROCAR`.
+Senao PARE: o `/continuar` termina aqui (o bilhete ja esta salvo).**
+
+```bash
+# kill-switch desliga a troca  E  esta no assento  E  as pecas locais da troca existem?
+if [ "${NORTE_CONTINUAR_TROCA:-1}" != "0" ] \
+   && { [ -n "${NORTE_SEAT_AUTO:-}" ] || [ -n "${NORTE_SEAT:-}" ]; } \
+   && [ -x "$HOME/.claude/scripts/norte-mark-relay.sh" ]; then echo "PODE-TROCAR"; else echo "SO-BILHETE"; fi
+```
+
+- **SO-BILHETE** → NAO faca mais nada. Os Passos 1-4 ja entregaram (e o caso de quem recebe a caixa).
+- **PODE-TROCAR** → siga 5.2 a 5.4 (a troca no assento).
+
+**Passo 5.2 — crie o handoff da troca + marque relay** (a troca so acontece com relay fresco):
+
+Invoque a skill **`session-handoff`** (ferramenta Skill) pra criar um handoff COMPLETO desta conversa
+(grava em `~/.claude/handoffs/` com trava anti-sobrescrita). Depois marque `relay: true`:
+
+```bash
+SID="${CLAUDE_CODE_SESSION_ID:-nosid}"; H="$(cat "$HOME/.claude/handoffs/.last-handoff-$SID" 2>/dev/null)"; [ -f "$H" ] || H="$(ls -1t ~/.claude/handoffs/*.md 2>/dev/null | head -1)"; test -f "$H" && "$HOME/.claude/scripts/norte-mark-relay.sh" "$H" && echo "OK: $H" || echo "SEM BILHETE"
+```
+
+Confira: imprimiu `OK: ...` E o nome bate com ESTE assunto. Se nao, **PARE** e diga:
+*"nao consegui salvar o bilhete da troca; nao vou trocar pra nao continuar o assunto errado — tento de novo?"*.
+
+**Passo 5.3 — modo do assento + a troca no lugar:**
+
+```bash
+[ -n "${NORTE_SEAT_AUTO:-}" ] && echo "SEATED_AUTO" || { [ -n "${NORTE_SEAT:-}" ] && echo "SEATED" || echo "NAO-SEATED"; }
+```
+
+- **SEATED_AUTO:** nao faca nada — a sessao se auto-encerra e a nova nasce no lugar com `/handon`.
+- **SEATED:** avise em 1 linha (*"Bilhete salvo — troco a conversa aqui mesmo agora, a nova entra no lugar em ~20s"*) e rode `"$HOME/.claude/scripts/norte-seat-exit.sh"` (so DEPOIS do 5.2 dar OK).
+- **NAO-SEATED:** rode `zsh "$HOME/.claude/scripts/norte-vscode-handon.sh" "$H"` (abre a aba nova + roda `/handon` sozinho) e imprima *"🔄 Trocando… a nova conversa esta carregando."* Confirme viva por `ps`. Se nao confirmar, PARE e avise pra NAO fechar a aba.
+
+**Passo 5.4 — cartao de chegada:** quando a nova nascer (via `/handon`), a PRIMEIRA coisa dela e entregar
+na Vitrine um cartao de chegada curto ("De onde viemos" + pontos-chave). O chat recebe so o ponteiro.
+
+> **ORDEM E SEGURANCA:** o Passo 5 (troca) so comeca DEPOIS do bilhete confirmado (Passos 1-4). Se o
+> bilhete nao salvou, NAO troque — o bilhete que viaja e a rede de seguranca da troca. Kill: `NORTE_CONTINUAR_TROCA=0`
+> forca `SO-BILHETE` (nunca troca), util pra quem quer so o handoff mesmo no assento.
 
 ## Degradacao (nunca trava o trabalho)
 

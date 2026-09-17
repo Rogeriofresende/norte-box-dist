@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.36
+- O **`/norte:continuar`** virou o **único** de verdade: agora, além de salvar o bilhete, ele também **troca a conversa no mesmo lugar da tela** (o "assento") — mas só quando você está na sua tela da Norte. Em qualquer outra máquina (ou pra quem recebe a caixa), ele **salva o bilhete e pronto**, sem abrir nada. Um comando só, que faz o certo em cada lugar. (Desligar a troca, se quiser só o bilhete: `NORTE_CONTINUAR_TROCA=0`.)
+
 ## 0.3.35
 - O **`/norte:continuar`** ficou à prova de perder bilhete: (1) agora ele **sempre tem onde salvar** — dentro do seu projeto (a memória viaja junto) ou, se você estiver numa pasta solta sem projeto, numa pasta sua global — então nunca fica sem gravar; (2) o nome do bilhete **nunca sobrescreve outro**: se dois salvamentos caem no mesmo minuto, ele cria um nome novo (`-2`, `-3`…) em vez de apagar o anterior. Um jeito só de continuar, sem sumiço.
 
