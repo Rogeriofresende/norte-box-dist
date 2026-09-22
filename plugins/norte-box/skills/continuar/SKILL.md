@@ -171,6 +171,19 @@ Reporte ao usuario, nesta ordem:
 4. **Como retomar:** "na proxima sessao, rode `/norte:retomar` — ele le este handoff,
    confere o mundo e diz onde continuar."
 
+## Passo 4.5 — Carimba QUAL conversa a retomar (aba de projeto) — fail-open
+
+Marca no bilhete recem-salvo qual conversa a proxima sessao deve retomar (`fio` + `authored_by` +
+`adota_conversa:true`), pra a `norte-retomar` SENTAR na mesma conversa em vez de nascer com numero novo.
+SO carimba DENTRO da Norte (conversa resolvivel por session_id no registro); FORA da Norte NAO faz nada
+(bilhete igual a hoje). Idempotente, nao-fatal — nunca trava o `/continuar`.
+
+```bash
+# $NOVO = o bilhete salvo no Passo 2. Kill-switch NORTE_HANDON_ADOTA_CONVERSA=0 pula (a norte-retomar respeita igual).
+[ "${NORTE_HANDON_ADOTA_CONVERSA:-1}" != "0" ] && [ -x "${CLAUDE_PLUGIN_ROOT}/bin/nb-mark-adota" ] \
+  && bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-mark-adota" "$NOVO" || true
+```
+
 ## Passo 5 — Trocar a conversa no lugar (o "assento") — SO quando local
 
 > **Auto-detecta o ambiente.** Este passo SO roda quando a sessao esta no "assento" da Norte

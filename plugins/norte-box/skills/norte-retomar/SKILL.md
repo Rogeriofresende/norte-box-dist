@@ -54,6 +54,19 @@ ls "$DIR"/handoffs/*<slug>*.md 2>/dev/null
 Fixe `HANDOFF_PATH` para os proximos passos (o `ALVO`, ou o candidato que o usuario escolheu no caso
 AMBIGUO). Leia o arquivo **inteiro** com o tool `Read` (nao `cat`).
 
+## Passo 1.5 — Sente na conversa do bilhete (aba de projeto) — fail-open
+
+Se o bilhete pede pra retomar uma conversa (`adota_conversa:true` OU `relay:true` no cabecalho), SENTE
+nela: a sessao nova continua NA mesma conversa (o VSCode passa a mostrar o numero dela) em vez de nascer
+com numero novo. Lease EDUCADO (nao rouba dono vivo) + trava viva (avisa se a conversa esta viva em
+outra janela) + botao de desligar. SO dentro da Norte; FORA da Norte NAO faz nada (mantem o numero proprio).
+
+```bash
+# HANDOFF_PATH foi fixado no Passo 1. Idempotente/nao-fatal. Kill: NORTE_HANDON_ADOTA_CONVERSA=0.
+[ -x "${CLAUDE_PLUGIN_ROOT}/bin/nb-retomar-adota" ] \
+  && bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-retomar-adota" "$HANDOFF_PATH" || true
+```
+
 ## Passo 2 — Detecte o staleness (idade + commits desde)
 
 ```bash

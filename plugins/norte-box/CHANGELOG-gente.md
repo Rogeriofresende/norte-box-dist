@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.37
+- Quando você usa o **`/norte:continuar`** de dentro de um projeto, a próxima sessão agora **volta pra mesma conversa** em vez de nascer numa conversa nova — assim você não perde o fio de onde estava. Funciona na sua tela da Norte; em qualquer outra máquina, continua salvando o bilhete normalmente, sem mexer em nada. (Desligar, se quiser: `NORTE_HANDON_ADOTA_CONVERSA=0`.)
+
 ## 0.3.36
 - O **`/norte:continuar`** virou o **único** de verdade: agora, além de salvar o bilhete, ele também **troca a conversa no mesmo lugar da tela** (o "assento") — mas só quando você está na sua tela da Norte. Em qualquer outra máquina (ou pra quem recebe a caixa), ele **salva o bilhete e pronto**, sem abrir nada. Um comando só, que faz o certo em cada lugar. (Desligar a troca, se quiser só o bilhete: `NORTE_CONTINUAR_TROCA=0`.)
 

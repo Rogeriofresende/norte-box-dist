@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# nb-mark-adota — PEÇA 1 do conserto do /continuar (aba de projeto), versão da CAIXA.
+# Carimba, no bilhete de PROJETO (norte-out), qual conversa voltar:
+#   fio: <NRT>  +  authored_by: <NRT>  +  adota_conversa: true
+#   (fio → a trava de segurança numeracao-shadow · authored_by → o gate do /handon · adota_conversa → o sinal explícito)
+# SÓ quando a sessão está DENTRO da Norte (conversa resolvível por session_id no registro).
+# Fail-open TOTAL: sem NRT/sem registro/ambíguo → NÃO carimba (bilhete igual a hoje = seguro FORA da Norte).
+# Idempotente. NÃO toca relay/relay_seat (isso é do assento).
+set -uo pipefail
+H="${1:?uso: nb-mark-adota <handoff.md>}"
+[ -f "$H" ] || { echo "sem-arquivo"; exit 0; }
+SID="${CLAUDE_CODE_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
+REG="${NRT_REGISTRY_PATH:-$HOME/novo-negocio/chat-norte/data/nrt_registry.json}"
+python3 - "$H" "$SID" "$REG" <<'PY'
+import sys, os, re, json
+H, sid, reg = sys.argv[1], sys.argv[2], sys.argv[3]
+def sid_match(owner_id, s):
+    if not s or not owner_id: return False
+    oid=str(owner_id); tail=oid.split(':',1)[1] if ':' in oid else oid
+    return tail==s
+def resolve_own():
+    try:
+        if not sid or not os.path.exists(reg): return None
+        ops=(json.load(open(reg,encoding='utf-8')) or {}).get('operations',{})
+        m=[nrt for nrt,op in ops.items()
+           for part in op.get('participants',{}).get('claude',[])
+           if sid_match(part.get('owner_id',''), sid)]
+        m=list(dict.fromkeys(m))
+        return m[0] if len(m)==1 else None
+    except Exception:
+        return None
+own=resolve_own()
+if not own:
+    print("▲ conserto-continuar v2 · nao-carimbei (sem conversa da Norte — fora da Norte ou ambiguo; bilhete inalterado)"); sys.exit(0)
+s=open(H,encoding='utf-8',errors='replace').read()
+def has(fm,k): return re.search(r'^'+k+r':', fm, re.M)
+FIELDS=[('fio',own),('authored_by',own),('adota_conversa','true')]
+if s.startswith('---'):
+    parts=s.split('---',2); fm=parts[1]
+    for k,v in FIELDS:
+        if not has(fm,k): fm=fm.rstrip('\n')+'\n'+k+': '+v+'\n'
+    parts[1]=fm; out='---'.join(parts)
+else:
+    hdr=''.join(k+': '+v+'\n' for k,v in FIELDS)
+    out='---\n'+hdr+'---\n'+s
+tmp=H+'.tmp.'+str(os.getpid())
+open(tmp,'w',encoding='utf-8').write(out); os.replace(tmp,H)
+print("▲ conserto-continuar v2 · carimbei: fio="+own+" + authored_by="+own+" + adota_conversa:true")
+PY

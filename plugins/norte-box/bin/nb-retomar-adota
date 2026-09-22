@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# nb-retomar-adota — PEÇA 2 do conserto do /continuar, versão da CAIXA.
+# O LEITOR de projeto (norte-retomar) SENTA na conversa do bilhete.
+# Uso: nb-retomar-adota <handoff.md>   (ou via env HANDOFF_PATH)
+# Blindagem (a mesma já provada):
+#   • trava viva (numeracao-shadow) → AVISA se a conversa está viva em outra janela (não rouba)
+#   • lease EDUCADO (--lease, SEM --force) → falha sozinho se há dono vivo
+#   • botão de desligar (NORTE_HANDON_ADOTA_CONVERSA=0) → pula a adoção inteira
+#   • fail-open: qualquer passo que falhe → NÃO senta, mantém o número próprio (comportamento de hoje)
+# SÓ dentro da Norte (precisa do registro + do comando nrt). FORA da Norte: fail-open (mantém o número).
+set -uo pipefail
+HANDOFF_PATH="${1:-${HANDOFF_PATH:-}}"
+[ -n "$HANDOFF_PATH" ] || { echo "▲ conserto-continuar v2 · [retomar] sem handoff — não sento (fail-open)."; exit 0; }
+[ -f "$HANDOFF_PATH" ] || exit 0
+[ "${NORTE_HANDON_ADOTA_CONVERSA:-1}" = "0" ] && { echo "▲ conserto-continuar v2 · [retomar] adoção desligada (NORTE_HANDON_ADOTA_CONVERSA=0) — não sento."; exit 0; }
+
+SID="${CLAUDE_CODE_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
+REG="${NRT_REGISTRY_PATH:-$HOME/novo-negocio/chat-norte/data/nrt_registry.json}"
+
+# 1) o bilhete pede pra sentar? (adota_conversa:true OU relay:true) + qual conversa (fio/authored_by)
+_fm() { awk -v k="$1" 'f&&/^---[[:space:]]*$/{exit} /^---[[:space:]]*$/{f=1;next} f&&$0 ~ "^"k":"{sub("^"k":[[:space:]]*","");gsub(/[[:space:]"]/,"");print;exit}' "$HANDOFF_PATH"; }
+ADOTA=$(_fm adota_conversa); RELAY=$(_fm relay)
+FIO=$(_fm fio); [ -z "$FIO" ] && FIO=$(_fm authored_by)
+case "$ADOTA" in true) PEDE=1;; false) PEDE=0;; *) [ "$RELAY" = "true" ] && PEDE=1 || PEDE=0;; esac
+[ "$PEDE" = "1" ] || { echo "▲ conserto-continuar v2 · [retomar] bilhete é REFERÊNCIA (não pede pra sentar) — mantenho meu número."; exit 0; }
+case "$FIO" in NRT-_[0-9]*) ;; *) echo "▲ conserto-continuar v2 · [retomar] bilhete não diz qual conversa voltar — não sento (fail-open)."; exit 0;; esac
+
+# 2) trava viva: AVISA se a conversa está viva em outra janela (mesma trava do 9/9)
+if [ -f "$HOME/.claude/skills/handon/numeracao-shadow.py" ] && [ -n "$SID" ]; then
+  NRT_REGISTRY_PATH="$REG" python3 "$HOME/.claude/skills/handon/numeracao-shadow.py" "$HANDOFF_PATH" "$SID" interativo 2>/dev/null | grep '^NUMERACAO_AVISO:' && \
+    echo "▲ conserto-continuar v2 · [retomar] ⚠ reconcilie com o CEO ANTES de sentar (a conversa parece viva em outra janela)."
+fi
+
+# 3) senta — lease EDUCADO (SEM --force): se há dono vivo, FALHA sozinho e mantém o número próprio (não rouba)
+SLUG=$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(d.get('operations',{}).get(sys.argv[2],{}).get('project_slug',''))" "$REG" "$FIO" 2>/dev/null)
+if [ -n "$SLUG" ] && [ -n "$SID" ] && [ -x "$HOME/novo-negocio/scripts/nrt" ]; then
+  if "$HOME/novo-negocio/scripts/nrt" switch "$FIO" --slug "$SLUG" --runtime claude --session-id "$SID" --lease >/dev/null 2>&1; then
+    echo "▲ conserto-continuar v2 · [retomar] ✅ sentei na conversa do bilhete ($FIO). A entrega e o número vão pra ela."
+    printf '%s\n' "$FIO" > "/tmp/norte-bussola-sess-${SID}.txt" 2>/dev/null || true
+  else
+    echo "▲ conserto-continuar v2 · [retomar] a conversa $FIO está com uma janela VIVA — NÃO sentei (mantenho meu número; sem roubo). Se for sua, feche a outra janela e retome."
+  fi
+else
+  echo "▲ conserto-continuar v2 · [retomar] não consegui resolver o destino (fora da Norte / sem registro) — mantenho meu número (fail-open)."
+fi
