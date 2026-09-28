@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.38
+- Chegou o **`/norte:obrigado`**: quando você **terminou**, ele salva o bilhete completo do projeto (o mesmo do `/norte:continuar`) e te diz que pode fechar a janela. Pra retomar depois, é só `/norte:retomar`. O `/continuar` salva e **segue**; o `/obrigado` salva e **encerra**. Não usa internet nem mexe em nada fora do seu projeto.
+
 ## 0.3.37
 - Quando você usa o **`/norte:continuar`** de dentro de um projeto, a próxima sessão agora **volta pra mesma conversa** em vez de nascer numa conversa nova — assim você não perde o fio de onde estava. Funciona na sua tela da Norte; em qualquer outra máquina, continua salvando o bilhete normalmente, sem mexer em nada. (Desligar, se quiser: `NORTE_HANDON_ADOTA_CONVERSA=0`.)
 
