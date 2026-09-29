@@ -10,7 +10,7 @@ name: win-instala
 #
 # O QUE ISTO PROVA (por fato, sem token/secret nenhum):
 #   1. `claude plugin marketplace add <dist>` funciona SEM login (repo publico, clone HTTPS).
-#   2. `claude plugin install norte-box@norte-box -y` funciona SEM login (exit 0, num Windows real).
+#   2. `claude plugin install norte@norte-box -y` funciona SEM login (exit 0, num Windows real).
 #   3. Os arquivos do plugin realmente aterrissam no disco (hooks.json + hooks/*.sh).
 #   4. hooks.json tem "shell":"bash" em TODOS os comandos (a regressao de 24/08 que sumiu com as
 #      travas no Windows teria falhado AQUI).
@@ -124,7 +124,7 @@ jobs:
 
           echo "== install -y (SEM login) =="
           set +e
-          claude plugin install norte-box@norte-box -y >/tmp/inst.txt 2>&1
+          claude plugin install norte@norte-box -y >/tmp/inst.txt 2>&1
           INS=$?
           set -e
           cat /tmp/inst.txt
