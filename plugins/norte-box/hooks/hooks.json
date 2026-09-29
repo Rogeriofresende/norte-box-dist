@@ -5,49 +5,49 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/secret-guard.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/secret-guard.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/confirmar-antes.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/confirmar-antes.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/consent-gate.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/consent-gate.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/deriva-perguntar.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/deriva-perguntar.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/triagem-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/triagem-emit.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-emit.sh\"",
             "async": true,
             "shell": "bash"
           }
@@ -59,19 +59,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-emit.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-emit.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-emit.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-emit.sh\"",
             "async": true,
             "shell": "bash"
           }
@@ -83,55 +83,49 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/situacao-abrir.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/situacao-abrir.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/modo-selo.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/modo-selo.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/time-apresentar.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/time-apresentar.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/voz-norte-regra.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/voz-norte-regra.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/vigia-doctor.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vigia-doctor.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-oferta.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ritual-oferta.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
-            "async": true,
-            "shell": "bash"
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/update-check-async.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
             "async": true,
             "shell": "bash"
           }
@@ -143,31 +137,31 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/situacao-gravar.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/situacao-gravar.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/diario-gravar.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/diario-gravar.sh\"",
             "async": false,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-stop.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-stop.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/telemetry-drain.sh\"",
             "async": true,
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/atrito-drain.sh\"",
             "async": true,
             "shell": "bash"
           }

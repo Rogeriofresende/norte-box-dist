@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.40
+- A caixa ficou **à prova** daquele aviso vermelho no fim da resposta: mesmo que um arquivo perca a permissão de novo, ela continua funcionando. E o seu **diário** (`/norte:diario`) volta a anotar cada entrega. Você não precisa fazer nada.
+
 ## 0.3.39
 - Sumiu o aviso vermelho **"Stop hook error … Permission denied"** que aparecia no rodapé depois de cada resposta. Não mudou nada no seu trabalho — era só um arquivo da caixa sem permissão de rodar.
 
