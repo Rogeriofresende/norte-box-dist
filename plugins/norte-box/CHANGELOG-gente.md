@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.39
+- Sumiu o aviso vermelho **"Stop hook error … Permission denied"** que aparecia no rodapé depois de cada resposta. Não mudou nada no seu trabalho — era só um arquivo da caixa sem permissão de rodar.
+
 ## 0.3.38
 - Chegou o **`/norte:obrigado`**: quando você **terminou**, ele salva o bilhete completo do projeto (o mesmo do `/norte:continuar`) e te diz que pode fechar a janela. Pra retomar depois, é só `/norte:retomar`. O `/continuar` salva e **segue**; o `/obrigado` salva e **encerra**. Não usa internet nem mexe em nada fora do seu projeto.
 
