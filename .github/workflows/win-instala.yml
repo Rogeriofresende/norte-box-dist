@@ -49,6 +49,12 @@ jobs:
           echo "bash=$BASH_VERSION"
           echo "arch=$(uname -m)"
 
+      # NRT-_992713: num PEDIDO DE JUNÇÃO o teste instala o CONTEÚDO DO PEDIDO (checkout local), não o main
+      # já publicado — senão a trava do main aprovaria qualquer pedido. No push do main segue o jeito real.
+      - name: Checkout do pedido (só em pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+
       - name: Node LTS (para o npm fallback do Claude Code)
         uses: actions/setup-node@v4
         with:
@@ -104,7 +110,9 @@ jobs:
           MKT=1
           for try in 1 2 3; do
             set +e
-            claude plugin marketplace add Rogeriofresende/norte-box-dist >/tmp/mkt.txt 2>&1
+            if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then SRC="$GITHUB_WORKSPACE"; else SRC="Rogeriofresende/norte-box-dist"; fi
+            echo "marketplace de origem: $SRC"
+            claude plugin marketplace add "$SRC" >/tmp/mkt.txt 2>&1
             MKT=$?
             set -e
             cat /tmp/mkt.txt
