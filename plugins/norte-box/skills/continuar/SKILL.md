@@ -195,6 +195,17 @@ ln -sf "$(basename "$NOVO")" "$DIR/handoffs/ULTIMO.md" 2>/dev/null \
 
 ## Passo 4 — Confirme
 
+**Antes, garanta o objetivo no bilhete (0.3.42 — vale pros dois tipos de bilhete):** a conversa nova le a
+linha `objetivo:` pra saber o PORQUE do assunto. Em 30/09 4 de 5 bilhetes sairam sem ela. Rode:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$NOVO"
+```
+
+- `OBJETIVO: <frase>` → use essa frase no item 1 abaixo.
+- `SEM OBJETIVO` → **nao invente**. Avise em 1 linha: *"⚠ Este assunto nao tem objetivo guardado — a
+  proxima conversa vai te perguntar qual e."* e siga (nao trava a troca).
+
 Reporte ao usuario, nesta ordem:
 1. **Handoff salvo:** o path do `.md` + o objetivo em 1 frase.
 2. **Ponteiro:** `ULTIMO.md` -> aponta pro novo.

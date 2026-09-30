@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# nb-bilhete-objetivo <bilhete> — garante a linha "objetivo:" no bilhete (0.3.42).
+#
+# POR QUE: o /handon da conversa nova lê o "objetivo:" do bilhete pra dizer o PORQUÊ do assunto. O molde do
+# bilhete não tinha esse campo, e em 30/09 4 de 5 bilhetes saíram sem ele — mesmo com o objetivo guardado
+# na bússola do assunto. Este helper confere cada bilhete na hora de guardar:
+#   1. já tem "objetivo:" preenchido            → não mexe
+#   2. tem uma seção "## Objetivo" no corpo      → copia a 1ª linha pro topo
+#   3. existe uma FONTE de objetivo nesta máquina (NORTE_OBJETIVO_FONTE, ou ~/.claude/scripts/norte-objetivo-do-fio.sh)
+#      → pergunta a ela pelo "fio:" do bilhete e copia
+#   4. nada disso                                → NÃO inventa: responde "SEM OBJETIVO" pro /continuar avisar a pessoa
+#
+# Saída (1 linha): "OBJETIVO: <texto>" ou "SEM OBJETIVO". Sempre exit 0 (nunca trava a troca).
+# Kill-switch: NORTE_BILHETE_OBJETIVO=0. LOCAL (a fonte opcional é quem decide se usa rede, com prazo de 12s).
+set -u
+B="${1:-}"
+[ "${NORTE_BILHETE_OBJETIVO:-1}" = "0" ] && { echo "SEM OBJETIVO (desligado)"; exit 0; }
+[ -n "$B" ] && [ -e "$B" ] || { echo "SEM OBJETIVO (bilhete não encontrado)"; exit 0; }
+command -v python3 >/dev/null 2>&1 || { echo "SEM OBJETIVO (sem python3)"; exit 0; }
+FONTE="${NORTE_OBJETIVO_FONTE:-$HOME/.claude/scripts/norte-objetivo-do-fio.sh}"
+python3 - "$B" "$FONTE" <<'PY' 2>/dev/null || echo "SEM OBJETIVO (erro)"
+import os, re, subprocess, sys
+
+path, fonte = os.path.realpath(sys.argv[1]), sys.argv[2]
+texto = open(path, encoding="utf-8").read()
+m = re.match(r"^---\n(.*?)\n---\n", texto, re.S)
+fm = m.group(1) if m else ""
+
+
+def limpa(s):
+    s = " ".join((s or "").split()).strip().strip("\"'").strip()
+    s = s.replace(": ", " — ")
+    return s.lstrip("-*>#&!|%@`[{ ").strip()[:300]
+
+
+achado = re.search(r"^objetivo:[ \t]*(.*)$", fm, re.M)
+if achado and limpa(achado.group(1)):
+    print("OBJETIVO: " + limpa(achado.group(1)))
+    sys.exit(0)
+
+obj, origem = "", ""
+sec = re.search(r"^##+[ \t]*Objetivo[^\n]*\n+([^\n#][^\n]*)", texto[m.end() if m else 0 :], re.M | re.I)
+if sec and limpa(sec.group(1)):
+    obj, origem = limpa(sec.group(1)), "seção Objetivo"
+
+fio = re.search(r"^fio:[ \t]*(NRT-_\d+)", fm, re.M)
+if not obj and fio and os.access(fonte, os.X_OK):
+    try:
+        r = subprocess.run([fonte, fio.group(1)], capture_output=True, text=True, timeout=12)
+        linha = (r.stdout or "").strip().splitlines()
+        if r.returncode == 0 and linha and limpa(linha[0]):
+            obj, origem = limpa(linha[0]), "objetivo guardado do assunto " + fio.group(1)
+    except Exception:
+        pass
+
+if not obj:
+    print("SEM OBJETIVO")
+    sys.exit(0)
+
+if m:
+    corpo_fm = re.sub(r"^objetivo:[ \t]*$\n?", "", fm, flags=re.M).rstrip("\n")
+    novo = "---\n" + corpo_fm + "\nobjetivo: " + obj + "\n---\n" + texto[m.end():]
+else:
+    novo = "---\nobjetivo: " + obj + "\n---\n" + texto
+tmp = path + ".obj.tmp"
+with open(tmp, "w", encoding="utf-8") as f:
+    f.write(novo)
+os.replace(tmp, path)
+print("OBJETIVO: " + obj + " (copiado de: " + origem + ")")
+PY
+exit 0
