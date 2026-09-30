@@ -6,86 +6,88 @@ A norte-box é a "caixa" que roda em cima do Claude: memória entre sessões, fr
 
 ---
 
+## Jeito mais fácil: a página de instalação
+
+Abra **https://norte-box-install.vercel.app** — ela detecta se você está no Windows ou no Mac e mostra só os passos certos, com botão de copiar. O passo a passo abaixo é o mesmo, por escrito.
+
+---
+
 ## Instalar no Windows 11 — passo a passo (não precisa saber programar)
 
-Você vai fazer isso **uma vez**. Se algum comando pedir para reiniciar, feche e abra o programa de novo.
+Você vai fazer isso **uma vez** (10-15 minutos). Se algum comando pedir para reiniciar, feche e abra o programa de novo.
 
-### 1) Instalar o Git (traz o "Git Bash", que os freios de segurança usam)
+### 1) Preparar o computador
 
-Abra o **Prompt de Comando** (menu Iniciar → digite `cmd` → Enter) e cole:
+Abra o **Prompt de Comando** (menu Iniciar → digite `cmd` → Enter) e cole, um de cada vez:
 
 ```
 winget install --id Git.Git --exact --silent --accept-source-agreements --accept-package-agreements
-```
-
-### 2) Instalar o Node e o jq (o convite precisa dos dois)
-
-Ainda no Prompt de Comando, cole os dois:
-
-```
 winget install --id OpenJS.NodeJS.LTS --exact --silent --accept-source-agreements --accept-package-agreements
 winget install --id jqlang.jq --exact --silent --accept-source-agreements --accept-package-agreements
-```
-
-### 3) Instalar o Claude Code
-
-```
 winget install --id Anthropic.ClaudeCode --exact --silent --accept-source-agreements --accept-package-agreements
 ```
 
-> Se o `winget install --id Anthropic.ClaudeCode` disser que não encontrou o pacote, instale pelo Node: `npm install -g @anthropic-ai/claude-code` (o Node do passo 2 já traz o `npm`).
+> Se o último disser que não encontrou o pacote, **feche o Prompt de Comando, abra de novo** e cole: `npm install -g @anthropic-ai/claude-code`
 
-**Feche o Prompt de Comando e abra de novo** (pra ele enxergar o que você acabou de instalar).
+**Feche o Prompt de Comando e abra de novo** (pra ele enxergar o que você acabou de instalar). Depois siga em **"Abrir o Claude e entrar"**, mais abaixo.
 
-### 4) Abrir o Claude e fazer login
+---
 
-No Prompt de Comando, digite:
+## Instalar no Mac — passo a passo
+
+Abra o **Terminal** (Cmd+Espaço → digite `Terminal` → Enter) e cole esta linha (ela instala tudo de uma vez):
 
 ```
-claude
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"; brew install node jq; npm install -g @anthropic-ai/claude-code
 ```
 
-Na primeira vez ele pede login — siga o que aparecer na tela (abre o navegador, você entra e autoriza).
+No meio ele pede a **senha do seu Mac** (ela não aparece enquanto você digita — é normal) e um **Enter** pra confirmar.
 
-### 5) Instalar a norte-box (dois comandos, **dentro do Claude**)
+---
 
-Com o Claude aberto, cole um de cada vez:
+## Abrir o Claude e entrar (Windows e Mac)
+
+Digite `claude` e tecle Enter. Na **primeira vez** aparecem 3 telas (em inglês):
+
+1. **Cores do texto** — só tecle **Enter**.
+2. **"Select login method"** — escolha **1** (*Claude account with subscription*) e tecle Enter. Abre o navegador: você entra na sua conta Claude e autoriza.
+3. **"Is this a project you trust?"** — ⚠ ela já vem marcada em **"No, exit"**. Se você só apertar Enter, o Claude **fecha**. Aperte a **seta pra baixo** até **"Yes, I trust this folder"** e aí Enter.
+
+## Instalar a norte-box (4 comandos, dentro do Claude)
+
+Com o Claude aberto, cole **um de cada vez** (espere cada um terminar):
 
 ```
 /plugin marketplace add Rogeriofresende/norte-box-dist
-/plugin install norte-box@norte-box
+/plugin install norte@norte-box
+/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace
 ```
 
 **Feche o Claude e abra de novo** (`claude`) pra ligar a caixa.
 
-### 6) Ligar com o seu convite
+## Ligar com o seu convite
 
-Dentro do Claude, cole (troque `<seu-código>` pelo código que você recebeu — começa com `nb-`):
-
-```
-/norte-box:convite <seu-código>
-/norte-box:consent
-```
-
-No `consent`, leia o termo e responda **sim**. Pronto — a norte-box está ligada.
-
-Pra conferir a qualquer momento:
+Dentro do Claude, cole um de cada vez (troque `<seu-código>` pelo código que você recebeu — começa com `nb-`):
 
 ```
-/norte-box:doctor
+/norte:convite <seu-código>
+/norte:consent
 ```
 
-Verde = tudo certo.
-
-### 7) Deixar a caixa se atualizar sozinha (recomendado — 1 vez só)
-
-Assim você não precisa atualizar na mão a cada versão nova. Dentro do Claude, abra:
+No `consent`, leia o termo e responda **sim**. Depois confira:
 
 ```
-/plugin
+/norte:doctor
 ```
 
-Vá em **Marketplaces → norte-box** e ligue o **auto-update** (atualização automática). Pronto: daí em diante, quando sair uma versão nova, a caixa se atualiza sozinha pouco depois de você abrir o Claude. Quem liga é você — a caixa **nunca** se atualiza escondida.
+Tem que terminar com **DOCTOR OK**. Pronto — a norte-box está ligada. ✅
+
+> Deu erro em algum passo? Tire um print da tela e mande pra quem te convidou.
+
+### Deixar a caixa se atualizar sozinha (recomendado — 1 vez só)
+
+Dentro do Claude, abra `/plugin`, vá em **Marketplaces → norte-box** e ligue o **auto-update**. Daí em diante, quando sair uma versão nova, a caixa se atualiza sozinha pouco depois de você abrir o Claude. Quem liga é você — a caixa **nunca** se atualiza escondida.
 
 ---
 
@@ -95,16 +97,16 @@ Se você já instalou antes, **não precisa desinstalar nada**. Só atualize, de
 
 ```
 /plugin marketplace update norte-box
-/plugin update norte-box@norte-box
+/plugin update norte@norte-box
 ```
 
-Feche o Claude e abra de novo. Depois rode o seu convite normalmente (passo 6). Se o seu convite já estava validado nesta mesma máquina, ele continua valendo.
+Feche o Claude e abra de novo. Depois rode o seu convite normalmente. Se o seu convite já estava validado nesta mesma máquina, ele continua valendo.
 
 ---
 
 ## Privacidade (o medidor de uso)
 
-O medidor de uso **só envia números de uso** (quantas vezes você usou cada coisa), e **só depois** que você valida um convite e responde **sim** no `/norte-box:consent`. Sem isso, **nada sai da sua máquina**. O conteúdo do seu trabalho **não** é enviado. Você pode ver e desligar isso a qualquer momento com `/norte-box:telemetry`.
+O medidor de uso **só envia números de uso** (quantas vezes você usou cada coisa), e **só depois** que você valida um convite e responde **sim** no `/norte:consent`. Sem isso, **nada sai da sua máquina**. O conteúdo do seu trabalho **não** é enviado. Você pode ver e desligar isso a qualquer momento com `/norte:telemetry`.
 
 O endereço do servidor de números **não é segredo** e é preenchido automaticamente pelo convite — você **não** precisa digitar nada de configuração.
 

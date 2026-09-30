@@ -217,6 +217,34 @@ jobs:
 
           echo "OK: trava viva no Windows (barra token=2, passa normal=0, respeita bypass=0)."
 
+      # NRT-_993061: o passo a passo publico (pagina + README) manda instalar tambem o Superpowers e
+      # depois rodar convite + doctor. Aqui prova, no Windows real, o resto do caminho do advogado:
+      # superpowers instala, o convite fala com o servidor (codigo FALSO -> recusa limpa, sem crash)
+      # e o doctor passa em toda a parte "Instalado" (a "Ativacao" precisa de convite real -> humano).
+      - name: "E2E — Superpowers + convite (codigo falso) + doctor do jeito que o advogado faz"
+        shell: bash
+        run: |
+          set -uo pipefail
+          unset ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN || true
+          echo "== superpowers (os 2 comandos do passo a passo) =="
+          claude plugin marketplace add obra/superpowers-marketplace || { echo "::error::marketplace do superpowers falhou no Windows"; exit 1; }
+          claude plugin install superpowers@superpowers-marketplace -y || { echo "::error::install do superpowers falhou no Windows"; exit 1; }
+
+          ROOT="$(dirname "$(dirname "$(find "$HOME/.claude/plugins/cache" -path '*norte-box*/hooks/hooks.json' 2>/dev/null | head -n1)")")"
+          [ -f "$ROOT/doctor-check.sh" ] || { echo "::error::doctor-check.sh nao achado em $ROOT"; exit 1; }
+          echo "plugin em: $ROOT"
+
+          echo "== convite com codigo FALSO: tem que recusar limpo (prova node + jq + rede ate o servidor) =="
+          OUT="$(CLAUDE_PLUGIN_ROOT="$ROOT" bash "$ROOT/bin/nb-convite.sh" "nb-codigo-falso-da-ci" 2>&1)"; echo "$OUT"
+          echo "$OUT" | grep -q 'CONVITE_INVALIDO' || { echo "::error::convite nao recusou limpo no Windows (esperado CONVITE_INVALIDO)"; exit 1; }
+
+          echo "== doctor: toda a parte Instalado tem que dar OK =="
+          DOC="$(CLAUDE_PLUGIN_ROOT="$ROOT" bash "$ROOT/doctor-check.sh" 2>&1)"; echo "$DOC"
+          for item in "Prova de vida" "Superpowers" "Freios (5 hooks)" "Estado gravavel" "git"; do
+            echo "$DOC" | grep -q "^$item|OK|" || { echo "::error::doctor: '$item' nao deu OK no Windows"; exit 1; }
+          done
+          echo "OK: superpowers + convite (recusa limpa) + doctor Instalado verdes no Windows."
+
       - name: Resumo
         shell: bash
         run: |
