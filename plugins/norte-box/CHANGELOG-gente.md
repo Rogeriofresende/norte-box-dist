@@ -8,6 +8,10 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.42
+- O medidor de uso (só em modo compartilhável) passa a contar **qual habilidade da norte-box você usou** (ex.: `continuar`), pra gente ver o que está sendo usado e o que está falhando. Vai só o nome da habilidade, nunca o que você escreveu. Detalhe em `docs/TELEMETRIA.md`.
+- O bilhete do **`/norte:continuar` agora sempre leva o objetivo do assunto** — a conversa nova já chega sabendo o porquê, sem você repetir. Se o assunto ainda não tem um objetivo, a caixa **avisa** em vez de seguir calada.
+
 ## 0.3.41
 - O **`/norte:continuar` não termina mais calado**: onde a conversa não troca sozinha, ele diz com todas as letras *"bilhete salvo — abra uma conversa nova e rode /norte:retomar"*. E ao abrir a conversa nova, a caixa **lembra uma vez** que tem um bilhete seu esperando.
 - **Um bilhete só**, guardado na pasta principal do seu projeto (antes às vezes ficava escondido numa cópia temporária e a conversa seguinte não achava). O bilhete agora anota **todos os seus pedidos da conversa**, não só os últimos.
