@@ -8,6 +8,11 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.41
+- O **`/norte:continuar` não termina mais calado**: onde a conversa não troca sozinha, ele diz com todas as letras *"bilhete salvo — abra uma conversa nova e rode /norte:retomar"*. E ao abrir a conversa nova, a caixa **lembra uma vez** que tem um bilhete seu esperando.
+- **Um bilhete só**, guardado na pasta principal do seu projeto (antes às vezes ficava escondido numa cópia temporária e a conversa seguinte não achava). O bilhete agora anota **todos os seus pedidos da conversa**, não só os últimos.
+- Onde existe a troca automática no mesmo lugar, ela voltou a acontecer **na 1ª vez** (uma atualização anterior tinha quebrado isso).
+
 ## 0.3.40
 - A caixa ficou **à prova** daquele aviso vermelho no fim da resposta: mesmo que um arquivo perca a permissão de novo, ela continua funcionando. E o seu **diário** (`/norte:diario`) volta a anotar cada entrega. Você não precisa fazer nada.
 

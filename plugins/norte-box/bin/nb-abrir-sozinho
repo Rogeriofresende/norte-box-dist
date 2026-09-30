@@ -2,7 +2,7 @@
 # nb-abrir-sozinho — frente P1 do /continuar da norte-box (NRT-_991398)
 #
 # "Abre sozinho" SEM mágica de tela (o CEO cortou o assento). Duas camadas:
-#   1) GARANTIA portátil (qualquer máquina): a retomada é 1 comando -> /norte-box:retomar.
+#   1) GARANTIA portátil (qualquer máquina): a retomada é 1 comando -> /norte:retomar.
 #      Esta camada NUNCA falha — é o que o conselho (Feel) exigiu: "1 comando à prova de bala".
 #   2) BÔNUS best-effort (só na máquina local): SE reconhecer o ambiente, oferece abrir sozinho.
 #      Se não reconhecer, DEGRADA honesto pro comando manual — nunca um auto-open que falha às vezes
@@ -33,7 +33,7 @@ ULT="$DIR/handoffs/ULTIMO.md"
 
 if [ ! -f "$ULT" ]; then
   echo "abrir-sozinho: sem bilhete pra retomar em $DIR/handoffs/"
-  echo "  (rode /norte-box:continuar nesta conversa antes de trocar)"
+  echo "  (rode /norte:continuar nesta conversa antes de trocar)"
   exit 0
 fi
 
@@ -49,7 +49,7 @@ echo "== abrir-sozinho =="
 echo "bilhete: $BILHETE"
 echo ""
 echo "GARANTIA (qualquer máquina) — a próxima sessão retoma com 1 comando:"
-echo "    /norte-box:retomar"
+echo "    /norte:retomar"
 echo ""
 
 # --- detecção do auto-open best-effort (honesta) ---

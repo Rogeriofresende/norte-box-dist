@@ -54,6 +54,12 @@ ls "$DIR"/handoffs/*<slug>*.md 2>/dev/null
 Fixe `HANDOFF_PATH` para os proximos passos (o `ALVO`, ou o candidato que o usuario escolheu no caso
 AMBIGUO). Leia o arquivo **inteiro** com o tool `Read` (nao `cat`).
 
+Marque o bilhete como ja retomado (o aviso de abertura "tem um bilhete salvo" nao volta a oferecer este):
+
+```bash
+printf '%s\n' "$(basename "$HANDOFF_PATH")" >> "$DIR/handoffs/.ja-visto" 2>/dev/null || true
+```
+
 ## Passo 1.5 — Sente na conversa do bilhete (aba de projeto) — fail-open
 
 Se o bilhete pede pra retomar uma conversa (`adota_conversa:true` OU `relay:true` no cabecalho), SENTE

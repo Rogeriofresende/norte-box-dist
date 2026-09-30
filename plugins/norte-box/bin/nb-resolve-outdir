@@ -13,7 +13,15 @@
 # Imprime só o caminho do DIR-base (sem /handoffs). Fail-open: em dúvida, ~/.norte-out.
 if [ -n "${NORTE_OUT_DIR:-}" ]; then
   printf '%s\n' "$NORTE_OUT_DIR"
-elif git rev-parse --is-inside-work-tree >/dev/null 2>&1 || [ -d ./norte-out ]; then
+elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  # 0.3.41: pasta PRINCIPAL do projeto — nem a subpasta onde a conversa está, nem a cópia temporária
+  # (worktree) da conversa. Antes o bilhete ficava preso na worktree e a próxima conversa não o via.
+  _common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+  case "$_common" in
+    */.git) printf '%s\n' "${_common%/.git}/norte-out" ;;
+    *) _top="$(git rev-parse --show-toplevel 2>/dev/null)"; printf '%s\n' "${_top:-.}/norte-out" ;;
+  esac
+elif [ -d ./norte-out ]; then
   printf '%s\n' "./norte-out"
 else
   printf '%s\n' "$HOME/.norte-out"

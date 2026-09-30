@@ -89,6 +89,12 @@
           },
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bilhete-oferta.sh\"",
+            "async": false,
+            "shell": "bash"
+          },
+          {
+            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/modo-selo.sh\"",
             "async": false,
             "shell": "bash"
