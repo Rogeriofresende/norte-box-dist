@@ -8,6 +8,9 @@
 # Idempotente. NÃO toca relay/relay_seat (isso é do assento).
 set -uo pipefail
 H="${1:?uso: nb-mark-adota <handoff.md>}"
+# 0.3.41 (bilhete único): o bilhete pode ser um ATALHO pro arquivo de verdade no projeto — escreve no
+# arquivo de verdade (os.replace no atalho trocaria o link por uma cópia e o bilhete viraria DOIS).
+[ -L "$H" ] && H="$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$H" 2>/dev/null || printf '%s' "$H")"
 [ -f "$H" ] || { echo "sem-arquivo"; exit 0; }
 SID="${CLAUDE_CODE_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
 REG="${NRT_REGISTRY_PATH:-$HOME/novo-negocio/chat-norte/data/nrt_registry.json}"

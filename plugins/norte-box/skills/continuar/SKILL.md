@@ -21,6 +21,31 @@ DIR="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-resolve-outdir")"   # ./norte-out (em 
 - **Fora de um projeto** (cwd solto, sem repo) -> `$DIR = ~/.norte-out` (**fallback global**) — assim o
   `/continuar` NUNCA fica sem onde gravar, cobrindo o que o antigo /continuar "do assento" fazia (NRT-_991398).
 - Override: `$NORTE_OUT_DIR` manda em tudo, se setado.
+- Em repo git, `$DIR` e a pasta **PRINCIPAL** do projeto (nunca a copia temporaria/worktree da conversa) —
+  assim a proxima conversa acha o bilhete (0.3.41).
+
+**UM BILHETE SO (0.3.41 — rode ISTO logo depois do `DIR`):** cada `/continuar` grava **um** bilhete. Qual:
+
+```bash
+if [ "${NORTE_BILHETE_UNICO:-1}" != "0" ] && [ -f "${NORTE_HANDOFF_SKILL:-$HOME/.claude/skills/session-handoff/SKILL.md}" ]; then echo "BILHETE-RICO"; else echo "BILHETE-SIMPLES"; fi
+```
+
+- **BILHETE-RICO** (maquina que tem a skill de handoff completo — ex.: a do dono da Norte): o bilhete UNICO e
+  o completo. **Pule os Passos 2, 2.5 e 3** (NAO escreva o bilhete de 6 secoes) e faca so isto, no lugar deles:
+  1. Invoque a skill **`session-handoff`** (ferramenta Skill) pra criar o handoff COMPLETO desta conversa.
+     Avise a ela: **pule os Steps 4.6 e 4.7** (quem cuida da troca e o `/continuar`, no Passo 5) e **inclua a
+     secao "Pedidos do CEO nesta conversa" cobrindo a conversa INTEIRA**.
+  2. Guarde-o na pasta certa do projeto (move o arquivo de verdade pro `$DIR/handoffs/`, deixa um atalho no
+     lugar antigo e atualiza o `ULTIMO.md`):
+     ```bash
+     SID="${CLAUDE_CODE_SESSION_ID:-nosid}"; H="$(cat "$HOME/.claude/handoffs/.last-handoff-$SID" 2>/dev/null)"
+     [ -e "$H" ] && NOVO="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-unificar" "$H" "$DIR")" && echo "BILHETE: $NOVO" || echo "SEM BILHETE"
+     ```
+     `SEM BILHETE` = a skill de handoff nao deixou o ponteiro desta conversa → **PARE** e diga *"nao consegui
+     salvar o bilhete desta conversa — nao vou trocar pra nao continuar o assunto errado. Tento de novo?"*.
+     NUNCA pegue "o bilhete mais recente da pasta" no lugar: pode ser de OUTRA janela.
+  3. Siga pro **Passo 4** (confirme) → 4.5 → 5.
+- **BILHETE-SIMPLES** (quem recebe a caixa): siga os Passos 1 a 5 normalmente (bilhete de 6 secoes).
 
 ## Quando usar
 
@@ -71,7 +96,7 @@ NOVO="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-path" "$DIR" "$slug")"
 ```
 
 Escreva o handoff em **`$NOVO`** (use `$NOVO` em TODOS os comandos abaixo, no lugar de
-`./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md`). Use exatamente estas 6 secoes:
+`./norte-out/handoffs/<slug>-<AAAAMMDD-HHMM>.md`). Use exatamente estas secoes:
 
 ```markdown
 # Handoff — <titulo curto>
@@ -91,6 +116,9 @@ selado-em: <timestamp ISO UTC de agora>
 ## Fatos verificados (nao suposicao)
 - <fato + como foi provado (comando que rodou, arquivo que existe, teste que passou)>
 
+## Pedidos do usuario nesta conversa (todos, com status)
+- [feito|pendente|descartado] "<palavras dele, curtas>" — <prova ou o que falta>
+
 ## Proximo passo (1, concreto)
 <a PRIMEIRA coisa que a proxima sessao faz — especifico e acionavel>
 
@@ -105,6 +133,9 @@ selado-em: <timestamp ISO UTC de agora>
   Sem prova, e `[ ]` (nao "provavelmente feito").
 - **Fatos verificados = so o que voce checou** rodando um comando ou lendo um arquivo. O que
   voce "acha" nao entra aqui.
+- **Pedidos do usuario:** releia a conversa INTEIRA (nao so o fim) e liste CADA pedido, na ordem, com status.
+  Pedido feito horas antes conta igual ao ultimo — esquecer um pedido e o furo que mais faz a proxima
+  conversa "nascer perdida".
 - **Cuidados / ja-disparado** e a secao anti-retrabalho: liste toda acao com efeito externo
   (PR, push, deploy, email, comando destrutivo) pra a proxima sessao NAO refazer.
 - **Nao invente.** Se uma secao nao tem substancia real, escreva menos — mas nunca deixe vazio
@@ -198,19 +229,27 @@ Senao PARE: o `/continuar` termina aqui (o bilhete ja esta salvo).**
 # kill-switch desliga a troca  E  esta no assento  E  as pecas locais da troca existem?
 if [ "${NORTE_CONTINUAR_TROCA:-1}" != "0" ] \
    && { [ -n "${NORTE_SEAT_AUTO:-}" ] || [ -n "${NORTE_SEAT:-}" ]; } \
-   && [ -x "$HOME/.claude/scripts/norte-mark-relay.sh" ]; then echo "PODE-TROCAR"; else echo "SO-BILHETE"; fi
+   && [ -x "${NORTE_SEAT_SCRIPTS:-$HOME/.claude/scripts}/norte-mark-relay.sh" ]; then echo "PODE-TROCAR"; else echo "SO-BILHETE"; fi
 ```
 
-- **SO-BILHETE** → NAO faca mais nada. Os Passos 1-4 ja entregaram (e o caso de quem recebe a caixa).
+- **SO-BILHETE** → a troca NAO vai acontecer nesta maquina. **Nunca termine calado:** encerre o
+  `/continuar` dizendo ao usuario, com estas palavras (pode ajustar o assunto, nunca o sentido):
+  *"✅ Bilhete salvo. Aqui a conversa **nao troca sozinha** — abra uma conversa nova (ou digite
+  `/clear`) e rode `/norte:retomar`: ela le este bilhete e continua de onde paramos."*
+  NUNCA diga "troquei", "a nova nasce sozinha" ou "fechando" neste ramo (e o caso de quem recebe a caixa).
 - **PODE-TROCAR** → siga 5.2 a 5.4 (a troca no assento).
 
-**Passo 5.2 — crie o handoff da troca + marque relay** (a troca so acontece com relay fresco):
+**Passo 5.2 — marque o bilhete como "pronto pra troca"** (a troca so acontece com o bilhete marcado):
 
-Invoque a skill **`session-handoff`** (ferramenta Skill) pra criar um handoff COMPLETO desta conversa
-(grava em `~/.claude/handoffs/` com trava anti-sobrescrita). Depois marque `relay: true`:
+- **BILHETE-RICO:** o bilhete UNICO ja existe (feito no inicio) — NAO crie outro.
+- **BILHETE-SIMPLES** (so se alguem desligou o bilhete unico com `NORTE_BILHETE_UNICO=0` dentro do assento):
+  invoque a skill **`session-handoff`** agora (pulando os Steps 4.6 e 4.7), como era antes.
+
+Depois marque — SO o bilhete DESTA conversa (sem "plano B": o antigo "pega o mais recente da pasta"
+chegou a armar o bilhete de OUTRA janela):
 
 ```bash
-SID="${CLAUDE_CODE_SESSION_ID:-nosid}"; H="$(cat "$HOME/.claude/handoffs/.last-handoff-$SID" 2>/dev/null)"; [ -f "$H" ] || H="$(ls -1t ~/.claude/handoffs/*.md 2>/dev/null | head -1)"; test -f "$H" && "$HOME/.claude/scripts/norte-mark-relay.sh" "$H" && echo "OK: $H" || echo "SEM BILHETE"
+SID="${CLAUDE_CODE_SESSION_ID:-nosid}"; H="$(cat "$HOME/.claude/handoffs/.last-handoff-$SID" 2>/dev/null)"; test -e "$H" && "${NORTE_SEAT_SCRIPTS:-$HOME/.claude/scripts}/norte-mark-relay.sh" "$H" && echo "OK: $H" || echo "SEM BILHETE"
 ```
 
 Confira: imprimiu `OK: ...` E o nome bate com ESTE assunto. Se nao, **PARE** e diga:
@@ -219,11 +258,19 @@ Confira: imprimiu `OK: ...` E o nome bate com ESTE assunto. Se nao, **PARE** e d
 **Passo 5.3 — modo do assento + a troca no lugar:**
 
 ```bash
-[ -n "${NORTE_SEAT_AUTO:-}" ] && echo "SEATED_AUTO" || { [ -n "${NORTE_SEAT:-}" ] && echo "SEATED" || echo "NAO-SEATED"; }
+if [ -n "${NORTE_SEAT_INTERACTIVE:-}" ]; then echo "SEATED_INTERATIVO"; elif [ -n "${NORTE_SEAT_AUTO:-}" ]; then echo "SEATED_AUTO"; elif [ -n "${NORTE_SEAT:-}" ]; then echo "SEATED"; else echo "NAO-SEATED"; fi
 ```
 
-- **SEATED_AUTO:** nao faca nada — a sessao se auto-encerra e a nova nasce no lugar com `/handon`.
-- **SEATED:** avise em 1 linha (*"Bilhete salvo — troco a conversa aqui mesmo agora, a nova entra no lugar em ~20s"*) e rode `"$HOME/.claude/scripts/norte-seat-exit.sh"` (so DEPOIS do 5.2 dar OK).
+- **SEATED_INTERATIVO** (o assento de uma pessoa, `--stay` — e o caso NORMAL de quem usa o assento)
+  **ou SEATED:** a conversa **NAO se fecha sozinha** — quem fecha e voce, agora. Avise em 1 linha
+  (*"Bilhete salvo — troco a conversa aqui mesmo agora, a nova entra no lugar em ~20s"*) e rode, nesta
+  ordem, SO DEPOIS do 5.2 dar `OK:` (sem isto a troca NUNCA acontece — regressao da 0.3.37, consertada na 0.3.41):
+  ```bash
+  [ -x "${NORTE_SEAT_SCRIPTS:-$HOME/.claude/scripts}/norte-troca-log.sh" ] && zsh "${NORTE_SEAT_SCRIPTS:-$HOME/.claude/scripts}/norte-troca-log.sh" --evento pediu --sid "${CLAUDE_CODE_SESSION_ID:-}" --handoff "$H" 2>/dev/null || true
+  "${NORTE_SEAT_SCRIPTS:-$HOME/.claude/scripts}/norte-seat-exit.sh"
+  ```
+- **SEATED_AUTO** (robo autonomo sem pessoa, `--allow-handon`): nao faca nada — a sessao sem pessoa
+  termina sozinha ao fim da resposta e a nova nasce no lugar com `/handon`.
 - **NAO-SEATED:** rode `zsh "$HOME/.claude/scripts/norte-vscode-handon.sh" "$H"` (abre a aba nova + roda `/handon` sozinho) e imprima *"🔄 Trocando… a nova conversa esta carregando."* Confirme viva por `ps`. Se nao confirmar, PARE e avise pra NAO fechar a aba.
 
 **Passo 5.4 — cartao de chegada:** quando a nova nascer (via `/handon`), a PRIMEIRA coisa dela e entregar

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# nb-bilhete-unificar <bilhete> <dir-base> — UM bilhete só, guardado na pasta certa do projeto (0.3.41).
+#
+# POR QUE: cada /continuar gravava DOIS bilhetes (o curto do projeto + o grande da troca) e o do projeto
+# ficava preso na cópia temporária da conversa. Agora o bilhete grande (o que o /handon e o "De onde viemos"
+# já sabem ler) é o ÚNICO: este helper MOVE o arquivo de verdade pra <dir-base>/handoffs/ (a pasta principal
+# do projeto, via nb-resolve-outdir) e deixa no lugar antigo só um ATALHO (link) — quem procurava lá
+# (o assento, o /handon) continua achando, sem cópia e sem divergência. Atualiza o ULTIMO.md do projeto.
+#
+# Saída: o caminho NOVO (o arquivo de verdade). Idempotente: se o bilhete já é um atalho pro projeto,
+# só devolve o destino. FAIL-OPEN: se não der pra mover (disco/permissão), devolve o caminho original
+# e o bilhete fica onde está (nunca perde o bilhete). LOCAL, sem rede.
+set -u
+SRC="${1:?uso: nb-bilhete-unificar <bilhete> <dir-base>}"
+DIR="${2:?uso: nb-bilhete-unificar <bilhete> <dir-base>}"
+[ -e "$SRC" ] || { echo "ERRO: bilhete não existe: $SRC" >&2; exit 1; }
+_real() { python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1" 2>/dev/null || printf '%s\n' "$1"; }
+REAL="$(_real "$SRC")"
+mkdir -p "$DIR/handoffs" 2>/dev/null || { printf '%s\n' "$REAL"; exit 0; }
+HD="$(_real "$DIR/handoffs")"
+case "$REAL" in "$HD"/*) : ;; *)
+  B="$(basename "$REAL")"; DEST="$HD/$B"; i=2
+  while [ -e "$DEST" ]; do DEST="$HD/${B%.md}-$i.md"; i=$((i+1)); done
+  if mv "$REAL" "$DEST" 2>/dev/null; then
+    ln -s "$DEST" "$REAL" 2>/dev/null || cp -p "$DEST" "$REAL" 2>/dev/null || true
+    REAL="$DEST"
+  fi ;;
+esac
+case "$REAL" in "$HD"/*) ln -sf "$(basename "$REAL")" "$HD/ULTIMO.md" 2>/dev/null || cp "$REAL" "$HD/ULTIMO.md" 2>/dev/null || true ;; esac
+printf '%s\n' "$REAL"
