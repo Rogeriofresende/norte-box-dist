@@ -221,6 +221,35 @@ fi
 _chars="$(printf '%s' "$_content" | wc -c | tr -d ' ')"
 [ -z "$_chars" ] && _chars=0
 _tokens_aprox=$(( _chars / 4 ))
+# --- HABILIDADE (0.3.42 · NRT-_992909, autorizado pelo CEO — contrato com os usuarios cobre) ---
+# Conta QUAL habilidade DA NORTE-BOX foi usada (pro painel "quem usou"). So um NOME PUBLICO da
+# LISTA FECHADA gerada agora dos nomes de pasta em skills/ e arquivos em commands/ deste plugin.
+# Fora da lista -> campo OMITIDO (nem "outro"). O texto do prompt/tool_input so e lido pra achar
+# o 1o token e descartado logo abaixo, junto com o resto. Kill-switch: NORTE_BOX_TELEMETRY_HAB=0.
+_habilidade=""
+if [ "${NORTE_BOX_TELEMETRY_HAB:-1}" != "0" ]; then
+  _hab_raw=""
+  if [ "$_event" = "PostToolUse" ] && [ "$_tool_safe" = "Skill" ]; then
+    _hab_raw="$(printf '%s' "$_tool_input_raw" | jq -r '.skill // empty' 2>/dev/null | head -1 || true)"
+  elif [ "$_event" = "UserPromptSubmit" ]; then
+    case "$_prompt_raw" in
+      /*) _hab_raw="$(printf '%s' "$_prompt_raw" | head -1 | cut -d' ' -f1 | cut -c1-64)" ;;
+    esac
+  fi
+  if [ -n "$_hab_raw" ]; then
+    _hab_raw="${_hab_raw#/}"; _hab_raw="${_hab_raw#norte-box:}"; _hab_raw="${_hab_raw#norte:}"
+    _hab_raw="${_hab_raw#▲-}"
+    _hab_root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)}"
+    case "$_hab_raw" in
+      ''|*[!a-z0-9-]*) : ;;   # so [a-z0-9-] — qualquer outro caractere (espaco, acento, :, /) = fora
+      *)
+        if [ -d "$_hab_root/skills/$_hab_raw" ] || [ -f "$_hab_root/commands/$_hab_raw.md" ]; then
+          _habilidade="$_hab_raw"
+        fi ;;
+    esac
+  fi
+  _hab_raw=""
+fi
 # Descarta o texto EXPLICITAMENTE assim que o tamanho foi medido (defesa em profundidade:
 # garante que nenhuma linha abaixo possa reaproveitar o conteudo por engano).
 _content=""; _prompt_raw=""; _tool_input_raw=""; _tool_response_raw=""; _session_raw=""
@@ -281,10 +310,12 @@ _line="$(jq -cn \
   --argjson tokens "${_tokens_aprox:-0}" \
   --argjson ms     "${_ms_json:-null}" \
   --argjson bytes  "${_chars:-0}" \
+  --arg habilidade "${_habilidade:-}" \
   '{invite_id:$invite_id, kind:"medidor", event:$event, tool:$tool, ts:$ts,
     versao:(if $versao=="" then null else $versao end),
     run_id:(if $run_id=="" then null else $run_id end), seq:$seq, ts_ms:$ts_ms, err:$err,
-    uso:{comandos:$comandos, tokens:$tokens, ms:$ms, bytes:$bytes}}' 2>/dev/null || true)"
+    uso:{comandos:$comandos, tokens:$tokens, ms:$ms, bytes:$bytes}}
+    + (if $habilidade=="" then {} else {habilidade:$habilidade} end)' 2>/dev/null || true)"
 
 [ -z "$_line" ] && exit 0
 

@@ -42,6 +42,11 @@ No modo compartilhavel, cada acao vira 1 evento **so-numeros** (`kind:"medidor"`
   carregar o nome de um cliente, ex `mcp__clinica-dr-joao__buscar_prontuario`) colapsa pra `mcp`;
   e qualquer ferramenta desconhecida/custom vira `outro` — **nao** e o caminho, nem o conteudo,
   nem o nome do servidor MCP), `ts`, e um `invite_id` opaco (id da pessoa, **nunca** um token/chave);
+- `habilidade` (desde 0.3.42) — o NOME da habilidade da norte-box que voce usou (ex `continuar`,
+  `conselho`, `provar`), pra saber quais habilidades estao sendo usadas e por quem. So entra um nome
+  da LISTA FECHADA das habilidades deste plugin (as pastas `skills/` e os arquivos `commands/`); um
+  comando seu, de outro plugin ou qualquer texto fora da lista **nao entra** (o campo fica ausente).
+  Nunca vai o que voce escreveu depois do comando. Desligar so isto: `NORTE_BOX_TELEMETRY_HAB=0`;
 - `versao` — a versao do NOSSO plugin (ex `0.3.23`), pro painel saber quem ja atualizou. Nasce do
   nosso `plugin.json`, nunca de nada que voce digita;
 - `run_id` — um codigo EMBARALHADO (hash) da sessao, so pra costurar seus passos numa trajetoria
