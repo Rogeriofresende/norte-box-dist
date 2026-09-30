@@ -8,7 +8,7 @@
 #
 # LIMITES (anti-ruido — quem roda varias conversas em paralelo no mesmo projeto):
 #   - so em abertura nova ou /clear (nunca em resume/compact);
-#   - so bilhete com menos de 24h;
+#   - so bilhete recente (padrao 12h; NORTE_BILHETE_OFERTA_HORAS muda);
 #   - cada bilhete e oferecido UMA vez so (e nunca depois de retomado) — marca em handoffs/.ja-visto;
 #   - 2+ assuntos recentes -> uma linha so, pedindo /norte:retomar (que lista e pergunta);
 #   - dentro do assento (NORTE_SEAT) nao aparece: la o /handon ja retoma sozinho.
@@ -30,7 +30,8 @@ DIR="$(bash "$_root/bin/nb-resolve-outdir" 2>/dev/null)" || exit 0
 [ -d "$DIR/handoffs" ] || exit 0
 VISTO="$DIR/handoffs/.ja-visto"
 
-_alvo="$(bash "$_root/bin/nb-retomar-alvo" "$DIR" 86400 2>/dev/null || true)"
+_HORAS="${NORTE_BILHETE_OFERTA_HORAS:-12}"; case "$_HORAS" in ""|*[!0-9]*) _HORAS=12;; esac
+_alvo="$(bash "$_root/bin/nb-retomar-alvo" "$DIR" $((_HORAS * 3600)) 2>/dev/null || true)"
 _linha=""
 case "$_alvo" in
   ALVO\ *)
@@ -38,6 +39,7 @@ case "$_alvo" in
     _b="$(basename "$_f")"
     grep -qxF "$_b" "$VISTO" 2>/dev/null && exit 0
     _min=$(( ( $(date +%s) - $(stat -L -f %m "$_f" 2>/dev/null || stat -L -c %Y "$_f" 2>/dev/null || date +%s) ) / 60 ))
+    [ "$_min" -le $((_HORAS * 60)) ] || exit 0   # o helper devolve o mais novo mesmo se velho — aqui corta
     _ass="$(grep -m1 -E '^# ' "$_f" 2>/dev/null | sed -E 's/^# +(Handoff|Session Handoff) *[—:-]* *//')"
     [ -n "$_ass" ] || _ass="${_b%.md}"
     _linha="📌 Tem um bilhete salvo: \"$_ass\" (há ${_min} min). Pra continuar de onde parou, rode /norte:retomar."
@@ -54,7 +56,7 @@ case "$_alvo" in
 $_alvo
 EOF
     [ "$_novos" -gt 0 ] || exit 0
-    _linha="📌 Tem $_novos bilhete(s) salvo(s) de assuntos diferentes nas últimas 24h. Pra continuar um deles, rode /norte:retomar (ele lista e você escolhe)."
+    _linha="📌 Tem $_novos bilhete(s) salvo(s) de assuntos diferentes nas últimas ${_HORAS}h. Pra continuar um deles, rode /norte:retomar (ele lista e você escolhe)."
     ;;
   *) exit 0 ;;
 esac
