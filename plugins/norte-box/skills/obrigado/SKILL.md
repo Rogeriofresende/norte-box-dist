@@ -25,6 +25,15 @@ Regras extras do bilhete de ENCERRAMENTO:
 - Guarde o caminho do bilhete salvo em `$NOVO` (o Passo 2 da irma ja define).
 - **NAO** rode os Passos 4.5 e 5 da irma (carimbar retomada / trocar a conversa) — quem encerra
   nao troca de conversa.
+- **Garanta o objetivo no bilhete (0.3.43 — o mesmo conferente do Passo 4 da irma):**
+
+  ```bash
+  bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$NOVO"
+  ```
+
+  `OBJETIVO: <frase>` → use essa frase na confirmacao. `SEM OBJETIVO` → **nao invente**; avise em 1
+  linha *"⚠ Este assunto nao tem objetivo guardado — quem retomar vai te perguntar qual e."* e siga
+  (nunca trava o encerramento).
 
 Se o bilhete nao salvou (pasta sem permissao etc.), imprima o bilhete completo **no chat** e diga
 em 1 linha que nao consegui gravar — e **PARE aqui** (sem bilhete, nao fecho nada).
@@ -50,6 +59,13 @@ SID="${CLAUDE_CODE_SESSION_ID:-nosid}"; H="$(cat "$HOME/.claude/handoffs/.last-h
 ```
 
 Se imprimiu `SEM BILHETE`, use o `$NOVO` do Passo 1 como `H`.
+
+Se `H` for outro arquivo (o bilhete grande), passe ele tambem pelo conferente — mesma regra do Passo 1
+(`SEM OBJETIVO` = avisa em 1 linha, nao trava):
+
+```bash
+[ "$H" != "$NOVO" ] && bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$H"
+```
 
 **3.2 — manda pra "Concluida" + registro fechado + bilhete.** Rode UMA vez, quieto:
 
