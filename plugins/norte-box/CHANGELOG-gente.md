@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.43
+- O **`/norte:obrigado` agora também guarda o objetivo do assunto no bilhete** (igual ao `/norte:continuar` desde a 0.3.42). Se o assunto não tem objetivo, ele **avisa** em vez de fechar calado — e nunca deixa de fechar por isso.
+
 ## 0.3.42
 - O medidor de uso (só em modo compartilhável) passa a contar **qual habilidade da norte-box você usou** (ex.: `continuar`), pra gente ver o que está sendo usado e o que está falhando. Vai só o nome da habilidade, nunca o que você escreveu. Detalhe em `docs/TELEMETRIA.md`.
 - O bilhete do **`/norte:continuar` agora sempre leva o objetivo do assunto** — a conversa nova já chega sabendo o porquê, sem você repetir. Se o assunto ainda não tem um objetivo, a caixa **avisa** em vez de seguir calada.
