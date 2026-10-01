@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.44
+- O **`/norte:continuar` agora tem uma regra só**: onde dá pra trocar de conversa sozinho, ele troca na primeira vez; onde não dá, ele **salva o bilhete e te avisa na tela** como continuar (`/norte:retomar`). Nunca abre janela por conta própria e nunca termina calado.
+
 ## 0.3.43
 - O **`/norte:obrigado` agora também guarda o objetivo do assunto no bilhete** (igual ao `/norte:continuar` desde a 0.3.42). Se o assunto não tem objetivo, ele **avisa** em vez de fechar calado — e nunca deixa de fechar por isso.
 

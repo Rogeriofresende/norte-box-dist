@@ -233,6 +233,11 @@ SO carimba DENTRO da Norte (conversa resolvivel por session_id no registro); FOR
 > (quem recebe a caixa, outra maquina, terminal comum) ele e PULADO — o bilhete dos Passos 1-4
 > ja e a entrega completa. Nunca trava, nunca abre janela pra quem nao tem o assento.
 
+> **REGRA UNICA DO /continuar (0.3.44 · conselho autouso01, GO do dono):** **no assento** troca na 1a
+> vez; **fora do assento** salva o bilhete e AVISA na tela que nao trocou e como continuar. Nunca abre
+> aba/janela por conta propria, nunca termina calado. `/continuar`, `/▲-continuar` e `/norte:continuar`
+> sao o MESMO fluxo (este arquivo e a fonte unica).
+
 **Passo 5.1 — so siga se (a) o Passo 4 confirmou o bilhete salvo E (b) ISTO imprimir `PODE-TROCAR`.
 Senao PARE: o `/continuar` termina aqui (o bilhete ja esta salvo).**
 
@@ -282,7 +287,7 @@ if [ -n "${NORTE_SEAT_INTERACTIVE:-}" ]; then echo "SEATED_INTERATIVO"; elif [ -
   ```
 - **SEATED_AUTO** (robo autonomo sem pessoa, `--allow-handon`): nao faca nada — a sessao sem pessoa
   termina sozinha ao fim da resposta e a nova nasce no lugar com `/handon`.
-- **NAO-SEATED:** rode `zsh "$HOME/.claude/scripts/norte-vscode-handon.sh" "$H"` (abre a aba nova + roda `/handon` sozinho) e imprima *"🔄 Trocando… a nova conversa esta carregando."* Confirme viva por `ps`. Se nao confirmar, PARE e avise pra NAO fechar a aba.
+- **NAO-SEATED:** nao acontece aqui (o 5.1 so deixa chegar quem esta no assento). Se cair aqui por engano, NAO abra aba nem janela: diga *"✅ Bilhete salvo. Aqui a conversa nao troca sozinha — abra uma conversa nova e rode `/norte:retomar`."* e pare (regra unica do /continuar, 0.3.44).
 
 **Passo 5.4 — cartao de chegada:** quando a nova nascer (via `/handon`), a PRIMEIRA coisa dela e entregar
 na Vitrine um cartao de chegada curto ("De onde viemos" + pontos-chave). O chat recebe so o ponteiro.
