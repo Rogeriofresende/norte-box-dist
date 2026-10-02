@@ -153,7 +153,7 @@ const PAGINA = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 </div></body></html>`;
 
 function resp(res, code, msg, ok) {
-  res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' });
+  res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin' });
   res.end(`<div style="font:16px system-ui;padding:40px;background:#0d1117;color:${ok ? '#bef264' : '#f85149'};min-height:100vh">${esc(msg)}</div>`);
 }
 
@@ -166,12 +166,14 @@ const srv = http.createServer((req, res) => {
     const caminho = (req.url || '').split('?')[0];
     if (caminho !== '/s/' + ACESSO || usado) return resp(res, 404, 'Formulário não encontrado (ou já usado).');
     if (req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin' });
       return res.end(PAGINA);
     }
     if (req.method !== 'POST') return resp(res, 405, 'Não permitido.');
     const origem = req.headers.origin;
     if (origem !== ORIGEM) return resp(res, 403, 'Pedido vindo de outra página — recusado.');
+    const site = req.headers['sec-fetch-site'];
+    if (site && site !== 'same-origin') return resp(res, 403, 'Pedido vindo de outra página — recusado.');
     let b = '';
     req.on('data', c => { b += c; if (b.length > 16384) req.destroy(); });
     req.on('end', () => {
