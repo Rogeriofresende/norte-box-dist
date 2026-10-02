@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.46
+- **Conserto do `/norte:salvar-seguro`**: na 0.3.45 o formulário podia recusar o envio feito pelo navegador ("pedido vindo de outra página"). Agora colar e clicar em Salvar funciona.
+
 ## 0.3.45
 - **Novo: `/norte:salvar-seguro`** — pra guardar uma senha, chave ou código de verificação **sem colar no chat**. Abre um formulário no seu navegador; você cola lá e o valor vai direto pro arquivo `.env` do projeto. A caixa também passa a **oferecer isso sozinha** antes de pedir qualquer coisa sensível.
 
