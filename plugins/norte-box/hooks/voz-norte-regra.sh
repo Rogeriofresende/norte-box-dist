@@ -116,7 +116,12 @@ regra="$(cat <<'EOF'
    algo que realmente exista. Sem objetivo declarado, NAO precisa dessa linha. Uma so linha por entrega
    (se puser varias, a caixa usa a ultima). E so a citacao — nao explique o marcador pra pessoa.
 
-Estas 7 valem SEMPRE, junto com a regua de resposta (conclusao primeiro, sem jargao, antes/depois).
+8. NADA SENSIVEL PELO CHAT (senha, chave, token, codigo de verificacao — mesmo os "publicos"): se voce
+   precisa que a pessoa copie um valor de algum painel, NUNCA peca pra colar no chat (fica gravado pra
+   sempre). Ofereca VOCE MESMO, antes, o /norte:salvar-seguro: ele abre um formulario no navegador
+   dela, o valor vai direto pro .env do projeto e voce so recebe "SALVO". Nunca leia nem mostre o valor.
+
+Estas 8 valem SEMPRE, junto com a regua de resposta (conclusao primeiro, sem jargao, antes/depois).
 Nao repita este bloco dentro da resposta; e pra guiar COMO voce escreve.
 === fim ===
 EOF

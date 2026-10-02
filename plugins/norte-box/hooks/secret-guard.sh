@@ -34,8 +34,9 @@ if printf '%s' "$PROMPT" | grep -qE "$PATTERNS"; then
   cat >&2 <<'MSG'
 (bloqueio) secret-guard (norte-box): parece que voce colou um secret (senha/token/chave) no chat.
 
-Secret nunca vai pelo chat - fica no transcript pra sempre. Use um canal seguro
-(formulario local / terminal proprio com read -s) e cole so o RESULTADO ("deu certo").
+Secret nunca vai pelo chat - fica no transcript pra sempre. Use o formulario seguro:
+  /norte:salvar-seguro <o que e>   (abre no seu navegador e grava direto no .env)
+e diga so o RESULTADO ("deu certo"). Se ja colou, troque o valor no servico de origem.
 
 Se for falso-positivo (ex: exemplo de regex), reenvie comecando com:
   [no-secret-check]
