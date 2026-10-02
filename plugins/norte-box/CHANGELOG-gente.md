@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.45
+- **Novo: `/norte:salvar-seguro`** — pra guardar uma senha, chave ou código de verificação **sem colar no chat**. Abre um formulário no seu navegador; você cola lá e o valor vai direto pro arquivo `.env` do projeto. A caixa também passa a **oferecer isso sozinha** antes de pedir qualquer coisa sensível.
+
 ## 0.3.44
 - O **`/norte:continuar` agora tem uma regra só**: onde dá pra trocar de conversa sozinho, ele troca na primeira vez; onde não dá, ele **salva o bilhete e te avisa na tela** como continuar (`/norte:retomar`). Nunca abre janela por conta própria e nunca termina calado.
 
