@@ -143,6 +143,14 @@ regra="${regra}
 FREIO DE MAO (diga a ela, 1 linha de padaria, na saudacao): \"Voce manda no ritmo — e so dizer 'para'
 que eu paro, e nada que nao da pra desfazer acontece sem o seu 'pode aplicar'.\""
 
+# NO CODEX (NRT-_995031): o Codex chama os comandos da caixa com "$" em vez de "/". O Codex exporta
+# PLUGIN_ROOT pros ganchos de plugin (o Claude nao) — e assim que a gente sabe onde esta.
+if [ -n "${PLUGIN_ROOT:-}" ]; then
+  regra="${regra}
+NO CODEX: onde as regras ou a caixa disserem /norte:<nome>, a pessoa digita \$norte:<nome> (ou pede em
+portugues). Ao sugerir um comando da caixa pra ela, escreva sempre na forma \$norte:<nome>."
+fi
+
 jq -n --arg ctx "$regra" '{
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",

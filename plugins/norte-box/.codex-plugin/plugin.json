@@ -1,0 +1,13 @@
+{
+  "name": "norte",
+  "version": "0.3.47",
+  "description": "▲ Norte — o jeito Norte de usar IA, fechado por convite: freios, memoria entre sessoes, metodo de projeto grande, resposta HTML local e MEDIDOR de uso (numeros por padrao — a Norte nao ve o seu trabalho; conteudo so por opt-in com previa).",
+  "author": {
+    "name": "Norte (Metodologia Startup LTDA)"
+  },
+  "homepage": "https://github.com/Rogeriofresende/norte-box",
+  "license": "UNLICENSED",
+  "skills": "./codex-skills/",
+  "hooks": "./hooks/hooks.json",
+  "commands": []
+}

@@ -8,6 +8,10 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.47
+- **A caixa agora funciona no Codex (ChatGPT)**, não só no Claude: os mesmos comandos (no Codex começam com `$`, ex.: `$norte:convite`), os freios, o termo, o medidor e a conferência final. Na 1ª vez o Codex pede pra você autorizar os ganchos da caixa ("Trust all and continue") — é isso que liga os freios.
+- Pra quem usa Claude, nada muda.
+
 ## 0.3.46
 - **Conserto do `/norte:salvar-seguro`**: na 0.3.45 o formulário podia recusar o envio feito pelo navegador ("pedido vindo de outra página"). Agora colar e clicar em Salvar funciona.
 

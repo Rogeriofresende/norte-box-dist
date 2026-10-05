@@ -21,6 +21,14 @@ set -u
 # memoria (roda em TODA sessao — mesmo padrao dos outros hooks SessionStart).
 cat >/dev/null 2>&1 || true
 
+# Marcador "os ganchos rodaram" (NRT-_995031) — o /norte:doctor le isto pra saber, DE FATO, se o Codex
+# esta rodando os ganchos (ele os pula ate a pessoa autorizar em /hooks). O Codex exporta PLUGIN_ROOT.
+# Grava tambem a VERSAO da caixa cujos ganchos rodaram: depois de atualizar, o Codex pede nova
+# autorizacao e o doctor nao pode ficar verde com o marcador da versao anterior.
+_rt=claude; [ -n "${PLUGIN_ROOT:-}" ] && _rt=codex
+_gv="$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-/nao-existe}}/.claude-plugin/plugin.json" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+{ mkdir -p "$HOME/.norte-box" && printf 'runtime=%s\nversao=%s\nts=%s\n' "$_rt" "$_gv" "$(date +%s)" > "$HOME/.norte-box/ganchos-vivos"; } 2>/dev/null || true
+
 # kill-switch flexivel.
 case "${NORTE_VIGIA:-1}" in 0|no|nao|off|false) exit 0 ;; esac
 

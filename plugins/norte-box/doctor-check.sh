@@ -40,14 +40,21 @@ for _cand in \
 do
   if _has_plugin "$_cand"; then ROOT="$_cand"; break; fi
 done
-# ultimo recurso: versao mais nova no cache de plugins do Claude
-if [ -z "$ROOT" ]; then
-  _cache_base="$HOME/.claude/plugins/cache/norte-box/norte"
+# ultimo recurso: versao mais nova no cache de plugins do Claude e depois no do Codex
+CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
+for _cache_base in "$HOME/.claude/plugins/cache/norte-box/norte" "$CODEX_DIR/plugins/cache/norte-box/norte"; do
+  [ -n "$ROOT" ] && break
   if [ -d "$_cache_base" ]; then
     _newest="$(ls -1 "$_cache_base" 2>/dev/null | sort -V | tail -1)"
     _has_plugin "$_cache_base/$_newest" && ROOT="$_cache_base/$_newest"
   fi
-fi
+done
+
+# Em qual IA estamos? O Codex poe CODEX_THREAD_ID no terminal; a caixa instalada no cache do Codex
+# tambem conta (NRT-_995031). O resto do doctor so muda a DICA de conserto, nunca o criterio.
+RUNTIME="claude"
+if [ -n "${CODEX_THREAD_ID:-}${CODEX_SESSION_ID:-}" ]; then RUNTIME="codex"
+else case "$ROOT" in "$CODEX_DIR"/*) RUNTIME="codex" ;; esac; fi
 
 emit() { printf '%s|%s|%s\n' "$1" "$2" "$3"; }
 
@@ -62,12 +69,18 @@ fi
 
 # 2. Superpowers presente — fonte CONFIAVEL (cache dir OU installed_plugins.json)
 SP=""
-[ -d "$HOME/.claude/plugins/cache/superpowers-marketplace" ] && SP="cache"
-if [ -z "$SP" ] && [ -f "$HOME/.claude/plugins/installed_plugins.json" ]; then
-  grep -qi "superpowers" "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null && SP="installed_plugins"
+if [ "$RUNTIME" = "codex" ]; then
+  [ -d "$CODEX_DIR/plugins/cache/superpowers-marketplace" ] && SP="cache do Codex"
+else
+  [ -d "$HOME/.claude/plugins/cache/superpowers-marketplace" ] && SP="cache"
+  if [ -z "$SP" ] && [ -f "$HOME/.claude/plugins/installed_plugins.json" ]; then
+    grep -qi "superpowers" "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null && SP="installed_plugins"
+  fi
 fi
 if [ -n "$SP" ]; then
   emit "Superpowers" "OK" "presente ($SP)"
+elif [ "$RUNTIME" = "codex" ]; then
+  emit "Superpowers" "FALHA" "instale: codex plugin marketplace add obra/superpowers-marketplace && codex plugin add superpowers@superpowers-marketplace"
 elif [ ! -e "$HOME/.claude/plugins" ]; then
   emit "Superpowers" "NAO_VERIFICADO" "~/.claude/plugins nao acessivel"
 else
@@ -137,6 +150,20 @@ if [ -n "$ROOT" ]; then
   elif [ -f "$ROOT/bin/nb-freio" ]; then emit "Freio de mao" "FALHA" "sem +x (rode: chmod +x bin/nb-freio)"
   else emit "Freio de mao" "FALHA" "bin/nb-freio ausente (reinstale/atualize o plugin)"; fi
 else emit "Freio de mao" "NAO_VERIFICADO" "raiz do plugin nao acessivel"; fi
+
+# 3f. Ganchos ligados (so no Codex — NRT-_995031). O Codex PULA os ganchos de plugin ate a pessoa
+# revisar e autorizar em /hooks. Sem eles nao ha freio, termo nem jeito Norte. Prova DE FATO: o gancho
+# de inicio grava ~/.norte-box/ganchos-vivos com "runtime=codex" quando roda dentro do Codex.
+if [ "$RUNTIME" = "codex" ]; then
+  _gvf="$HOME/.norte-box/ganchos-vivos"
+  if grep -q '^runtime=codex' "$_gvf" 2>/dev/null && [ -n "${V:-}" ] && grep -qx "versao=$V" "$_gvf" 2>/dev/null; then
+    emit "Ganchos ligados" "OK" "os ganchos da caixa v$V rodaram no Codex"
+  elif grep -q '^runtime=codex' "$_gvf" 2>/dev/null; then
+    emit "Ganchos ligados" "FALHA" "os ganchos rodaram numa versao anterior — no Codex, digite /hooks, autorize de novo e abra o Codex de novo"
+  else
+    emit "Ganchos ligados" "FALHA" "no Codex, digite /hooks, autorize os ganchos da norte e abra o Codex de novo"
+  fi
+fi
 
 # 4. Estado gravavel
 if mkdir -p "$HOME/.norte-box" ./norte-out >/dev/null 2>&1 && touch ./norte-out/.probe >/dev/null 2>&1; then
