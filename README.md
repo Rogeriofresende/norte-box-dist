@@ -104,6 +104,47 @@ Feche o Claude e abra de novo. Depois rode o seu convite normalmente. Se o seu c
 
 ---
 
+## Usa o Codex (ChatGPT) em vez do Claude?
+
+A norte-box também funciona no **Codex**, com a conta do ChatGPT (testado no Codex 0.153 e 0.160).
+
+**1) Instalar o Codex** — no Terminal (Mac) ou Prompt de Comando (Windows), com o Node já instalado (passo 1 acima):
+
+```
+npm install -g @openai/codex
+```
+
+**2) Entrar e instalar a caixa** — ainda no terminal:
+
+```
+codex login
+codex plugin marketplace add Rogeriofresende/norte-box-dist
+codex plugin add norte@norte-box
+codex plugin marketplace add obra/superpowers-marketplace
+codex plugin add superpowers@superpowers-marketplace
+```
+
+**3) Abrir o Codex numa pasta de trabalho** — `mkdir -p ~/norte && cd ~/norte && codex` (Windows: `mkdir %USERPROFILE%\norte & cd %USERPROFILE%\norte & codex`). Duas telas na 1ª vez:
+
+| Tela | O que fazer |
+|---|---|
+| "Do you trust the contents of this directory?" | Enter (1. Yes, continue) |
+| **"Hooks need review"** | seta ↓ até **"2. Trust all and continue"** → Enter. Sem isso a caixa fica sem freios, sem termo e sem o jeito Norte. |
+
+**4) Ligar com o convite** — no Codex os comandos começam com **`$`** (não `/`):
+
+```
+$norte:convite SEU-CODIGO
+$norte:consent
+$norte:doctor
+```
+
+Quando o Codex perguntar **"Would you like to run the following command?"**, Enter (Yes) — é a caixa falando com o servidor do convite. No `$norte:consent`, leia o termo e responda **sim** só se concordar. No fim tem que aparecer **DOCTOR OK**.
+
+Atualizou a caixa e o Codex pediu "Hooks need review" de novo? É normal: autorize de novo (o `$norte:doctor` avisa se faltar).
+
+---
+
 ## Privacidade (o medidor de uso)
 
 O medidor de uso **só envia números de uso** (quantas vezes você usou cada coisa), e **só depois** que você valida um convite e responde **sim** no `/norte:consent`. Sem isso, **nada sai da sua máquina**. O conteúdo do seu trabalho **não** é enviado. Você pode ver e desligar isso a qualquer momento com `/norte:telemetry`.

@@ -1,0 +1,33 @@
+---
+name: "retomar"
+description: "Le o handoff mais recente do projeto (./norte-out/handoffs/) com rigor critico, resume por staleness e valida o mundo antes de agir. (comando /norte:retomar)"
+---
+
+> **No Codex:** onde este texto disser `/norte:<nome>`, a pessoa digita `$norte:<nome>` (ou pede em português).
+> Os comandos de terminal abaixo já acham a pasta da caixa sozinhos — rode-os como estão.
+
+> `<ARGUMENTOS>` = o que a pessoa escreveu junto com o pedido (pode ser vazio).
+
+Voce e o `/norte:retomar`. Acione a skill **norte-retomar**.
+
+Numa sessao nova, leia o handoff mais recente deste projeto (via `./norte-out/handoffs/ULTIMO.md`,
+ou o path/slug em `<ARGUMENTOS>` se houver) e entregue, **antes de qualquer execucao**: o objetivo
+herdado, onde a sessao anterior parou, o proximo passo e 1 discordancia se o mundo mudou.
+
+Siga o contrato da skill `norte-retomar`:
+- detecte o **staleness** (FRESH / SLIGHTLY_STALE / STALE / VERY_STALE) por idade + commits desde;
+- rode o **aviso de bilhete vencido** (`bin/nb-bilhete-validade "$HANDOFF_PATH"`) e mostre a linha de
+  veredito da idade (`🟢 fresco` / `🟡 envelhecido` / `🔴 velho — confira antes de seguir`, com Nd/Nc) **no
+  TOPO**, antes das 5 perguntas — coexistindo com o bloco 🔴 do selo. E ALERTA pra conferir, nunca licenca
+  pra executar (mede so idade+commits, nao le o conteudo); `🟡 nao sei a idade` se faltar carimbo/git;
+- siga a cadeia `continues-from` (leitura real, recursiva ate a raiz);
+- levante as **5 perguntas** (premissa / beco / efeito / mundo / intencao) ANTES de pesquisar;
+- **valide o mundo** — trate o "proximo passo" do handoff como SUPOSICAO, nao fato; se o mundo mexeu
+  no mesmo assunto, NAO execute — reconcilie com o usuario primeiro;
+- detecte acoes ja-disparadas (PR, push, deploy, email) e NAO as re-execute;
+- escale o rigor: FRESH confia + resume no chat; STALE+ valida tudo antes de confiar.
+
+Sem `./norte-out/handoffs/` -> avise "nenhum handoff neste projeto; rode `/norte:continuar`
+ao final da sessao pra criar um" e pare (nao e erro). Nunca trave o trabalho por um comando que
+falhou — registre a falha e siga. Termine apresentando o **proximo passo (com intencao)** como
+chamado a acao.
