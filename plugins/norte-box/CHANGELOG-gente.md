@@ -8,6 +8,11 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.49
+- **Trocar de conta ficou mais à prova de erro**: se a conversa foi aberta com `claude` puro, o `/norte:trocar-conta B` agora te dá o comando exato pra reabrir ESTA mesma conversa já na outra conta. A barrinha de baixo mostra 🄰 ou 🄱 quando a conversa foi aberta pelo `nb-claude`.
+- O `nb-claude` agora acompanha as atualizações da caixa sozinho (quem já tinha: rode `/norte:trocar-conta configurar` uma vez). O `/norte:doctor` diz o que falta pra troca funcionar.
+- Windows, Codex e o painel lateral do VS Code avisam antes que a troca não funciona ali.
+
 ## 0.3.48
 - **Quem tem 2 contas Claude agora troca de conta sem perder a conversa**: `/norte:trocar-conta` mostra quanto cada conta (A e B) já usou, e `/norte:trocar-conta B` passa a conversa pra outra conta — quando a resposta termina, ela fecha e reabre sozinha, com o histórico. Pra preparar (uma vez): `/norte:trocar-conta configurar` — as chaves entram pelo formulário seguro, nunca pelo chat. Funciona em conversa aberta com `nb-claude`; no Windows ainda não.
 

@@ -10,11 +10,32 @@ a MESMA conversa na outra conta, no mesmo terminal, com o histórico.
 erro). Chave só entra pelo formulário do `/norte:salvar-seguro`. NUNCA faça `/login` pela pessoa.
 Só troca quem ela pediu com a letra (A ou B) — sem letra, só mostra.
 
+## Antes de rodar qualquer coisa: dá pra trocar aqui?
+
+A troca **não funciona** em 3 lugares. Confira primeiro (só lê variáveis, não mexe em nada):
+
+```bash
+case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) echo LUGAR=windows;; *) [ "${OS:-}" = Windows_NT ] && echo LUGAR=windows;; esac
+[ -z "${CLAUDE_CODE_SESSION_ID:-}" ] && echo LUGAR=fora-do-claude-code
+[ -n "${CLAUDE_CODE_ENTRYPOINT:-}" ] && [ "$CLAUDE_CODE_ENTRYPOINT" != cli ] && echo "LUGAR=painel ($CLAUDE_CODE_ENTRYPOINT)"
+```
+
+- **Windows** (`LUGAR=windows`) → *"No Windows a troca de conta ainda não funciona."*
+- **Codex** (você é o Codex, não o Claude Code — ou saiu `LUGAR=fora-do-claude-code`) → *"No Codex a troca de
+  conta não funciona — ela é só pro Claude Code."*
+- **Painel lateral do VS Code / extensão** (`LUGAR=painel ...`) → *"No painel lateral do VS Code a troca não
+  funciona — abra a conversa num Terminal com `nb-claude`."*
+
+Nesses casos diga a frase em 1 linha e **pare** — não rode o `esta A|B`. Mostrar o uso (sem letra) ainda
+pode. Não saiu nada (ou ficou na dúvida) → siga; o `nb-trocar-conta` decide e recusa com motivo se precisar.
+
 Ache os programas (o resolvedor funciona em qualquer instalação):
 
 ```bash
-NBD="$(for d in "$CLAUDE_PLUGIN_ROOT/bin" "$HOME"/.claude/plugins/cache/norte-box/*/*/bin; do [ -f "$d/nb-trocar-conta" ] && { printf '%s' "$d"; break; }; done)"
+NBD="$([ -f "$CLAUDE_PLUGIN_ROOT/bin/nb-trocar-conta" ] && printf '%s' "$CLAUDE_PLUGIN_ROOT/bin" || for d in "$HOME"/.claude/plugins/cache/norte-box/*/*/bin; do [ -f "$d/nb-trocar-conta" ] && printf '%s\t%s\n' "$(basename "$(dirname "$d")")" "$d"; done | grep -E '^[0-9]+\.[0-9]+\.[0-9]+'"$(printf '\t')" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -f2-)"
 ```
+
+(Sem `CLAUDE_PLUGIN_ROOT`, pega a versão **mais nova** instalada — 0.3.10 vem depois de 0.3.9.)
 
 Leia `$ARGUMENTS`:
 
@@ -27,6 +48,10 @@ node "$NBD/nb-trocar-conta" estado
 Mostre as linhas como vieram (as 2 contas + em qual conta está esta conversa). Se aparecer "sem chave
 guardada" ou "não foi aberta pelo nb-claude", ofereça em 1 linha o `/norte:trocar-conta configurar`.
 
+**A letra na barrinha:** em conversa aberta pelo `nb-claude`, a barrinha de baixo mostra 🄰 ou 🄱 no fim — é a
+conta em que **esta conversa foi aberta**. Conversa aberta com `claude` puro não mostra letra nenhuma. A letra
+não quer dizer "troca feita": depois de trocar, a conversa reabre e a letra nova aparece nela.
+
 ## `A` ou `B` → trocar esta conversa
 
 ```bash
@@ -37,6 +62,9 @@ node "$NBD/nb-trocar-conta" esta <A|B>
   resposta logo** — a troca só acontece quando a conversa para.
 - `NAO|...` → diga o motivo em 1 linha. É recusa honesta (conta quase cheia, já está nela, conversa fora do
   nb-claude, Windows). Não tente contornar.
+- Se o `NAO|...` trouxer um comando `nb-claude <A|B> --resume <número>` (conversa aberta com `claude` puro),
+  mostre esse comando **exato**, num bloco de código, e diga: *"Saia desta conversa com `/exit` e cole isso
+  no Terminal — ela volta igualzinha, já na outra conta."* Não rode o comando você mesmo.
 
 ## `configurar` → preparar (uma vez por computador)
 
@@ -59,17 +87,26 @@ node "$NBD/nb-trocar-conta" esta <A|B>
    "pode":
 
    ```bash
-   mkdir -p "$HOME/.norte-box/bin" && cp "$NBD/nb-claude" "$HOME/.norte-box/bin/nb-claude" && chmod +x "$HOME/.norte-box/bin/nb-claude"
+   mkdir -p "$HOME/.norte-box/bin" && cp "$NBD/nb-claude-ponteiro" "$HOME/.norte-box/bin/nb-claude" && chmod +x "$HOME/.norte-box/bin/nb-claude"
    for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do [ -f "$rc" ] && ! grep -q 'norte-box/bin' "$rc" && printf '\n# norte-box: nb-claude (troca de conta)\nexport PATH="$HOME/.norte-box/bin:$PATH"\n' >> "$rc"; done
    ```
 
-   Diga: *"Pronto. Abra um Terminal novo e use `nb-claude` no lugar de `claude` (ou `nb-claude B` pra
-   começar na B). Dali, `/norte:trocar-conta B` troca a conversa."*
+   O que fica instalado é um **ponteiro**: a cada uso ele roda o `nb-claude` da versão mais nova da caixa.
+   **Atualizar a caixa não exige reinstalar.** (Quem tem a cópia antiga: rodar este passo de novo troca pelo
+   ponteiro; o `/norte:doctor` avisa "nb-claude antigo".)
 
-3. Confira com `node "$NBD/nb-trocar-conta" estado`.
+   Diga: *"Pronto. Abra um Terminal novo e use `nb-claude` no lugar de `claude` (ou `nb-claude B` pra
+   começar na B). Dali, `/norte:trocar-conta B` troca a conversa. Quando a caixa atualizar, não precisa
+   refazer nada."*
+
+3. Confira com `node "$NBD/nb-trocar-conta" estado` e com o `/norte:doctor` (3 linhas "Troca de conta").
 
 ## O que não funciona (diga se perguntarem)
 
-- Windows: ainda não.
-- Conversa aberta com `claude` puro (sem `nb-claude`): mostra o uso, mas não troca.
-- Conversa trabalhando: espera até 30 min ela parar; depois desiste sem trocar.
+- **Windows:** ainda não. Avisa antes de tentar.
+- **Codex:** não — a troca é só do Claude Code. Avisa antes de tentar.
+- **Painel lateral do VS Code (extensão):** não troca — use um Terminal (pode ser o Terminal de dentro do VS
+  Code) com `nb-claude`. Avisa antes de tentar.
+- **Conversa aberta com `claude` puro** (sem `nb-claude`): mostra o uso e a barrinha fica sem letra; não troca
+  no lugar, mas dá o comando `nb-claude <conta> --resume ...` pra reabrir a mesma conversa na outra conta.
+- **Conversa trabalhando:** espera até 30 min ela parar; depois desiste sem trocar.

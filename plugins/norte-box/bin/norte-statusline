@@ -10,6 +10,10 @@
 #                     <60%  neutro | 60-80% amarelo | >80% vermelho.
 #   - "Opus"     = a IA (model.display_name, ja vem abreviado: Opus/Sonnet/Haiku).
 #   - SEM assunto, SEM NRT. So o numero, que e a ancora fixa da conversa.
+#   - " · 🄰" / " · 🄱" no fim = a conta Claude em que ESTA conversa foi aberta pelo nb-claude
+#     (que poe NB_CONTA=A|B no ambiente do claude; a barra e filha dele e herda). So aparece
+#     com NB_CONTA exatamente A ou B; sem isso, nenhuma letra (nao promete nada). A letra diz
+#     "aberta na conta X", nunca "troca feita". So le a variavel: nada de .env, chave ou rede.
 #
 # COMO O #N FUNCIONA (a maquina do usuario NAO tem o registro NRT do CEO):
 #   O Norte-box mantem um contador LOCAL proprio. Chave = session_id (o Claude Code garante
@@ -34,9 +38,16 @@ LOCK="${STATE_DIR}/conversas.map.lock"   # lock por mkdir (atomico e portatil)
 # --- 1) Consome stdin SEMPRE (evita SIGPIPE). E dado, jamais comando. ---
 _stdin="$(cat 2>/dev/null || true)"
 
+# Conta da conversa (so A/B exatos; qualquer outra coisa = sem letra).
+_conta=""
+case "${NB_CONTA:-}" in
+  A) _conta=" · 🄰" ;;
+  B) _conta=" · 🄱" ;;
+esac
+
 # --- 2) Sem jq nao ha parse seguro de JSON -> degrada, nao quebra. ---
 if ! command -v jq >/dev/null 2>&1; then
-  printf '%s\n' "▲ · ctx:--% · —"
+  printf '%s%s\n' "▲ · ctx:--% · —" "$_conta"
   exit 0
 fi
 
@@ -123,5 +134,5 @@ fi
 # --- 6) Monta a barra no formato exato: "▲N  ·  ctx:P%  ·  Modelo" ---
 #     "▲" colado no N (sem "·"). Separador " · " entre os 3 blocos.
 _tri="▲${_n}"    # se _n vazio -> so "▲" (degrade)
-printf '%s · %s · %s\n' "$_tri" "$_ctx_body" "$_model"
+printf '%s · %s · %s%s\n' "$_tri" "$_ctx_body" "$_model" "$_conta"
 exit 0

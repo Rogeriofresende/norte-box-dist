@@ -99,11 +99,37 @@ function processoDaConversa(lancador) {
   return 0;
 }
 
+// null = arquivo da conversa não existe/ilegível agora · { formato: false } = existe mas sem status (string) e
+// statusUpdatedAt (número): o Claude Code mudou o formato e não dá pra saber quando a conversa parou.
 function situacao(pid) {
-  try {
-    const d = JSON.parse(fs.readFileSync(path.join(SESSOES, pid + '.json'), 'utf8'));
-    return { status: d.status, desde: Number(d.statusUpdatedAt || d.updatedAt || 0) };
-  } catch (_) { return null; }
+  let d;
+  try { d = JSON.parse(fs.readFileSync(path.join(SESSOES, pid + '.json'), 'utf8')); } catch (_) { return null; }
+  if (!d || typeof d.status !== 'string' || typeof d.statusUpdatedAt !== 'number' || !isFinite(d.statusUpdatedAt)) {
+    return { formato: false };
+  }
+  return { formato: true, status: d.status, desde: d.statusUpdatedAt };
+}
+
+const SID_OK = /^[0-9a-fA-F-]{8,64}$/;
+const FORMATO_MUDOU = 'NAO|o Claude Code mudou o formato da conversa — não troco às cegas (atualize a norte-box)';
+
+function sidValido() {
+  const sid = process.env.CLAUDE_CODE_SESSION_ID || '';
+  return SID_OK.test(sid) ? sid : '';
+}
+
+// Fora do nb-claude: o caminho exato pra reabrir ESTA conversa no nb-claude (ou o genérico, sem sid válido).
+function foraDoLancador(para) {
+  const sid = sidValido();
+  if (!sid) return 'esta conversa não foi aberta pelo nb-claude — feche e abra com: nb-claude';
+  return 'esta conversa não foi aberta pelo nb-claude — saia com /exit e reabra ESTA conversa na conta ' + para
+    + ' com: nb-claude ' + para + ' --resume ' + sid + ondeRodar();
+}
+
+// --resume só acha a conversa na mesma pasta; sem o nb-claude instalado, o comando não existe ainda.
+function ondeRodar() {
+  const instalado = fs.existsSync(path.join(HOME, '.norte-box', 'bin', 'nb-claude'));
+  return ' (no Terminal, nesta mesma pasta' + (instalado ? ')' : '; antes instale o nb-claude: /norte:trocar-conta configurar)');
 }
 
 async function estado() {
@@ -112,7 +138,13 @@ async function estado() {
   console.log(linhaConta('B', fb));
   const c = process.env.NB_CONTA;
   console.log('');
-  console.log(c ? 'esta conversa: conta ' + c : 'esta conversa não foi aberta pelo nb-claude (não troca)');
+  if (c) console.log('esta conversa: conta ' + c);
+  else {
+    console.log('esta conversa não foi aberta pelo nb-claude (não troca)');
+    const sid = sidValido();
+    if (sid) console.log('pra trocar: saia com /exit e reabra ESTA conversa com: nb-claude A --resume ' + sid
+      + '  (ou nb-claude B --resume ' + sid + ')' + ondeRodar());
+  }
   return 0;
 }
 
@@ -122,9 +154,9 @@ async function esta(para) {
   const de = process.env.NB_CONTA || '';
   const sid = process.env.CLAUDE_CODE_SESSION_ID || '';
   if (!lanc || !vivo(lanc) || !de) {
-    console.log('NAO|esta conversa não foi aberta pelo nb-claude — feche e abra com: nb-claude'); return 1;
+    console.log('NAO|' + foraDoLancador(para)); return 1;
   }
-  if (!/^[0-9a-fA-F-]{8,64}$/.test(sid)) { console.log('NAO|não consegui saber qual é esta conversa'); return 1; }
+  if (!SID_OK.test(sid)) { console.log('NAO|não consegui saber qual é esta conversa'); return 1; }
   if (de === para) { console.log('NAO|esta conversa já está na ' + para); return 1; }
   if (!chave(para)) { console.log('NAO|não há chave guardada da conta ' + para + ' — use /norte:trocar-conta configurar'); return 1; }
   const f = await medir(para);
@@ -132,7 +164,9 @@ async function esta(para) {
   if (f.erro) { console.log('NAO|conta ' + para + ': ' + f.erro); return 1; }
   if (f.pct >= QUASE) { console.log('NAO|a conta ' + para + ' está quase cheia (' + f.pct + '%' + (f.reset ? ', ' + volta(f.reset) : '') + ') — nada foi trocado'); return 1; }
   const pid = processoDaConversa(lanc);
-  if (!pid || !situacao(pid)) { console.log('NAO|esta versão do Claude Code não mostra quando a conversa parou — não troco às cegas'); return 1; }
+  const sit = pid ? situacao(pid) : null;
+  if (!sit) { console.log('NAO|esta versão do Claude Code não mostra quando a conversa parou — não troco às cegas'); return 1; }
+  if (!sit.formato) { console.log(FORMATO_MUDOU); return 1; }
   fs.mkdirSync(FILA, { recursive: true, mode: 0o700 });
   const espera = path.join(FILA, 'espera-' + lanc + '.pid');
   try { const v = parseInt(fs.readFileSync(espera, 'utf8'), 10); if (v && vivo(v)) process.kill(v, 'SIGTERM'); } catch (_) { /* nenhuma */ }
@@ -152,6 +186,7 @@ async function esperar(para, lanc, pid, sid) {
     while (Date.now() < fim) {
       if (!vivo(pid) || !vivo(lanc)) { log({ ev: 'sumiu', sid, para }); return 1; }
       const s = situacao(pid);
+      if (s && !s.formato) { log({ ev: 'formato', sid, para }); return 1; }
       if (s && s.status === 'idle' && Date.now() - s.desde >= PARADA_MS) {
         const pedido = path.join(FILA, lanc + '.json');
         fs.writeFileSync(pedido + '.tmp', JSON.stringify({ sid, para, ts: Date.now() }), { mode: 0o600 });
