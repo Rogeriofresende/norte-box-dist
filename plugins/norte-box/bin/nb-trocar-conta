@@ -1,0 +1,180 @@
+#!/usr/bin/env node
+// nb-trocar-conta — /norte:trocar-conta. Pra quem tem 2 contas Claude (A e B): mostra quanto cada uma
+// já usou e troca a conta DESTA conversa — ela fecha quando parar e o nb-claude reabre a MESMA conversa
+// (claude --resume) na outra conta, no mesmo terminal, com o histórico.
+// As chaves (claude setup-token) ficam em ~/.norte-box/contas/.env, gravadas pelo /salvar-seguro
+// (--projeto ~/.norte-box/contas). Este programa NUNCA imprime chave, nem em erro.
+//
+// Uso:  nb-trocar-conta estado          → as 2 contas (% usado) + em qual conta está esta conversa
+//       nb-trocar-conta esta A|B        → troca esta conversa assim que ela terminar a resposta
+// Saída pra máquina: linhas de estado · OK|<frase> · NAO|<motivo>
+// Ganchos de teste: NB_CONTAS_DIR · NB_TROCA_DIR · NB_TROCA_SESSOES · NB_TROCA_FOLGA_JSON · NB_TROCA_PARADA_MS
+'use strict';
+const fs = require('fs'), os = require('os'), path = require('path'), https = require('https');
+const { spawn, execFileSync } = require('child_process');
+
+const HOME = os.homedir();
+const CONTAS = process.env.NB_CONTAS_DIR || path.join(HOME, '.norte-box', 'contas');
+const FILA = process.env.NB_TROCA_DIR || path.join(HOME, '.norte-box', 'troca');
+const SESSOES = process.env.NB_TROCA_SESSOES
+  || path.join(process.env.CLAUDE_CONFIG_DIR || path.join(HOME, '.claude'), 'sessions');
+const PARADA_MS = parseInt(process.env.NB_TROCA_PARADA_MS || '4000', 10);
+const QUASE = 95;
+const LETRA = { A: '🄰', B: '🄱' };
+const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+function log(ev) {
+  try {
+    fs.mkdirSync(FILA, { recursive: true });
+    ev.ts = new Date().toISOString();
+    fs.appendFileSync(path.join(FILA, 'troca.jsonl'), JSON.stringify(ev) + '\n');
+  } catch (_) { /* registro é extra */ }
+}
+
+function chave(conta) {
+  try {
+    const t = fs.readFileSync(path.join(CONTAS, '.env'), 'utf8');
+    const m = t.match(new RegExp('^CLAUDE_CONTA_' + conta + '_TOKEN=(.*)$', 'm'));
+    if (!m) return '';
+    return m[1].trim().replace(/^"(.*)"$/, '$1').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  } catch (_) { return ''; }
+}
+
+function volta(seg) {
+  const t = new Date(seg * 1000);
+  return isNaN(t) ? '' : 'volta ' + DIAS[t.getDay()] + ' ' + t.getHours() + 'h';
+}
+
+// Quanto a conta já usou: 1 pedido mínimo (1 token de resposta) e lê os cabeçalhos de limite da resposta.
+function medir(conta) {
+  if (process.env.NB_TROCA_FOLGA_JSON) {
+    const f = JSON.parse(process.env.NB_TROCA_FOLGA_JSON)[conta];
+    return Promise.resolve(f || null);
+  }
+  const tok = chave(conta);
+  if (!tok) return Promise.resolve(null);
+  const corpo = JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1,
+    system: "You are Claude Code, Anthropic's official CLI for Claude.", messages: [{ role: 'user', content: 'oi' }] });
+  return new Promise((ok) => {
+    const rq = https.request('https://api.anthropic.com/v1/messages', { method: 'POST', timeout: 20000, headers: {
+      Authorization: 'Bearer ' + tok, 'anthropic-beta': 'oauth-2025-04-20', 'anthropic-version': '2023-06-01',
+      'content-type': 'application/json', 'User-Agent': 'claude-cli' } }, (r) => {
+      r.resume();
+      const h = r.headers;
+      const jan = (n) => {
+        const u = parseFloat(h['anthropic-ratelimit-unified-' + n + '-utilization']);
+        const s = parseInt(h['anthropic-ratelimit-unified-' + n + '-reset'], 10);
+        return isNaN(u) ? null : { pct: Math.round(u * 100), reset: s };
+      };
+      const a = jan('5h'), b = jan('7d');
+      if (r.statusCode === 401 || r.statusCode === 403) return ok({ erro: 'chave recusada — gere outra e guarde de novo' });
+      if (!a && !b) return ok(r.statusCode === 429 ? { pct: 100, reset: 0 } : null);
+      const pior = (b && (!a || b.pct >= a.pct)) ? b : a;
+      ok({ pct: pior.pct, reset: pior.reset });
+    });
+    rq.on('timeout', () => rq.destroy());
+    rq.on('error', () => ok(null));
+    rq.end(corpo);
+  });
+}
+
+function linhaConta(c, f) {
+  if (!chave(c) && !process.env.NB_TROCA_FOLGA_JSON) return LETRA[c] + ' ' + c + ' · sem chave guardada';
+  if (!f) return LETRA[c] + ' ' + c + ' · sem medição agora';
+  if (f.erro) return LETRA[c] + ' ' + c + ' · ' + f.erro;
+  return LETRA[c] + ' ' + c + ' · ' + f.pct + '% usado' + (f.pct >= 80 && f.reset ? ' · ' + volta(f.reset) : '');
+}
+
+function vivo(pid) { try { process.kill(pid, 0); return true; } catch (_) { return false; } }
+
+// A conversa (o processo claude) é o filho direto do nb-claude.
+function processoDaConversa(lancador) {
+  try {
+    const out = execFileSync('ps', ['-A', '-o', 'pid=,ppid='], { encoding: 'utf8' });
+    for (const l of out.trim().split('\n')) {
+      const [pid, ppid] = l.trim().split(/\s+/).map(Number);
+      if (ppid === lancador) return pid;
+    }
+  } catch (_) { /* sem ps */ }
+  return 0;
+}
+
+function situacao(pid) {
+  try {
+    const d = JSON.parse(fs.readFileSync(path.join(SESSOES, pid + '.json'), 'utf8'));
+    return { status: d.status, desde: Number(d.statusUpdatedAt || d.updatedAt || 0) };
+  } catch (_) { return null; }
+}
+
+async function estado() {
+  const [fa, fb] = await Promise.all([medir('A'), medir('B')]);
+  console.log(linhaConta('A', fa));
+  console.log(linhaConta('B', fb));
+  const c = process.env.NB_CONTA;
+  console.log('');
+  console.log(c ? 'esta conversa: conta ' + c : 'esta conversa não foi aberta pelo nb-claude (não troca)');
+  return 0;
+}
+
+async function esta(para) {
+  if (process.platform === 'win32') { console.log('NAO|no Windows a troca ainda não funciona'); return 1; }
+  const lanc = parseInt(process.env.NB_TROCA_LANCADOR || '0', 10);
+  const de = process.env.NB_CONTA || '';
+  const sid = process.env.CLAUDE_CODE_SESSION_ID || '';
+  if (!lanc || !vivo(lanc) || !de) {
+    console.log('NAO|esta conversa não foi aberta pelo nb-claude — feche e abra com: nb-claude'); return 1;
+  }
+  if (!/^[0-9a-fA-F-]{8,64}$/.test(sid)) { console.log('NAO|não consegui saber qual é esta conversa'); return 1; }
+  if (de === para) { console.log('NAO|esta conversa já está na ' + para); return 1; }
+  if (!chave(para)) { console.log('NAO|não há chave guardada da conta ' + para + ' — use /norte:trocar-conta configurar'); return 1; }
+  const f = await medir(para);
+  if (!f) { console.log('NAO|não consegui medir a conta ' + para + ' agora — tente de novo em 1 minuto'); return 1; }
+  if (f.erro) { console.log('NAO|conta ' + para + ': ' + f.erro); return 1; }
+  if (f.pct >= QUASE) { console.log('NAO|a conta ' + para + ' está quase cheia (' + f.pct + '%' + (f.reset ? ', ' + volta(f.reset) : '') + ') — nada foi trocado'); return 1; }
+  const pid = processoDaConversa(lanc);
+  if (!pid || !situacao(pid)) { console.log('NAO|esta versão do Claude Code não mostra quando a conversa parou — não troco às cegas'); return 1; }
+  fs.mkdirSync(FILA, { recursive: true, mode: 0o700 });
+  const espera = path.join(FILA, 'espera-' + lanc + '.pid');
+  try { const v = parseInt(fs.readFileSync(espera, 'utf8'), 10); if (v && vivo(v)) process.kill(v, 'SIGTERM'); } catch (_) { /* nenhuma */ }
+  const filho = spawn(process.execPath, [__filename, '_esperar', para, String(lanc), String(pid), sid],
+    { detached: true, stdio: 'ignore', env: process.env });
+  filho.unref();
+  fs.writeFileSync(espera, String(filho.pid));
+  log({ ev: 'pediu', sid, de, para });
+  console.log('OK|esta conversa passa pra ' + para + ' assim que terminar esta resposta (fecha e reabre sozinha, com o histórico)');
+  return 0;
+}
+
+async function esperar(para, lanc, pid, sid) {
+  const fim = Date.now() + 30 * 60 * 1000;
+  const espera = path.join(FILA, 'espera-' + lanc + '.pid');
+  try {
+    while (Date.now() < fim) {
+      if (!vivo(pid) || !vivo(lanc)) { log({ ev: 'sumiu', sid, para }); return 1; }
+      const s = situacao(pid);
+      if (s && s.status === 'idle' && Date.now() - s.desde >= PARADA_MS) {
+        const pedido = path.join(FILA, lanc + '.json');
+        fs.writeFileSync(pedido + '.tmp', JSON.stringify({ sid, para, ts: Date.now() }), { mode: 0o600 });
+        fs.renameSync(pedido + '.tmp', pedido);
+        log({ ev: 'fechando', sid, para, pid });
+        process.kill(pid, 'SIGTERM');
+        return 0;
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    log({ ev: 'desistiu', sid, para });
+    return 1;
+  } finally {
+    try { fs.unlinkSync(espera); } catch (_) { /* já saiu */ }
+  }
+}
+
+(async () => {
+  const [acao, para, ...resto] = process.argv.slice(2);
+  let code;
+  if (acao === 'estado' || !acao) code = await estado();
+  else if (acao === 'esta' && (para === 'A' || para === 'B')) code = await esta(para);
+  else if (acao === '_esperar') code = await esperar(para, parseInt(resto[0], 10), parseInt(resto[1], 10), resto[2]);
+  else { console.log('NAO|use: estado · esta A · esta B'); code = 1; }
+  process.exit(code);
+})();
