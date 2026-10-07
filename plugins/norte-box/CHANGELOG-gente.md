@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.48
+- **Quem tem 2 contas Claude agora troca de conta sem perder a conversa**: `/norte:trocar-conta` mostra quanto cada conta (A e B) já usou, e `/norte:trocar-conta B` passa a conversa pra outra conta — quando a resposta termina, ela fecha e reabre sozinha, com o histórico. Pra preparar (uma vez): `/norte:trocar-conta configurar` — as chaves entram pelo formulário seguro, nunca pelo chat. Funciona em conversa aberta com `nb-claude`; no Windows ainda não.
+
 ## 0.3.47
 - **A caixa agora funciona no Codex (ChatGPT)**, não só no Claude: os mesmos comandos (no Codex começam com `$`, ex.: `$norte:convite`), os freios, o termo, o medidor e a conferência final. Na 1ª vez o Codex pede pra você autorizar os ganchos da caixa ("Trust all and continue") — é isso que liga os freios.
 - Pra quem usa Claude, nada muda.

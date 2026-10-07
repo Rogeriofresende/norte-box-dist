@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# nb-claude — abre o Claude na conta escolhida (A ou B) e, quando o /norte:trocar-conta pede, reabre a MESMA
+# conversa (claude --resume) na outra conta, no mesmo terminal. Sem pedido de troca, sai como o claude normal.
+# Chaves: ~/.norte-box/contas/.env (CLAUDE_CONTA_A_TOKEN / CLAUDE_CONTA_B_TOKEN, gravadas pelo /salvar-seguro).
+# Conta sem chave guardada = usa o login normal do Claude. Nunca imprime chave.
+# Uso: nb-claude [A|B] [argumentos do claude...]
+# Ganchos de teste: NB_CONTAS_DIR · NB_TROCA_DIR · NB_CLAUDE_BIN
+set -u
+DIR="${NB_CONTAS_DIR:-$HOME/.norte-box/contas}"
+FILA="${NB_TROCA_DIR:-$HOME/.norte-box/troca}"
+BIN="${NB_CLAUDE_BIN:-claude}"
+conta="A"
+[ -s "$DIR/padrao" ] && conta="$(tr -dc 'AB' < "$DIR/padrao" | head -c1)"
+case "${1:-}" in A|B) conta="$1"; shift ;; esac
+[ -z "$conta" ] && conta="A"
+
+_chave() {
+  [ -f "$DIR/.env" ] || return 0
+  sed -n "s/^CLAUDE_CONTA_$1_TOKEN=//p" "$DIR/.env" | head -1 | sed -e 's/^"\(.*\)"$/\1/' -e 's/\\"/"/g' -e 's/\\\\/\\/g'
+}
+
+while :; do
+  tok="$(_chave "$conta")"
+  if [ -n "$tok" ]; then
+    NB_CONTA="$conta" NB_TROCA_LANCADOR="$$" CLAUDE_CODE_OAUTH_TOKEN="$tok" "$BIN" "$@"
+  else
+    NB_CONTA="$conta" NB_TROCA_LANCADOR="$$" "$BIN" "$@"
+  fi
+  rc=$?
+  tok=""
+  pedido="$FILA/$$.json"
+  [ -f "$pedido" ] || exit "$rc"
+  linha="$(tr -d '\n' < "$pedido")"
+  mv -f "$pedido" "$pedido.usado" 2>/dev/null || rm -f "$pedido"
+  sid="$(printf '%s' "$linha" | sed -n 's/.*"sid":"\([0-9a-fA-F-]*\)".*/\1/p')"
+  para="$(printf '%s' "$linha" | sed -n 's/.*"para":"\([AB]\)".*/\1/p')"
+  if [ -z "$sid" ] || [ -z "$para" ]; then
+    printf '%s\n' "nb-claude: pedido de troca inválido — nada foi reaberto" >&2
+    exit "$rc"
+  fi
+  printf '%s\n' "▶ Conta $para · mesma conversa reaberta" >&2
+  conta="$para"
+  set -- --resume "$sid"
+done
