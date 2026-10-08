@@ -121,7 +121,10 @@ _event_name="$(printf '%s' "$_stdin"        | jq -r '.hook_event_name // empty' 
 # hashear impede ate cruzar esse arquivo. err: 1 bit derivado do BOOLEANO is_error do tool_response
 # (nunca a mensagem — o texto do erro segue so MEDIDO em bytes e descartado, como todo conteudo).
 _session_raw="$(printf '%s' "$_stdin" | jq -r '.session_id // empty' 2>/dev/null || true)"
-_err="$(printf '%s' "$_stdin" | jq -r 'if (.tool_response|type)=="object" then ((.tool_response.is_error // false)==true) else false end' 2>/dev/null || echo false)"
+_err="$(printf '%s' "$_stdin" | jq -r 'if (.hook_event_name // "")=="PostToolUseFailure" then true elif (.tool_response|type)=="object" then ((.tool_response.is_error // false)==true) else false end' 2>/dev/null || echo false)"
+# NRT-_995909: ferramenta que FALHA nao dispara PostToolUse — dispara PostToolUseFailure (gancho
+# novo no hooks.json, apontando pra este mesmo script). Mesmo formato do registro (event fica
+# "PostToolUse" porque tool_name esta presente); so o bit err vira true.
 case "$_err" in true) _err=true ;; *) _err=false ;; esac
 
 if [ -n "$_prompt_raw" ]; then
@@ -322,30 +325,10 @@ _line="$(jq -cn \
 # Enfileira no buffer local (append). Falha ao gravar -> fail-open.
 printf '%s\n' "$_line" >> "$QUEUE" 2>/dev/null || exit 0
 
-# --- Flush ASSINCRONO fire-and-forget (STUB se sem endpoint) ---
-# Auth de ingestao (furos #1 e #3): usa SO o token PROPRIO do convite (identity.json). NAO ha
-# fallback pro token compartilhado — o kit do convidado nem carrega token de dono. Sem convite
-# validado -> sem token -> nao envia agora (fica na fila; o dreno tenta depois de validar).
-#
-# TRANSPORTE HONESTO (Modelo A): usa o mesmo `nb-post.js` A MOSTRA que o convite/consent usam —
-# um POST normal (http/https do stdlib do node), legivel, que DIZ o que manda se perguntado.
-# NAO driblamos deny-list de curl aqui (o curl era um patch pra a maquina endurecida do proprio
-# CEO; pra distribuicao a usuarios normais, transporte legivel). O payload e SO-NUMEROS.
-_url="${NORTE_BOX_TELEMETRY_URL:-}"
-_tok="$(jq -r '.ingest_token // empty' "${STATE_DIR}/identity.json" 2>/dev/null || true)"
-_nbpost=""
-if [ -n "${_SELF_DIR:-}" ] && [ -f "${_SELF_DIR}/../lib/nb-post.js" ]; then
-  _nbpost="${_SELF_DIR}/../lib/nb-post.js"
-elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/lib/nb-post.js" ]; then
-  _nbpost="${CLAUDE_PLUGIN_ROOT}/lib/nb-post.js"
-fi
-if [ -n "$_url" ] && [ -n "$_tok" ] && [ -n "$_nbpost" ] && command -v node >/dev/null 2>&1; then
-  case "$_url" in
-    https://*|http://127.0.0.1*|http://localhost*)
-      ( printf '%s' "$_line" | node "$_nbpost" "$_url" - "$_tok" >/dev/null 2>&1 || true ) &
-      disown 2>/dev/null || true
-      ;;
-  esac
-fi
-
+# --- ENVIO UNICO (NRT-_995909, GO CEO 08/10) ---
+# Antes: alem de enfileirar, este hook mandava o evento NA HORA (nb-post.js em 2o plano) e o
+# telemetry-drain.sh mandava a MESMA linha de novo a partir do cursor (que nao sabia do envio
+# imediato) -> ~2 copias de cada uso no coletor (medido: fator ~1,9-2,0 em todas as pessoas).
+# Agora: so a fila. Quem envia e SO o dreno (SessionStart/Stop), com trava e cursor que so anda
+# depois do 200. Atraso: o uso sobe no fim do turno (Stop), nao perde (fica na fila se cair).
 exit 0
