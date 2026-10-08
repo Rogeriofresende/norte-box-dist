@@ -1,0 +1,13 @@
+{
+  "name": "troca",
+  "displayName": "norte-box · troca de conta",
+  "description": "Cmd+clique na letra 🄰/🄱 da barrinha da norte-box: escolhe a conta e confirma — a conversa troca de conta sozinha.",
+  "version": "0.1.0",
+  "publisher": "norte-box",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": { "vscode": "^1.90.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {}
+}

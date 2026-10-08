@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.50
+- **Trocar de conta com um clique na letra (VS Code)**: no `/norte:trocar-conta configurar`, a caixa pergunta se pode instalar um complemento no seu VS Code. Com ele, Cmd+clique na letra 🄰/🄱 do fim da barrinha mostra as 2 contas com o uso; você escolhe, confirma, e a conversa troca de conta sozinha, com o histórico. Quem não quiser fica igual.
+
 ## 0.3.49
 - **Trocar de conta ficou mais à prova de erro**: se a conversa foi aberta com `claude` puro, o `/norte:trocar-conta B` agora te dá o comando exato pra reabrir ESTA mesma conversa já na outra conta. A barrinha de baixo mostra 🄰 ou 🄱 quando a conversa foi aberta pelo `nb-claude`.
 - O `nb-claude` agora acompanha as atualizações da caixa sozinho (quem já tinha: rode `/norte:trocar-conta configurar` uma vez). O `/norte:doctor` diz o que falta pra troca funcionar.

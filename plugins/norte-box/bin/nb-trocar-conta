@@ -7,6 +7,8 @@
 //
 // Uso:  nb-trocar-conta estado          → as 2 contas (% usado) + em qual conta está esta conversa
 //       nb-trocar-conta esta A|B        → troca esta conversa assim que ela terminar a resposta
+//       nb-trocar-conta de-fora <conversa> A|B → o mesmo, chamado DE FORA da conversa (clique na letra no VS Code)
+//       nb-trocar-conta json            → as 2 contas em JSON (pro complemento do VS Code montar a lista)
 // Saída pra máquina: linhas de estado · OK|<frase> · NAO|<motivo>
 // Ganchos de teste: NB_CONTAS_DIR · NB_TROCA_DIR · NB_TROCA_SESSOES · NB_TROCA_FOLGA_JSON · NB_TROCA_PARADA_MS
 'use strict';
@@ -148,12 +150,13 @@ async function estado() {
   return 0;
 }
 
-async function esta(para) {
+async function esta(para, fora) {
   if (process.platform === 'win32') { console.log('NAO|no Windows a troca ainda não funciona'); return 1; }
-  const lanc = parseInt(process.env.NB_TROCA_LANCADOR || '0', 10);
-  const de = process.env.NB_CONTA || '';
-  const sid = process.env.CLAUDE_CODE_SESSION_ID || '';
+  const lanc = fora ? fora.lanc : parseInt(process.env.NB_TROCA_LANCADOR || '0', 10);
+  const de = fora ? fora.de : (process.env.NB_CONTA || '');
+  const sid = fora ? fora.sid : (process.env.CLAUDE_CODE_SESSION_ID || '');
   if (!lanc || !vivo(lanc) || !de) {
+    if (fora) { console.log('NAO|esta conversa não foi aberta pelo nb-claude — não troca pela letra'); return 1; }
     console.log('NAO|' + foraDoLancador(para)); return 1;
   }
   if (!SID_OK.test(sid)) { console.log('NAO|não consegui saber qual é esta conversa'); return 1; }
@@ -176,6 +179,53 @@ async function esta(para) {
   fs.writeFileSync(espera, String(filho.pid));
   log({ ev: 'pediu', sid, de, para });
   console.log('OK|esta conversa passa pra ' + para + ' assim que terminar esta resposta (fecha e reabre sozinha, com o histórico)');
+  return 0;
+}
+
+// De fora da conversa: acha o processo dela pelo número da conversa (arquivo de sessão do Claude Code), o
+// nb-claude que a abriu (o pai) e a conta atual (anotada pelo nb-claude em conta-<pid>).
+function pai(pid) {
+  try { return parseInt(execFileSync('ps', ['-o', 'ppid=', '-p', String(pid)], { encoding: 'utf8' }).trim(), 10) || 0; }
+  catch (_) { return 0; }
+}
+
+function acharDeFora(sid) {
+  let melhor = null;
+  try {
+    for (const f of fs.readdirSync(SESSOES)) {
+      if (!/^\d+\.json$/.test(f)) continue;
+      let d;
+      try { d = JSON.parse(fs.readFileSync(path.join(SESSOES, f), 'utf8')); } catch (_) { continue; }
+      const pid = parseInt(f, 10);
+      if (!d || d.sessionId !== sid || !vivo(pid)) continue;
+      const t = typeof d.statusUpdatedAt === 'number' ? d.statusUpdatedAt : 0;
+      if (!melhor || t > melhor.t) melhor = { pid, t };
+    }
+  } catch (_) { return null; }
+  if (!melhor) return null;
+  const lanc = pai(melhor.pid);
+  let de = '';
+  try { de = fs.readFileSync(path.join(FILA, 'conta-' + lanc), 'utf8').trim(); } catch (_) { /* não é do nb-claude */ }
+  return { sid, lanc, de: (de === 'A' || de === 'B') ? de : '' };
+}
+
+async function deFora(sid, para) {
+  if (!SID_OK.test(sid || '')) { console.log('NAO|não consegui saber qual é esta conversa'); return 1; }
+  const f = acharDeFora(sid);
+  if (!f) { console.log('NAO|não achei esta conversa aberta agora'); return 1; }
+  return esta(para, f);
+}
+
+async function emJson() {
+  const [fa, fb] = await Promise.all([medir('A'), medir('B')]);
+  const um = (c, f) => {
+    const tem = !!chave(c) || !!process.env.NB_TROCA_FOLGA_JSON;
+    if (!tem) return { chave: false };
+    if (!f) return { chave: true, pct: null };
+    if (f.erro) return { chave: true, erro: f.erro };
+    return { chave: true, pct: f.pct, volta: f.pct >= 80 && f.reset ? volta(f.reset) : '' };
+  };
+  console.log(JSON.stringify({ A: um('A', fa), B: um('B', fb), quase: QUASE }));
   return 0;
 }
 
@@ -209,7 +259,9 @@ async function esperar(para, lanc, pid, sid) {
   let code;
   if (acao === 'estado' || !acao) code = await estado();
   else if (acao === 'esta' && (para === 'A' || para === 'B')) code = await esta(para);
+  else if (acao === 'de-fora' && (resto[0] === 'A' || resto[0] === 'B')) code = await deFora(para, resto[0]);
+  else if (acao === 'json') code = await emJson();
   else if (acao === '_esperar') code = await esperar(para, parseInt(resto[0], 10), parseInt(resto[1], 10), resto[2]);
-  else { console.log('NAO|use: estado · esta A · esta B'); code = 1; }
+  else { console.log('NAO|use: estado · esta A · esta B · de-fora <conversa> A|B · json'); code = 1; }
   process.exit(code);
 })();

@@ -1,0 +1,129 @@
+#!/usr/bin/env node
+// nb-troca-vscode — instala/remove o complemento do VS Code que deixa a letra 🄰/🄱 da barrinha clicável.
+// Só roda quando a pessoa pede, no /norte:trocar-conta configurar. Monta o pacote (.vsix) a partir de
+// ../vscode/troca e usa o `code --install-extension` do próprio VS Code. Não reinicia o VS Code.
+//
+// Uso:  nb-troca-vscode instalar   → instala (ou atualiza) e liga a anotação da barrinha
+//       nb-troca-vscode remover    → desinstala e desliga
+//       nb-troca-vscode estado     → instalado ou não
+//       nb-troca-vscode pacote <arquivo.vsix> → só monta o pacote (teste)
+// Saída pra máquina: OK|<frase> · NAO|<motivo>
+// Ganchos de teste: NB_HOME · NB_CODE_BIN · NB_CODE_ARGS (JSON, argumentos extras pro code)
+'use strict';
+const fs = require('fs'), os = require('os'), path = require('path');
+const { execFileSync } = require('child_process');
+
+const HOME = process.env.NB_HOME || os.homedir();
+const FONTE = path.join(__dirname, '..', 'vscode', 'troca');
+const MARCA = path.join(HOME, '.norte-box', 'troca', 'vscode-ligado');
+const ID = 'norte-box.troca';
+
+function manifesto() { return JSON.parse(fs.readFileSync(path.join(FONTE, 'package.json'), 'utf8')); }
+
+// --- zip mínimo (sem compressão) — sem depender de zip/python na máquina de quem instala ---
+const TAB = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xffffffff; for (const x of b) c = TAB[(c ^ x) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function zip(arquivos) {
+  const partes = [], centrais = [];
+  let pos = 0;
+  for (const [nome, dados] of arquivos) {
+    const n = Buffer.from(nome, 'utf8'), crc = crc32(dados);
+    const loc = Buffer.alloc(30);
+    loc.writeUInt32LE(0x04034b50, 0); loc.writeUInt16LE(20, 4); loc.writeUInt16LE(0x0800, 6);
+    loc.writeUInt32LE(crc, 14); loc.writeUInt32LE(dados.length, 18); loc.writeUInt32LE(dados.length, 22); loc.writeUInt16LE(n.length, 26);
+    const cen = Buffer.alloc(46);
+    cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(0x0800, 8);
+    cen.writeUInt32LE(crc, 16); cen.writeUInt32LE(dados.length, 20); cen.writeUInt32LE(dados.length, 24); cen.writeUInt16LE(n.length, 28);
+    cen.writeUInt32LE(pos, 42);
+    partes.push(loc, n, dados); centrais.push(cen, n);
+    pos += 30 + n.length + dados.length;
+  }
+  const tc = Buffer.concat(centrais), fim = Buffer.alloc(22);
+  fim.writeUInt32LE(0x06054b50, 0); fim.writeUInt16LE(arquivos.length, 8); fim.writeUInt16LE(arquivos.length, 10);
+  fim.writeUInt32LE(tc.length, 12); fim.writeUInt32LE(pos, 16);
+  return Buffer.concat(partes.concat([tc, fim]));
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function pacote(destino) {
+  const m = manifesto();
+  const vsixManifest = '<?xml version="1.0" encoding="utf-8"?>\n'
+    + '<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">\n'
+    + ' <Metadata>\n'
+    + '  <Identity Language="en-US" Id="' + esc(m.name) + '" Version="' + esc(m.version) + '" Publisher="' + esc(m.publisher) + '" />\n'
+    + '  <DisplayName>' + esc(m.displayName) + '</DisplayName>\n'
+    + '  <Description xml:space="preserve">' + esc(m.description) + '</Description>\n'
+    + '  <Properties>\n'
+    + '   <Property Id="Microsoft.VisualStudio.Code.Engine" Value="' + esc(m.engines.vscode) + '" />\n'
+    + '   <Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="workspace" />\n'
+    + '   <Property Id="Microsoft.VisualStudio.Code.ExecutesCode" Value="true" />\n'
+    + '  </Properties>\n'
+    + '  <License>extension/LICENSE.txt</License>\n'
+    + ' </Metadata>\n'
+    + ' <Installation><InstallationTarget Id="Microsoft.VisualStudio.Code"/></Installation>\n'
+    + ' <Dependencies/>\n'
+    + ' <Assets>\n'
+    + '  <Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true" />\n'
+    + '  <Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/readme.md" Addressable="true" />\n'
+    + '  <Asset Type="Microsoft.VisualStudio.Services.Content.License" Path="extension/LICENSE.txt" Addressable="true" />\n'
+    + ' </Assets>\n'
+    + '</PackageManifest>\n';
+  const tipos = '<?xml version="1.0" encoding="utf-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension=".json" ContentType="application/json"/><Default Extension=".js" ContentType="application/javascript"/>'
+    + '<Default Extension=".md" ContentType="text/markdown"/><Default Extension=".txt" ContentType="text/plain"/>'
+    + '<Default Extension=".vsixmanifest" ContentType="text/xml"/></Types>\n';
+  const arq = [['[Content_Types].xml', Buffer.from(tipos)], ['extension.vsixmanifest', Buffer.from(vsixManifest)]];
+  for (const f of ['package.json', 'extension.js', 'readme.md', 'LICENSE.txt']) arq.push(['extension/' + f, fs.readFileSync(path.join(FONTE, f))]);
+  fs.writeFileSync(destino, zip(arq));
+}
+
+// O `code` do VS Code: no PATH ou no lugar padrão do Mac/Linux.
+function codeBin() {
+  if (process.env.NB_CODE_BIN) return process.env.NB_CODE_BIN;
+  const cands = ['/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
+    path.join(HOME, 'Applications', 'Visual Studio Code.app', 'Contents', 'Resources', 'app', 'bin', 'code'),
+    '/usr/bin/code', '/usr/local/bin/code', '/opt/homebrew/bin/code', '/snap/bin/code'];
+  try { const p = execFileSync('sh', ['-c', 'command -v code'], { encoding: 'utf8' }).trim(); if (p) return p; } catch (_) { /* não está no PATH */ }
+  return cands.find((c) => fs.existsSync(c)) || '';
+}
+
+function code(args) {
+  const extra = process.env.NB_CODE_ARGS ? JSON.parse(process.env.NB_CODE_ARGS) : [];
+  return execFileSync(codeBin(), extra.concat(args), { encoding: 'utf8', timeout: 120000, stdio: ['ignore', 'pipe', 'pipe'] });
+}
+
+function instalado() {
+  try { return code(['--list-extensions']).split('\n').some((l) => l.trim().toLowerCase() === ID); } catch (_) { return false; }
+}
+
+function main() {
+  const [acao, arg] = process.argv.slice(2);
+  if (process.platform === 'win32') { console.log('NAO|no Windows a troca ainda não funciona'); return 1; }
+  if (acao === 'pacote' && arg) { pacote(arg); console.log('OK|pacote montado'); return 0; }
+  if (!['instalar', 'remover', 'estado'].includes(acao)) { console.log('NAO|use: instalar · remover · estado'); return 1; }
+  if (!codeBin()) { console.log('NAO|não achei o VS Code neste computador — a letra só fica clicável no Terminal do VS Code'); return 1; }
+  if (acao === 'estado') { console.log(instalado() ? 'OK|complemento instalado' : 'NAO|complemento não instalado'); return 0; }
+  if (acao === 'remover') {
+    try { code(['--uninstall-extension', ID]); } catch (_) { /* já não estava */ }
+    try { fs.unlinkSync(MARCA); } catch (_) { /* já desligado */ }
+    console.log('OK|complemento removido — a letra volta a ser só um aviso'); return 0;
+  }
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nb-troca-'));
+  const vsix = path.join(tmp, 'norte-box-troca.vsix');
+  try {
+    pacote(vsix);
+    code(['--install-extension', vsix, '--force']);
+  } catch (e) {
+    console.log('NAO|o VS Code não aceitou o complemento (' + (e.code || e.name) + ')'); return 1;
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  if (!instalado()) { console.log('NAO|o VS Code não mostrou o complemento depois de instalar'); return 1; }
+  fs.mkdirSync(path.dirname(MARCA), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(MARCA, manifesto().version + '\n');
+  console.log('OK|letra clicável instalada no VS Code (complemento ' + ID + ' ' + manifesto().version + ')');
+  return 0;
+}
+
+process.exit(main());

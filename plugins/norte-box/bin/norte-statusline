@@ -119,6 +119,23 @@ _resolve_n() {
 }
 _resolve_n
 
+# --- 4c) Letra clicavel no VS Code (so com o complemento instalado pelo /trocar-conta configurar). ---
+#     A barra anota conversa -> numero/conta/processo em ~/.norte-box/troca/letra/<sid>.json; o complemento
+#     reconhece "▲N ... 🄱" na linha do terminal e acha a conversa por ali. Sem link escondido na letra.
+if [ -n "$_conta" ] && [ -n "$_n" ] && [ -f "${STATE_DIR}/troca/vscode-ligado" ]; then
+  case "$_sid" in
+    ''|*[!0-9a-fA-F-]*) ;;
+    *)
+      _ldir="${STATE_DIR}/troca/letra"
+      mkdir -p "$_ldir" 2>/dev/null \
+        && printf '{"sid":"%s","n":"%s","de":"%s","pai":%s,"ts":%s}\n' "$_sid" "$_n" "$NB_CONTA" "$PPID" "$(date +%s)" \
+             > "$_ldir/.$_sid.$$" 2>/dev/null \
+        && mv -f "$_ldir/.$_sid.$$" "$_ldir/$_sid.json" 2>/dev/null
+      rm -f "$_ldir/.$_sid.$$" 2>/dev/null
+      ;;
+  esac
+fi
+
 # --- 5) Cores ANSI pra faixa do contexto (fail-open: sem % -> sem cor). ---
 _C_RESET=$'\033[0m'
 _C_YELLOW=$'\033[33m'
