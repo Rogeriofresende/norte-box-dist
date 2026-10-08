@@ -19,7 +19,11 @@ _chave() {
   sed -n "s/^CLAUDE_CONTA_$1_TOKEN=//p" "$DIR/.env" | head -1 | sed -e 's/^"\(.*\)"$/\1/' -e 's/\\"/"/g' -e 's/\\\\/\\/g'
 }
 
+# A conta atual fica anotada em conta-<pid> (só a letra) pro clique na letra, de fora da conversa, saber de onde sai.
+mkdir -p "$FILA" 2>/dev/null && chmod 700 "$FILA" 2>/dev/null
+trap 'rm -f "$FILA/conta-$$"' EXIT
 while :; do
+  printf '%s\n' "$conta" > "$FILA/conta-$$" 2>/dev/null
   tok="$(_chave "$conta")"
   if [ -n "$tok" ]; then
     NB_CONTA="$conta" NB_TROCA_LANCADOR="$$" CLAUDE_CODE_OAUTH_TOKEN="$tok" "$BIN" "$@"

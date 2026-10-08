@@ -55,7 +55,8 @@ Mostre as linhas como vieram (as 2 contas + em qual conta está esta conversa). 
 guardada" ou "não foi aberta pelo nb-claude", ofereça em 1 linha o `/norte:trocar-conta configurar`.
 
 **A letra na barrinha:** em conversa aberta pelo `nb-claude`, a barrinha de baixo mostra 🄰 ou 🄱 no fim — é a
-conta em que **esta conversa foi aberta**. Conversa aberta com `claude` puro não mostra letra nenhuma. A letra
+conta em que **esta conversa foi aberta**. Conversa aberta com `claude` puro não mostra letra nenhuma. Com o
+complemento do VS Code (passo 3 do `configurar`), Cmd+clique na letra troca a conta por ali mesmo. A letra
 não quer dizer "troca feita": depois de trocar, a conversa reabre e a letra nova aparece nela.
 
 ## `A` ou `B` → trocar esta conversa
@@ -105,7 +106,21 @@ node "$NBD/nb-trocar-conta" esta <A|B>
    começar na B). Dali, `/norte:trocar-conta B` troca a conversa. Quando a caixa atualizar, não precisa
    refazer nada."*
 
-3. Confira com `node "$NBD/nb-trocar-conta" estado` e com o `/norte:doctor` (3 linhas "Troca de conta").
+3. **A letra clicável (opcional, só no VS Code).** Com um complemento do VS Code, o Cmd+clique (Ctrl+clique no
+   Linux) na letra 🄰/🄱 da barrinha abre a lista das 2 contas → escolhe → confirma → a conversa troca sozinha.
+   **Pergunte antes** (instala um complemento no VS Code dela): *"Quer que eu instale no seu VS Code o
+   complemento que deixa a letra clicável?"* Só com o "pode":
+
+   ```bash
+   node "$NBD/nb-troca-vscode" instalar
+   ```
+
+   - `OK|...` → diga: *"Pronto. Nas conversas abertas com `nb-claude` no Terminal do VS Code, dê Cmd+clique na
+     letra do fim da barrinha. Se não clicar de primeira, feche e abra o Terminal."* NÃO reinicie o VS Code.
+   - `NAO|...` → diga o motivo em 1 linha (sem VS Code, Windows). A troca pelo `/norte:trocar-conta B` segue.
+   - Tirar depois: `node "$NBD/nb-troca-vscode" remover`.
+
+4. Confira com `node "$NBD/nb-trocar-conta" estado` e com o `/norte:doctor` (3 linhas "Troca de conta").
 
 ## O que não funciona (diga se perguntarem)
 
