@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# norte-box:nb-claude-ponteiro — instalado como ~/.norte-box/bin/nb-claude pelo /norte:trocar-conta configurar.
+# Não é cópia do lançador: a cada uso acha o nb-claude da versão MAIS NOVA da caixa instalada e roda ele.
+# Assim, atualizar a caixa já atualiza o nb-claude — sem reinstalar. Nunca lê nem imprime chave.
+# Gancho de teste: NB_CACHE_DIR (padrão ~/.claude/plugins/cache/norte-box)
+set -u
+CACHE="${NB_CACHE_DIR:-$HOME/.claude/plugins/cache/norte-box}"
+
+_listar() { # "versão<TAB>caminho" de cada nb-claude instalado (versões sem o arquivo ficam de fora)
+  local f v base
+  for f in "$CACHE"/*/*/bin/nb-claude; do
+    [ -f "$f" ] || continue
+    v="$(basename "$(dirname "$(dirname "$f")")")"
+    # só pastas de versão (0.3.10, 0.3.10-beta → ordena por 0.3.10)
+    base="$(printf '%s' "$v" | sed -n 's/^\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*$/\1/p')"
+    [ -n "$base" ] || continue
+    printf '%s\t%s\n' "$base" "$f"
+  done
+}
+achado="$(_listar | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | cut -f2-)"
+
+if [ -z "$achado" ]; then
+  printf '%s\n' "nb-claude: a norte-box não está instalada — instale a caixa de novo" >&2
+  exit 127
+fi
+exec bash "$achado" "$@"

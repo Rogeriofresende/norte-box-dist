@@ -258,3 +258,49 @@ else
     emit "Modo" "FALHA" "diz compartilhavel MAS falta o endereco do coletor no .env — rode /norte:convite"
   fi
 fi
+
+# 9. TROCA DE CONTA (opcional, so pra quem tem 2 contas Claude — /norte:trocar-conta configurar).
+# Nunca le o VALOR das chaves: so testa se a linha existe e nao esta vazia (grep -q, sem imprimir nada).
+# Quem nao configurou nada (sem pasta de contas e sem nb-claude) nao ve linha nenhuma: a troca e opcional e
+# um NAO_VERIFICADO aqui rebaixaria o doctor inteiro de quem tem 1 conta so.
+_TC_DIR="${NB_CONTAS_DIR:-$HOME/.norte-box/contas}"
+_TC_LANC="$HOME/.norte-box/bin/nb-claude"
+if [ ! -d "$_TC_DIR" ] && [ ! -e "$_TC_LANC" ]; then
+  :
+else
+  # 9a. chaves
+  if [ -f "$_TC_DIR/.env" ]; then
+    _tc_falta=""
+    for _c in A B; do
+      grep -Eq "^CLAUDE_CONTA_${_c}_TOKEN=\"?[^\"[:space:]]" "$_TC_DIR/.env" 2>/dev/null || _tc_falta="$_tc_falta $_c"
+    done
+    if [ -z "$_tc_falta" ]; then
+      emit "Troca de conta — chaves" "OK" "chaves das contas A e B guardadas"
+    else
+      _tc_falta="$(printf '%s' "$_tc_falta" | sed 's/^ //; s/ / e /')"
+      emit "Troca de conta — chaves" "PENDENTE" "falta guardar a chave da conta $_tc_falta: /norte:trocar-conta configurar"
+    fi
+  else
+    emit "Troca de conta — chaves" "PENDENTE" "nenhuma chave guardada ainda: /norte:trocar-conta configurar"
+  fi
+  # 9b. lancador: tem que ser o PONTEIRO (acompanha a versao mais nova da caixa), nao uma copia velha
+  if [ ! -e "$_TC_LANC" ]; then
+    emit "Troca de conta — nb-claude" "PENDENTE" "nb-claude nao instalado: /norte:trocar-conta configurar"
+  elif ! grep -q 'norte-box:nb-claude-ponteiro' "$_TC_LANC" 2>/dev/null; then
+    emit "Troca de conta — nb-claude" "PENDENTE" "nb-claude antigo, reinstale pelo configurar (/norte:trocar-conta configurar)"
+  elif [ ! -x "$_TC_LANC" ]; then
+    emit "Troca de conta — nb-claude" "PENDENTE" "nb-claude sem permissao de execucao, reinstale pelo configurar"
+  else
+    emit "Troca de conta — nb-claude" "OK" "~/.norte-box/bin/nb-claude acompanha a versao mais nova da caixa"
+  fi
+  # 9c. o Claude Code ainda grava status/statusUpdatedAt no arquivo da sessao (a troca depende disso)
+  _tc_ses="${NB_TROCA_SESSOES:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions}"
+  _tc_rec="$(ls -1t "$_tc_ses"/*.json 2>/dev/null | head -1)"
+  if [ -z "$_tc_rec" ] || [ ! -f "$_tc_rec" ]; then
+    emit "Troca de conta — Claude compatível" "NAO_VERIFICADO" "nenhum arquivo de sessao do Claude pra conferir"
+  elif grep -q '"status"[[:space:]]*:' "$_tc_rec" 2>/dev/null && grep -q '"statusUpdatedAt"[[:space:]]*:' "$_tc_rec" 2>/dev/null; then
+    emit "Troca de conta — Claude compatível" "OK" "arquivo da sessao tem status e statusUpdatedAt"
+  else
+    emit "Troca de conta — Claude compatível" "FALHA" "o Claude Code mudou o formato; a troca vai recusar"
+  fi
+fi
