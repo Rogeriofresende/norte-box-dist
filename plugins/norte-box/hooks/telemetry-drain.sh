@@ -155,6 +155,14 @@ _nb_post_code() {
 NOW="$(date -u +%s 2>/dev/null || echo 0)"
 CUTOFF=$(( NOW - TTL_DAYS * 86400 ))
 
+# Cursor SO ANDA PRA FRENTE (NRT-_995909): grava max(atual, novo). Nunca regride.
+_gravar_cursor() {
+  local _novo="$1" _atual
+  _atual="$(cat "$CURSOR" 2>/dev/null | tr -d ' ')"; case "$_atual" in (*[!0-9]*|'') _atual=0 ;; esac
+  [ "$_novo" -lt "$_atual" ] && _novo="$_atual"
+  printf '%s' "$_novo" > "$CURSOR.tmp" 2>/dev/null && mv -f "$CURSOR.tmp" "$CURSOR" 2>/dev/null || true
+}
+
 # --- Envia UM lote a partir do cursor atual. Ecoa: "SENT n" | "TTL n" | "FAIL code" | "IDLE" ---
 _send_one_batch() {
   local TOTAL CUR PENDING_RAW COUNT_PENDING ARR NSEND ok drop i CODE
@@ -162,7 +170,7 @@ _send_one_batch() {
   CUR=0; [ -f "$CURSOR" ] && CUR="$(cat "$CURSOR" 2>/dev/null | tr -d ' ')"
   case "$CUR" in (*[!0-9]*|'') CUR=0 ;; esac
   # fila rotacionou/encolheu (cursor > total) -> reseta
-  [ "$CUR" -gt "$TOTAL" ] && CUR=0
+  if [ "$CUR" -gt "$TOTAL" ]; then _drain_log "drain: fila encolheu (cursor=$CUR > linhas=$TOTAL) -> recomeca do 0"; CUR=0; printf '0' > "$CURSOR" 2>/dev/null || true; fi
   [ "$CUR" -ge "$TOTAL" ] && { echo "IDLE"; return 0; }
 
   # janela de pendentes (apos o cursor): ate MAX_BATCH linhas E ate MAX_BYTES bytes.
@@ -204,16 +212,44 @@ _send_one_batch() {
       return 1
     fi
     # sucesso (200) avanca; 403 avanca (descarta o que o servidor recusa pra sempre)
-    printf '%s' "$(( CUR + COUNT_PENDING ))" > "$CURSOR" 2>/dev/null || true
+    _gravar_cursor "$(( CUR + COUNT_PENDING ))"
     if [ "$ok" = "1" ]; then echo "SENT $COUNT_PENDING"; else echo "DROP403 $COUNT_PENDING"; fi
     return 0
   fi
 
   # nada valido a enviar por TTL: avanca o cursor por TODAS as pendentes deste lote
-  printf '%s' "$(( CUR + COUNT_PENDING ))" > "$CURSOR" 2>/dev/null || true
+  _gravar_cursor "$(( CUR + COUNT_PENDING ))"
   echo "TTL $COUNT_PENDING"
   return 0
 }
+
+# --- TRAVA (NRT-_995909, GO CEO 08/10): UM dreno por vez. ---
+# Antes: SessionStart+Stop de varias conversas paralelas rodavam drenos AO MESMO TEMPO; cada um
+# lia o mesmo cursor e mandava o MESMO lote (log do CEO: 20 de 193 lotes saíram 2-3x) e o
+# cursor podia ser regravado com valor menor (reenvio de registros antigos dias depois).
+# Agora: mkdir atomico; quem chega com a trava ocupada sai (o dono ja esta drenando a fila).
+# Trava de dono morto (pid inexistente) ou com mais de 60 min e recuperada, por UM recuperador so.
+LOCK_DIR="${STATE_DIR}/telemetry-drain.lock"
+_pegar_trava() {
+  if mkdir "$LOCK_DIR" 2>/dev/null; then printf '%s' "$$" > "$LOCK_DIR/pid" 2>/dev/null || true; return 0; fi
+  # Trava ocupada. Só UM recuperador por vez (2ª trava, também mkdir atômico) — senão dois drenos
+  # que acham o mesmo dono morto se atropelam (um apaga a trava que o outro acabou de criar).
+  local _rec="${LOCK_DIR}.recuperando"
+  [ -n "$(find "$_rec" -maxdepth 0 -mmin +5 2>/dev/null)" ] && rmdir "$_rec" 2>/dev/null
+  mkdir "$_rec" 2>/dev/null || return 1
+  local _dono _velha="" _ok=1
+  _dono="$(cat "$LOCK_DIR/pid" 2>/dev/null | tr -d ' ')"
+  [ -n "$(find "$LOCK_DIR" -maxdepth 0 -mmin +60 2>/dev/null)" ] && _velha=1
+  # Dono morto (pid nao existe) OU trava com mais de 60 min (nenhum dreno dura isso: teto ~27 min).
+  if [ ! -d "$LOCK_DIR" ] || [ -n "$_velha" ] || { [ -n "$_dono" ] && ! kill -0 "$_dono" 2>/dev/null; }; then
+    { rm -f "$LOCK_DIR/pid"; rmdir "$LOCK_DIR"; } 2>/dev/null || true
+    if mkdir "$LOCK_DIR" 2>/dev/null; then printf '%s' "$$" > "$LOCK_DIR/pid" 2>/dev/null || true; _drain_log "drain: trava recuperada (dono=${_dono:-?})"; _ok=0; fi
+  fi
+  rmdir "$_rec" 2>/dev/null || true
+  return $_ok
+}
+_pegar_trava || exit 0
+trap '{ rm -f "$LOCK_DIR/pid"; rmdir "$LOCK_DIR"; } 2>/dev/null || true' EXIT
 
 # --- LOOP: drena varios lotes ate esvaziar (ou ate MAX_LOOPS / falha transitoria) ---
 _start_cur="$(cat "$CURSOR" 2>/dev/null | tr -d ' ')"; case "$_start_cur" in (*[!0-9]*|'') _start_cur=0 ;; esac
