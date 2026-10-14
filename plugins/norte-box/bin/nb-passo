@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# nb-passo — marca 1 PASSO de uma habilidade (0.3.52 · NRT-_995031 · conselho caixapassos1).
+#
+# Quem marca e o PROGRAMA da habilidade (nb-retomar-alvo, nb-retomar-adota, nb-bilhete-validade,
+# nb-bilhete-objetivo, ponteiro ULTIMO, fechar no registro) — nunca a IA. Este script recebe a SAIDA
+# do programa, classifica num rotulo de LISTA FECHADA e enfileira 1 linha na MESMA fila do medidor
+# ($HOME/.norte-box/telemetry-queue.jsonl). Quem envia e o dreno de sempre (telemetry-drain.sh).
+#
+# Uso:
+#   nb-passo <habilidade> <passo> --saida "<texto que o programa imprimiu>"
+#   nb-passo <habilidade> <passo> --rc <codigo de saida>
+#   nb-passo <habilidade> ponteiro --confere <ULTIMO.md> <bilhete>
+#   nb-passo --sou obrigado        (o /obrigado avisa que os passos do bilhete sao dele, por 30 min)
+#   habilidade "bilhete" = continuar, ou obrigado se o /obrigado avisou nesta conversa.
+#
+# LEIS: exit 0 SEMPRE, nunca imprime nada, nunca usa rede. So sobe: habilidade, passo, resultado,
+# versao, ts, run_id (hash) e invite_id opaco — ZERO conteudo (a saida e lida so pra classificar e
+# descartada). Mesmos portoes do medidor: modo compartilhavel + consentimento + telemetry.enabled.
+# Desligar: NORTE_BOX_PASSO=0.
+set -u
+{
+[ "${NORTE_BOX_PASSO:-1}" = "0" ] && exit 0
+
+STATE_DIR="${HOME}/.norte-box"
+QUEUE="${STATE_DIR}/telemetry-queue.jsonl"
+_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+_ROOT="${_SELF_DIR%/bin}"
+
+_sid="${CLAUDE_CODE_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
+_hash16() {
+  if command -v shasum >/dev/null 2>&1; then printf '%s' "$1" | shasum -a 256 2>/dev/null | cut -c1-16
+  elif command -v sha256sum >/dev/null 2>&1; then printf '%s' "$1" | sha256sum 2>/dev/null | cut -c1-16
+  fi
+}
+_run_id=""; [ -n "$_sid" ] && _run_id="$(_hash16 "$_sid")"
+
+# --sou obrigado: so grava um marcador local (nao enfileira nada).
+if [ "${1:-}" = "--sou" ]; then
+  [ "${2:-}" = "obrigado" ] && [ -n "$_run_id" ] && mkdir -p "$STATE_DIR" 2>/dev/null \
+    && printf 'obrigado' > "$STATE_DIR/passo-hab-$_run_id" 2>/dev/null
+  exit 0
+fi
+
+_hab="${1:-}"; _passo="${2:-}"; shift 2 2>/dev/null || exit 0
+_saida=""; _rc=""; _ult=""; _bil=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --saida)   _saida="${2:-}"; shift 2 2>/dev/null || shift ;;
+    --rc)      _rc="${2:-}"; shift 2 2>/dev/null || shift ;;
+    --confere) _ult="${2:-}"; _bil="${3:-}"; shift 3 2>/dev/null || shift $# ;;
+    *) shift ;;
+  esac
+done
+
+if [ "$_hab" = "bilhete" ]; then
+  _hab="continuar"
+  _mk="$STATE_DIR/passo-hab-$_run_id"
+  if [ -n "$_run_id" ] && [ -f "$_mk" ] && [ -n "$(find "$_mk" -mmin -30 2>/dev/null)" ]; then
+    [ "$(cat "$_mk" 2>/dev/null)" = "obrigado" ] && _hab="obrigado"
+  fi
+fi
+
+# --- classificacao: LISTA FECHADA por (habilidade, passo). Fora dela -> nao enfileira. ---
+_res=""
+case "$_passo" in
+  achou_bilhete)
+    case "$_saida" in ALVO\ *) _res=ok ;; AMBIGUO*) _res=ambiguo ;; VAZIO*) _res=vazio ;; *) _res=falhou ;; esac ;;
+  sentou_conversa)
+    case "$_saida" in
+      *"sentei na conversa"*) _res=ok ;;
+      *"REFERÊNCIA"*) _res=nao_pedido ;;
+      *"janela VIVA"*) _res=recusou_janela_viva ;;
+      *"desligada"*) _res=desligado ;;
+      *"fora da Norte"*|*"sem handoff"*|*"não diz qual conversa"*) _res=nao_se_aplica ;;
+      *) _res=falhou ;;
+    esac ;;
+  aviso_vencido)
+    case "$_saida" in 🟢*) _res=fresco ;; 🔴*) _res=velho ;; 🟡*) _res=nao_sei ;; *) _res=falhou ;; esac ;;
+  bilhete_com_objetivo)
+    case "$_saida" in
+      OBJETIVO:*) _res=ok ;;
+      *"bilhete não encontrado"*) _res=sem_bilhete ;;
+      *"desligado"*) _res=desligado ;;
+      "SEM OBJETIVO") _res=sem_objetivo ;;
+      *) _res=falhou ;;
+    esac ;;
+  ponteiro)
+    if [ -n "$_ult" ] && [ -n "$_bil" ] && [ -e "$_ult" ] && [ -e "$_bil" ]; then
+      if cmp -s "$_ult" "$_bil" 2>/dev/null; then _res=ok; else _res=aponta_outro; fi
+    else
+      _res=falhou
+    fi ;;
+  onde_estou)
+    case "$_saida" in INTERNO*) _res=interno ;; SO-BILHETE*) _res=so_bilhete ;; *) _res=falhou ;; esac ;;
+  fechou_registro)
+    case "$_rc" in 0) _res=ok ;; '') _res=falhou ;; *) _res=falhou ;; esac ;;
+  *) exit 0 ;;
+esac
+_saida=""   # descarta o texto: so o rotulo sobrevive
+
+case "$_hab" in obrigado|norte-retomar|continuar) : ;; *) exit 0 ;; esac
+
+# --- mesmos portoes do medidor (fail-closed no envio, fail-open no trabalho) ---
+if [ -f "$_ROOT/hooks/_modo.sh" ]; then . "$_ROOT/hooks/_modo.sh"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hooks/_modo.sh" ]; then . "${CLAUDE_PLUGIN_ROOT}/hooks/_modo.sh"
+fi
+command -v _norte_pode_enviar >/dev/null 2>&1 || exit 0
+_norte_pode_enviar || exit 0
+[ -f "$STATE_DIR/telemetry.enabled" ] || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+_invite_id="$(jq -r '.invite_id // .sub // empty' "$STATE_DIR/identity.json" 2>/dev/null || true)"
+[ -z "$_invite_id" ] && _invite_id="$(jq -r '.hash // empty' "$STATE_DIR/consent.json" 2>/dev/null || true)"
+[ -z "$_invite_id" ] && _invite_id="anon"
+
+_versao="$(jq -r '.version // empty' "$_ROOT/.claude-plugin/plugin.json" 2>/dev/null || true)"
+case "$_versao" in ''|*[!0-9.]*|[!0-9]*) _versao="" ;; esac
+[ "${#_versao}" -gt 16 ] && _versao=""
+
+_line="$(jq -cn \
+  --arg invite_id "$_invite_id" --arg ts "$(date -u +%FT%TZ 2>/dev/null || echo unknown)" \
+  --arg versao "$_versao" --arg run_id "$_run_id" \
+  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" \
+  '{invite_id:$invite_id, kind:"passo", ts:$ts,
+    versao:(if $versao=="" then null else $versao end),
+    run_id:(if $run_id=="" then null else $run_id end),
+    passo:{habilidade:$hab, passo:$passo, resultado:$res}}' 2>/dev/null || true)"
+[ -z "$_line" ] && exit 0
+mkdir -p "$STATE_DIR" 2>/dev/null || exit 0
+printf '%s\n' "$_line" >> "$QUEUE" 2>/dev/null || exit 0
+exit 0
+} >/dev/null 2>&1
+exit 0
