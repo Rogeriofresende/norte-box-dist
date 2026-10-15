@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.53
+- **Nada muda no seu uso.** As anotações do `/norte:obrigado` ficaram completas: agora é a própria caixa que anota todas as etapas (inclusive se o atalho pro último bilhete ficou certo), sem depender da IA lembrar. Se a anotação falhar, o `/obrigado` segue igual.
+
 ## 0.3.52
 - **Nada muda no seu uso.** Quando você usa o `/norte:obrigado` ou o `/norte:norte-retomar`, a caixa passa a anotar se cada etapa deu certo (achou o bilhete, salvou com objetivo, etc.) — só o nome da etapa e se deu certo, nunca o que você escreveu. Serve pra gente consertar onde quebra. Se a anotação falhar, a habilidade segue igual.
 

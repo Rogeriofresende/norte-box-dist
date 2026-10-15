@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# nb-obrigado-onde — Passo 2 do /obrigado: diz se esta maquina e a tela da Norte (INTERNO) ou nao (SO-BILHETE).
+# 0.3.53 (NRT-_996798): era uma linha de shell no SKILL.md + uma linha "nb-passo" que a IA as vezes pulava.
+# Agora o PROGRAMA responde e marca o passo "onde_estou" (e avisa que a conversa e do /obrigado) em 2º plano.
+# Saida (1 linha): INTERNO | SO-BILHETE. Sempre exit 0. Desligar so a marcacao: NORTE_BOX_PASSO=0.
+set -u
+if [ "${NORTE_OBRIGADO_INTERNO:-1}" != "0" ] && [ -x "$HOME/.claude/scripts/norte-concluir-conversa.sh" ]; then
+  ONDE="INTERNO"
+else
+  ONDE="SO-BILHETE"
+fi
+echo "$ONDE"
+_nbp="$(dirname "$0")/nb-passo"
+if [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$_nbp" ]; then
+  ( { bash "$_nbp" --sou obrigado; bash "$_nbp" obrigado onde_estou --saida "$ONDE"; } </dev/null >/dev/null 2>&1 & ) 2>/dev/null || true
+fi
+exit 0

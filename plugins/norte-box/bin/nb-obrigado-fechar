@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# nb-obrigado-fechar <bilhete> — Passo 3.2 do /obrigado (so na tela da Norte): manda a conversa pra
+# "Concluida" no registro junto com o bilhete. 0.3.53 (NRT-_996798): antes eram 2 linhas no SKILL.md e a
+# marcacao "fechou_registro" dependia da IA rodar a 2ª. Agora o PROGRAMA fecha, devolve a mesma saida e o
+# mesmo codigo, e marca o passo em 2º plano. Desligar so a marcacao: NORTE_BOX_PASSO=0.
+set -u
+S="$HOME/.claude/scripts/norte-concluir-conversa.sh"
+if [ -x "$S" ]; then
+  "$S" --bilhete "${1:-}"; RC=$?
+else
+  echo "SEM-REGISTRO (esta maquina nao tem o registro da Norte)"; RC=127
+fi
+_nbp="$(dirname "$0")/nb-passo"
+if [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$_nbp" ]; then
+  ( bash "$_nbp" obrigado fechou_registro --rc "$RC" </dev/null >/dev/null 2>&1 & ) 2>/dev/null || true
+fi
+exit $RC

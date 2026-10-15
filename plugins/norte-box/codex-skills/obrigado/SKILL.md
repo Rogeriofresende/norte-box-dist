@@ -31,7 +31,7 @@ Regras extras do bilhete de ENCERRAMENTO:
 - **Garanta o objetivo no bilhete (0.3.43 — o mesmo conferente do Passo 4 da irma):**
 
   ```bash
-  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -d "${CODEX_HOME:-$HOME/.codex}"/plugins/cache/norte-box/norte/*/ 2>/dev/null | sort -V | tail -1)}/bin/nb-bilhete-objetivo" "$NOVO"
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -d "${CODEX_HOME:-$HOME/.codex}"/plugins/cache/norte-box/norte/*/ 2>/dev/null | sort -V | tail -1)}/bin/nb-bilhete-objetivo" "$NOVO" obrigado
   ```
 
   `OBJETIVO: <frase>` → use essa frase na confirmacao. `SEM OBJETIVO` → **nao invente**; avise em 1
@@ -67,7 +67,7 @@ Se `H` for outro arquivo (o bilhete grande), passe ele tambem pelo conferente �
 (`SEM OBJETIVO` = avisa em 1 linha, nao trava):
 
 ```bash
-[ "$H" != "$NOVO" ] && bash "${CLAUDE_PLUGIN_ROOT:-$(ls -d "${CODEX_HOME:-$HOME/.codex}"/plugins/cache/norte-box/norte/*/ 2>/dev/null | sort -V | tail -1)}/bin/nb-bilhete-objetivo" "$H"
+[ "$H" != "$NOVO" ] && bash "${CLAUDE_PLUGIN_ROOT:-$(ls -d "${CODEX_HOME:-$HOME/.codex}"/plugins/cache/norte-box/norte/*/ 2>/dev/null | sort -V | tail -1)}/bin/nb-bilhete-objetivo" "$H" obrigado
 ```
 
 **3.2 — manda pra "Concluida" + registro fechado + bilhete.** Rode UMA vez, quieto:

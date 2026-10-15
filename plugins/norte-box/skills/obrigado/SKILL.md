@@ -19,12 +19,6 @@ perda, as 6 secoes, o selo, o ponteiro `ULTIMO.md`):
 cat "${CLAUDE_PLUGIN_ROOT}/skills/continuar/SKILL.md"
 ```
 
-Antes, avise a caixa que os passos do bilhete desta conversa sao do `/obrigado` (silencioso, 0.3.52):
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" --sou obrigado || true
-```
-
 Regras extras do bilhete de ENCERRAMENTO:
 - Na secao `## Proximo passo`, se nao sobrou nada, escreva `nada pendente — conversa encerrada`
   (nao invente trabalho).
@@ -34,7 +28,7 @@ Regras extras do bilhete de ENCERRAMENTO:
 - **Garanta o objetivo no bilhete (0.3.43 — o mesmo conferente do Passo 4 da irma):**
 
   ```bash
-  bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$NOVO"
+  bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$NOVO" obrigado
   ```
 
   `OBJETIVO: <frase>` → use essa frase na confirmacao. `SEM OBJETIVO` → **nao invente**; avise em 1
@@ -47,8 +41,7 @@ em 1 linha que nao consegui gravar — e **PARE aqui** (sem bilhete, nao fecho n
 ## Passo 2 — Onde estou? (auto-detecta; nunca trava)
 
 ```bash
-ONDE="$(if [ "${NORTE_OBRIGADO_INTERNO:-1}" != "0" ] && [ -x "$HOME/.claude/scripts/norte-concluir-conversa.sh" ]; then echo "INTERNO"; else echo "SO-BILHETE"; fi)"; echo "$ONDE"
-bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" obrigado onde_estou --saida "$ONDE" || true
+ONDE="$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-obrigado-onde")"; echo "$ONDE"
 ```
 
 - **SO-BILHETE** (qualquer maquina sem as pecas internas da Norte — e o caso de quem recebe a caixa):
@@ -71,14 +64,13 @@ Se `H` for outro arquivo (o bilhete grande), passe ele tambem pelo conferente �
 (`SEM OBJETIVO` = avisa em 1 linha, nao trava):
 
 ```bash
-[ "$H" != "$NOVO" ] && bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$H"
+[ "$H" != "$NOVO" ] && bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-bilhete-objetivo" "$H" obrigado
 ```
 
 **3.2 — manda pra "Concluida" + registro fechado + bilhete.** Rode UMA vez, quieto:
 
 ```bash
-"$HOME/.claude/scripts/norte-concluir-conversa.sh" --bilhete "$H"; RC=$?
-bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" obrigado fechou_registro --rc "$RC" || true
+bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-obrigado-fechar" "$H"
 ```
 
 Se falhar, **NAO trave** — o bilhete ja esta salvo; diga em 1 linha que a conversa nao moveu pra
