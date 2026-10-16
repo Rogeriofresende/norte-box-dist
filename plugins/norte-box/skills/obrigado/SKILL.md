@@ -19,6 +19,12 @@ perda, as 6 secoes, o selo, o ponteiro `ULTIMO.md`):
 cat "${CLAUDE_PLUGIN_ROOT}/skills/continuar/SKILL.md"
 ```
 
+Antes, avise a caixa que os passos do bilhete desta conversa sao do `/obrigado` (silencioso, 0.3.52):
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" --sou obrigado || true
+```
+
 Regras extras do bilhete de ENCERRAMENTO:
 - Na secao `## Proximo passo`, se nao sobrou nada, escreva `nada pendente — conversa encerrada`
   (nao invente trabalho).
@@ -41,7 +47,8 @@ em 1 linha que nao consegui gravar — e **PARE aqui** (sem bilhete, nao fecho n
 ## Passo 2 — Onde estou? (auto-detecta; nunca trava)
 
 ```bash
-if [ "${NORTE_OBRIGADO_INTERNO:-1}" != "0" ] && [ -x "$HOME/.claude/scripts/norte-concluir-conversa.sh" ]; then echo "INTERNO"; else echo "SO-BILHETE"; fi
+ONDE="$(if [ "${NORTE_OBRIGADO_INTERNO:-1}" != "0" ] && [ -x "$HOME/.claude/scripts/norte-concluir-conversa.sh" ]; then echo "INTERNO"; else echo "SO-BILHETE"; fi)"; echo "$ONDE"
+bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" obrigado onde_estou --saida "$ONDE" || true
 ```
 
 - **SO-BILHETE** (qualquer maquina sem as pecas internas da Norte — e o caso de quem recebe a caixa):
@@ -70,7 +77,8 @@ Se `H` for outro arquivo (o bilhete grande), passe ele tambem pelo conferente �
 **3.2 — manda pra "Concluida" + registro fechado + bilhete.** Rode UMA vez, quieto:
 
 ```bash
-"$HOME/.claude/scripts/norte-concluir-conversa.sh" --bilhete "$H"
+"$HOME/.claude/scripts/norte-concluir-conversa.sh" --bilhete "$H"; RC=$?
+bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" obrigado fechou_registro --rc "$RC" || true
 ```
 
 Se falhar, **NAO trave** — o bilhete ja esta salvo; diga em 1 linha que a conversa nao moveu pra

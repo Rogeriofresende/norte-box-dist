@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.52
+- **Nada muda no seu uso.** Quando você usa o `/norte:obrigado` ou o `/norte:norte-retomar`, a caixa passa a anotar se cada etapa deu certo (achou o bilhete, salvou com objetivo, etc.) — só o nome da etapa e se deu certo, nunca o que você escreveu. Serve pra gente consertar onde quebra. Se a anotação falhar, a habilidade segue igual.
+
 ## 0.3.50
 - **Trocar de conta com um clique na letra (VS Code)**: no `/norte:trocar-conta configurar`, a caixa pergunta se pode instalar um complemento no seu VS Code. Com ele, Cmd+clique na letra 🄰/🄱 do fim da barrinha mostra as 2 contas com o uso; você escolhe, confirma, e a conversa troca de conta sozinha, com o histórico. Quem não quiser fica igual.
 

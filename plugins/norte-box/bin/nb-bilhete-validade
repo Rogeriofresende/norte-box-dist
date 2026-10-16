@@ -24,6 +24,14 @@
 # quebrada / carimbo ausente nao trava a /norte-retomar) · dado e dado (o commit vira argumento de git
 # rev-list, nunca comando). Kill-switch NORTE_VALIDADE=0 -> inerte (nada no stdout). bash 3.2, set -u.
 set -u
+# 0.3.52 (NRT-_995031): o PROGRAMA marca o passo "aviso_vencido" com a propria saida (nb-passo) —
+# fail-open: a saida e o codigo de saida ficam identicos; se a marcacao falhar, nada muda.
+if [ -z "${_NB_PASSO_DENTRO:-}" ] && [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$(dirname "$0")/nb-passo" ]; then
+  _nbp_out="$(_NB_PASSO_DENTRO=1 bash "$0" "$@")"; _nbp_rc=$?
+  [ -n "$_nbp_out" ] && printf '%s\n' "$_nbp_out"
+  ( bash "$(dirname "$0")/nb-passo" norte-retomar aviso_vencido --saida "$_nbp_out" </dev/null >/dev/null 2>&1 & ) 2>/dev/null || true
+  exit $_nbp_rc
+fi
 
 _arg="${1:-}"
 if [ -z "$_arg" ]; then

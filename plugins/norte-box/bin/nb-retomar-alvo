@@ -15,6 +15,14 @@
 #   CANDIDATO<TAB><path><TAB><slug><TAB><data>       (uma linha por assunto recente, mais novo primeiro)
 # LOCAL, sem rede. Fail-open: sem python3, devolve ALVO do mais novo por mtime (nunca trava a retomada).
 set -u
+# 0.3.52 (NRT-_995031): o PROGRAMA marca o passo "achou_bilhete" com a propria saida (nb-passo) —
+# fail-open: a saida e o codigo de saida ficam identicos; se a marcacao falhar, nada muda.
+if [ -z "${_NB_PASSO_DENTRO:-}" ] && [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$(dirname "$0")/nb-passo" ]; then
+  _nbp_out="$(_NB_PASSO_DENTRO=1 bash "$0" "$@")"; _nbp_rc=$?
+  [ -n "$_nbp_out" ] && printf '%s\n' "$_nbp_out"
+  ( bash "$(dirname "$0")/nb-passo" norte-retomar achou_bilhete --saida "$_nbp_out" </dev/null >/dev/null 2>&1 & ) 2>/dev/null || true
+  exit $_nbp_rc
+fi
 DIR="${1:?uso: nb-retomar-alvo <dir-base> [janela_seg]}"
 JAN="${2:-21600}"   # 6h
 HDIR="$DIR/handoffs"
