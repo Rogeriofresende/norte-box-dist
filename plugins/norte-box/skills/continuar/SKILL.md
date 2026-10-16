@@ -186,8 +186,6 @@ mkdir -p "$DIR/handoffs"
 # $NOVO ja foi definido no Passo 2 (caminho garantidamente unico) — NAO remonte o nome aqui
 ln -sf "$(basename "$NOVO")" "$DIR/handoffs/ULTIMO.md" 2>/dev/null \
   || cp "$NOVO" "$DIR/handoffs/ULTIMO.md"
-# 0.3.52: o programa confere se o ponteiro aponta pro bilhete novo e marca o passo (silencioso, nunca trava)
-bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-passo" bilhete ponteiro --confere "$DIR/handoffs/ULTIMO.md" "$NOVO" || true
 ```
 
 > **Nota (2 sessoes na mesma pasta):** o `ULTIMO.md` e um ponteiro unico — se outra sessao salvar depois,
