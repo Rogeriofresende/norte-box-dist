@@ -31,7 +31,8 @@ DIR="$(bash "$_root/bin/nb-resolve-outdir" 2>/dev/null)" || exit 0
 VISTO="$DIR/handoffs/.ja-visto"
 
 _HORAS="${NORTE_BILHETE_OFERTA_HORAS:-12}"; case "$_HORAS" in ""|*[!0-9]*) _HORAS=12;; esac
-_alvo="$(bash "$_root/bin/nb-retomar-alvo" "$DIR" $((_HORAS * 3600)) 2>/dev/null || true)"
+# NORTE_BOX_PASSO=0: abrir a conversa NAO e usar o /norte-retomar — sem isso cada abertura marcava "achou_bilhete" (NRT-_996894)
+_alvo="$(NORTE_BOX_PASSO=0 bash "$_root/bin/nb-retomar-alvo" "$DIR" $((_HORAS * 3600)) 2>/dev/null || true)"
 _linha=""
 case "$_alvo" in
   ALVO\ *)

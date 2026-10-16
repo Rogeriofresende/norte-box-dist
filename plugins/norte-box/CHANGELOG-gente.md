@@ -10,6 +10,7 @@ vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
 ## 0.3.53
 - **Nada muda no seu uso.** As anotações do `/norte:obrigado` ficaram completas: agora é a própria caixa que anota todas as etapas (inclusive se o atalho pro último bilhete ficou certo), sem depender da IA lembrar. Se a anotação falhar, o `/obrigado` segue igual.
+- Abrir uma conversa não conta mais como se você tivesse usado o `/norte:retomar` — só conta quando você usa de verdade.
 
 ## 0.3.52
 - **Nada muda no seu uso.** Quando você usa o `/norte:obrigado` ou o `/norte:norte-retomar`, a caixa passa a anotar se cada etapa deu certo (achou o bilhete, salvou com objetivo, etc.) — só o nome da etapa e se deu certo, nunca o que você escreveu. Serve pra gente consertar onde quebra. Se a anotação falhar, a habilidade segue igual.
