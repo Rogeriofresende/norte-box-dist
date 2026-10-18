@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.54
+- **Nada muda no seu uso.** A anotação de "o atalho pro último bilhete ficou certo?" do `/norte:obrigado` parou de acusar erro à toa em computadores onde a caixa guarda uma cópia do bilhete em vez de um atalho.
+
 ## 0.3.53
 - **Nada muda no seu uso.** As anotações do `/norte:obrigado` ficaram completas: agora é a própria caixa que anota todas as etapas (inclusive se o atalho pro último bilhete ficou certo), sem depender da IA lembrar. Se a anotação falhar, o `/obrigado` segue igual.
 - Abrir uma conversa não conta mais como se você tivesse usado o `/norte:retomar` — só conta quando você usa de verdade.
