@@ -85,8 +85,26 @@ case "$_passo" in
       *) _res=falhou ;;
     esac ;;
   ponteiro)
+    # 0.3.54: confere se APONTA pro mesmo bilhete, nao se o texto e igual. Atalho: caminho real.
+    # Copia (fallback do cp quando ln -s falha): texto sem a linha objetivo: que o
+    # nb-bilhete-objetivo injeta DEPOIS da copia — era o falso "aponta_outro" do Ygor (9/10).
     if [ -n "$_ult" ] && [ -n "$_bil" ] && [ -e "$_ult" ] && [ -e "$_bil" ]; then
-      if cmp -s "$_ult" "$_bil" 2>/dev/null; then _res=ok; else _res=aponta_outro; fi
+      if [ -L "$_ult" ]; then
+        if [ "$_ult" -ef "$_bil" ]; then _res=ok; else _res=aponta_outro; fi
+      elif cmp -s "$_ult" "$_bil" 2>/dev/null; then _res=ok
+      elif command -v python3 >/dev/null 2>&1 && python3 - "$_ult" "$_bil" <<'PY' 2>/dev/null
+import re, sys
+def sem_objetivo(p):
+    t = open(p, encoding="utf-8").read()
+    m = re.match(r"---\n(.*?)\n---\n", t, re.S)
+    if not m:
+        return t
+    fm = re.sub(r"^objetivo:[^\n]*(\n|\Z)", "", m.group(1), flags=re.M).strip("\n")
+    return ("---\n" + fm + "\n---\n" if fm else "") + t[m.end():]
+sys.exit(0 if sem_objetivo(sys.argv[1]) == sem_objetivo(sys.argv[2]) else 1)
+PY
+      then _res=ok
+      else _res=aponta_outro; fi
     else
       _res=falhou
     fi ;;
