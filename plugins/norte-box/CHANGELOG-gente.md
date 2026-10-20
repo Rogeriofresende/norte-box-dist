@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.55
+- **Nada muda no seu uso.** Quando o `/norte:obrigado` salva o bilhete, a caixa agora acha o objetivo da conversa também quando ele vem na mesma linha do título, em negrito ou com emoji. Assim, ao voltar à conversa, ela não pergunta de novo o que já estava escrito.
+
 ## 0.3.54
 - **Nada muda no seu uso.** A anotação de "o atalho pro último bilhete ficou certo?" do `/norte:obrigado` parou de acusar erro à toa em computadores onde a caixa guarda uma cópia do bilhete em vez de um atalho.
 

@@ -62,9 +62,52 @@ if achado and limpa(achado.group(1)):
     sys.exit(0)
 
 obj, origem = "", ""
-sec = re.search(r"^##+[ \t]*Objetivo[^\n]*\n+([^\n#][^\n]*)", texto[m.end() if m else 0 :], re.M | re.I)
-if sec and limpa(sec.group(1)):
-    obj, origem = limpa(sec.group(1)), "seção Objetivo"
+# 0.3.55: além de "## Objetivo" + frase na linha de baixo, aceita a frase na MESMA linha do título
+# (depois de ":" ou travessão), título em negrito (**Objetivo:** ...) e emoji/símbolo antes da
+# palavra (## 🎯 Objetivo). Só olha títulos e linhas em negrito no começo da linha; seção vazia
+# continua SEM OBJETIVO (não inventa).
+SIMB = r"(?:[^\w\s]+[ \t]*)*"
+TITULO = re.compile(r"^#{1,6}[ \t]*" + SIMB + r"objetivos?\b([^\n]*)$", re.I)
+NEGRITO = re.compile(r"^[ \t]*(?:[-*][ \t]+)?\*\*[ \t]*" + SIMB + r"objetivos?\b([^*\n]*)\*\*[ \t]*([^\n]*)$", re.I)
+NA_LINHA = re.compile(r"^[^:—–\n]{0,40}?(?:[:—–]|[ \t]-[ \t])[ \t]*(\S.*)$")
+
+
+def na_mesma_linha(resto):
+    r = NA_LINHA.match(resto or "")
+    return limpa(r.group(1)) if r else ""
+
+
+ROTULO = re.compile(r"^[ \t]*\*\*[^*\n]+(?::\*\*|\*\*[ \t]*:)")  # **Responsável:** Ana = outro campo
+
+
+def linha_de_baixo(linhas, i):
+    for prox in linhas[i + 1 :]:
+        if not prox.strip():
+            continue
+        if prox.lstrip().startswith(("#", "```")) or ROTULO.match(prox):
+            return ""
+        return limpa(prox)
+    return ""
+
+
+linhas = texto[m.end() if m else 0 :].split("\n")
+em_codigo = False
+for i, linha in enumerate(linhas):
+    if linha.lstrip().startswith("```"):
+        em_codigo = not em_codigo
+        continue
+    if em_codigo:
+        continue
+    t, n = TITULO.match(linha), NEGRITO.match(linha)
+    if t:
+        achou = na_mesma_linha(t.group(1)) or linha_de_baixo(linhas, i)
+    elif n:
+        achou = limpa(n.group(2)) or na_mesma_linha(n.group(1)) or linha_de_baixo(linhas, i)
+    else:
+        continue
+    if achou:
+        obj, origem = achou, "seção Objetivo"
+        break
 
 fio = re.search(r"^fio:[ \t]*(NRT-_\d+)", fm, re.M)
 if not obj and fio and os.access(fonte, os.X_OK):
