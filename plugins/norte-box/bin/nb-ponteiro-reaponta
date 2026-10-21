@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# nb-ponteiro-reaponta <bilhete> — depois do conferente do objetivo, deixa o ULTIMO.md da mesma pasta
+# apontando pro bilhete conferido, SEM atropelar outra janela (0.3.56 · NRT-_997988 · conselho ponteiroygor).
+#
+# POR QUE: caso Ygor 21/10 — o conferente disse "SEM OBJETIVO", a IA corrigiu o bilhete e rodou o conferente
+# de novo, mas NAO refez o Passo 3 (ULTIMO.md). Na maquina dele o ULTIMO.md e COPIA: ficou a versao sem
+# objetivo, e quem retomar pelo ULTIMO pega o bilhete errado. Isto passa a ser feito pelo PROGRAMA.
+#
+# REGRA (so mexe quando o bilhete conferido e o mais NOVO que o ponteiro mostra):
+#   atalho -> se aponta pra ele, nada; se aponta pra um bilhete MAIS VELHO (ou quebrado), re-aponta;
+#             se aponta pra um MAIS NOVO (outra janela salvou depois), NAO mexe.
+#   copia  -> descobre de qual bilhete e a copia (conteudo igual, ignorando a linha objetivo:); se nao bate
+#             com nenhum (copia velha de um bilhete editado depois), vale o bilhete mais novo criado ate a
+#             hora em que o ponteiro foi gravado. Mesmo criterio: so recopia se o conferido for o mais novo.
+#   "Mais novo" = data e hora NO NOME do bilhete (o nome nasce com a hora da criacao; editar nao muda).
+#   Nome sem data reconhecivel -> NAO mexe (na duvida, deixa como esta).
+# Troca atomica (arquivo temporario + rename) dentro de uma trava curta (pasta .ULTIMO.lock).
+# LEIS: exit 0 SEMPRE, nunca imprime nada, sem rede. Desligar: NORTE_PONTEIRO_REAPONTA=0.
+set -u
+[ "${NORTE_PONTEIRO_REAPONTA:-1}" = "0" ] && exit 0
+[ -n "${1:-}" ] && [ -e "$1" ] || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
+python3 - "$1" <<'PY' >/dev/null 2>&1 || true
+import os, re, shutil, sys, time
+
+b = os.path.realpath(sys.argv[1])
+d = os.path.dirname(b)
+u = os.path.join(d, "ULTIMO.md")
+if os.path.basename(b) == "ULTIMO.md" or not os.path.lexists(u):
+    sys.exit(0)
+
+PADROES = (
+    re.compile(r"(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})(?:-(\d+))?\.md$"),          # slug-AAAAMMDD-HHMMSS[-N].md
+    re.compile(r"(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})(?:-[^/]*)?\.md$"),          # AAAA-MM-DD-HHMMSS-slug.md
+    re.compile(r"(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})()(?:-(\d+))?\.md$"),                 # slug-AAAAMMDD-HHMM[-N].md (antigo)
+)
+
+
+def chave(p):
+    nome = os.path.basename(p)
+    for rx in PADROES:
+        m = rx.search(nome)
+        if m:
+            g = m.groups()
+            seg = int(g[5] or 0)
+            extra = int(g[6]) if len(g) > 6 and g[6] else 1
+            try:
+                t = time.mktime((int(g[0]), int(g[1]), int(g[2]), int(g[3]), int(g[4]), seg, 0, 0, -1))
+            except Exception:
+                return None
+            return (t, extra)
+    return None
+
+
+def sem_objetivo(p):
+    try:
+        t = open(p, encoding="utf-8").read()
+    except Exception:
+        return None
+    m = re.match(r"---\n(.*?)\n---\n", t, re.S)
+    if not m:
+        return t
+    fm = re.sub(r"^objetivo:[^\n]*(\n|\Z)", "", m.group(1), flags=re.M).strip("\n")
+    return ("---\n" + fm + "\n---\n" if fm else "") + t[m.end():]
+
+
+kb = chave(b)
+if kb is None:
+    sys.exit(0)
+
+trava = os.path.join(d, ".ULTIMO.lock")
+for _ in range(40):
+    try:
+        os.mkdir(trava)
+        break
+    except FileExistsError:
+        try:
+            if time.time() - os.stat(trava).st_mtime > 10:
+                os.rmdir(trava)
+                continue
+        except Exception:
+            pass
+        time.sleep(0.05)
+    except Exception:
+        sys.exit(0)
+else:
+    sys.exit(0)
+
+try:
+    if os.path.islink(u):
+        alvo = os.path.join(d, os.readlink(u))
+        if os.path.exists(alvo) and os.path.samefile(alvo, b):
+            sys.exit(0)
+        if os.path.exists(alvo):
+            ka = chave(alvo)
+            if ka is None or ka > kb:
+                sys.exit(0)
+        tmp = u + ".reaponta.tmp"
+        if os.path.lexists(tmp):
+            os.remove(tmp)
+        os.symlink(os.path.basename(b), tmp)
+        os.replace(tmp, u)
+    else:
+        atual = sem_objetivo(u)
+        irmaos = [os.path.join(d, n) for n in os.listdir(d)
+                  if n.endswith(".md") and n != "ULTIMO.md" and not os.path.islink(os.path.join(d, n))]
+        de_quem = None
+        for p in irmaos:
+            if atual is not None and sem_objetivo(p) == atual:
+                if os.path.samefile(p, b):
+                    de_quem = b
+                    break
+                de_quem = p
+        if de_quem is None:
+            gravado = os.lstat(u).st_mtime + 2
+            datados = [(chave(p), p) for p in irmaos if chave(p) is not None and chave(p)[0] <= gravado]
+            de_quem = max(datados)[1] if datados else None
+        if de_quem is not None and not os.path.samefile(de_quem, b):
+            kq = chave(de_quem)
+            if kq is None or kq > kb:
+                sys.exit(0)
+        if open(u, "rb").read() == open(b, "rb").read():
+            sys.exit(0)
+        tmp = u + ".reaponta.tmp"
+        shutil.copyfile(b, tmp)
+        os.replace(tmp, u)
+finally:
+    try:
+        os.rmdir(trava)
+    except Exception:
+        pass
+PY
+exit 0
