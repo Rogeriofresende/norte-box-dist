@@ -134,4 +134,7 @@ with open(tmp, "w", encoding="utf-8") as f:
 os.replace(tmp, path)
 print("OBJETIVO: " + obj + " (copiado de: " + origem + ")")
 PY
+# 0.3.56 (NRT-_997988): o ponteiro ULTIMO.md da mesma pasta passa a seguir o bilhete conferido (caso Ygor
+# 21/10: a IA corrigiu o objetivo e nao refez o ponteiro). So mexe se o bilhete for o mais novo; calado.
+[ -f "$(dirname "$0")/nb-ponteiro-reaponta" ] && bash "$(dirname "$0")/nb-ponteiro-reaponta" "$B" </dev/null >/dev/null 2>&1
 exit 0

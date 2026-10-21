@@ -107,7 +107,15 @@ PY
       else _res=aponta_outro; fi
     else
       _res=falhou
-    fi ;;
+    fi
+    # 0.3.56 (NRT-_997988): o PROGRAMA consertou o ponteiro (nb-ponteiro-reaponta deixou a marca pra ESTE
+    # bilhete ha ate 2 min) -> conta a parte como "reapontou", nao "ok" calado (a IA esqueceu o Passo 3).
+    _mkp="$STATE_DIR/ponteiro-reapontou"
+    if [ "$_res" = ok ] && [ -f "$_mkp" ] && [ -n "$(find "$_mkp" -mmin -2 2>/dev/null)" ]; then
+      _bil_real="$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$_bil" 2>/dev/null)"
+      [ "$(cat "$_mkp" 2>/dev/null)" = "$_bil_real" ] && _res=reapontou
+    fi
+    [ -f "$_mkp" ] && rm -f "$_mkp" 2>/dev/null ;;
   onde_estou)
     case "$_saida" in INTERNO*) _res=interno ;; SO-BILHETE*) _res=so_bilhete ;; *) _res=falhou ;; esac ;;
   fechou_registro)
