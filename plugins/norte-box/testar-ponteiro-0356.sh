@@ -24,7 +24,8 @@ caso() { # $1 caso $2 jeito -> imprime "res2 | ULTIMO aponta pra"
    duas_janelas) printf -- "$SEM" > "$B1"; ponteiro "$2" "$B1"; conf "$B1"            # janela 1 salva sem objetivo
                  sleep 1; printf -- "$COM" > "$D/$B2N"; ponteiro "$2" "$D/$B2N"; conf "$D/$B2N"  # janela 2 salva depois
                  edita "$B1"; conf "$B1" ;;                                          # janela 1 corrige o seu
-   nome_sem_data) B1="$D/painel.md"; printf -- "$SEM" > "$B1"; ponteiro "$2" "$B1"; conf "$B1"; printf -- "$COM" > "$D/$B2N"; conf "$D/$B2N" ;;
+   objetivo_na_secao) printf -- "$COM" > "$B1"; ponteiro "$2" "$B1"; conf "$B1" ;;
+   nome_sem_data) B1="$D/painel.md"; printf -- "$COM" > "$B1"; ponteiro "$2" "$D/antigo-20261021-100000.md"; conf "$B1" ;;
    *) printf -- "$SEM" > "$B1"; ponteiro "$2" "$B1"; conf "$B1"
       case "$1" in
         normal) : ;;
@@ -41,13 +42,48 @@ confere() { # $1 rotulo $2 obtido $3 esperado
 for j in atalho copia; do
   for c in normal edita_mesmo edita_e_aponta bilhete_novo; do
     CX=$VELHO; v=$(caso $c $j); CX=$NOVO; n=$(caso $c $j)
-    esp="ok | $B1N"; [ "$c" = bilhete_novo ] && esp="ok | $B2N"
+    case "$c/$j" in
+      bilhete_novo/*) esp="reapontou | $B2N" ;;
+      edita_mesmo/copia) esp="reapontou | $B1N" ;;
+      edita_e_aponta/copia) esp="ok | $B1N" ;;
+      *) esp="ok | $B1N" ;;
+    esac
     printf '  [0.3.55: %-30s]' "$v"; confere "$c/$j" "$n" "$esp"
   done
-  CX=$NOVO; confere "duas_janelas/$j (não atropela)" "$(caso duas_janelas $j | cut -d'|' -f2 | tr -d ' ')" "$B2N"
+  CX=$NOVO; confere "duas_janelas/$j (uma depois da outra)" "$(caso duas_janelas $j | cut -d'|' -f2 | tr -d ' ')" "$B2N"
 done
+# --- 2 janelas AO MESMO TEMPO -------------------------------------------------------------
+# A janela 1 corrige o objetivo; o programa dela PARA 1,5 s bem no meio da troca (pausa de teste).
+# Nesse meio tempo a janela 2 salva um bilhete novo. No fim, o ULTIMO tem que mostrar o da janela 2.
+corrida() { # $1 jeito $2 quando a janela 2 aponta (dentro|depois)
+  prep; B1="$D/$B1N"; printf -- "$SEM" > "$B1"; ponteiro "$1" "$D/antigo-20261021-100000.md"
+  edita "$B1"
+  ( HOME=$HM NORTE_PONTEIRO_TESTE_PAUSA_S=1.5 bash "$NOVO/bin/nb-bilhete-objetivo" "$B1" obrigado >/dev/null ) &
+  sleep 0.5; printf -- "$COM" > "$D/$B2N"
+  [ "$2" = dentro ] && ponteiro "$1" "$D/$B2N"
+  wait; sleep 1.2
+  [ "$2" = depois ] && ponteiro "$1" "$D/$B2N"
+  echo "$(qual)"
+}
+for j in atalho copia; do
+  confere "ao mesmo tempo/$j (janela 2 aponta no meio)" "$(corrida $j dentro)" "$B2N"
+  confere "ao mesmo tempo/$j (janela 2 aponta depois)" "$(corrida $j depois)" "$B2N"
+done
+# Estresse: 40 disputas sem pausa, a janela 2 entra 0-150 ms depois. O ULTIMO tem que terminar SEMPRE no mais novo.
+for j in atalho copia; do
+  erro=0
+  for i in $(seq 1 20); do
+    prep; B1="$D/$B1N"; printf -- "$SEM" > "$B1"; ponteiro "$j" "$D/antigo-20261021-100000.md"; edita "$B1"
+    ( HOME=$HM bash "$NOVO/bin/nb-bilhete-objetivo" "$B1" obrigado >/dev/null ) &
+    sleep "0.$(printf '%03d' $((RANDOM % 150)))"; printf -- "$COM" > "$D/$B2N"; ponteiro "$j" "$D/$B2N"
+    wait; sleep 0.3
+    [ "$(qual)" = "$B2N" ] || erro=$((erro+1))
+  done
+  confere "estresse/$j: 20 disputas, ULTIMO no mais novo" "$erro erradas" "0 erradas"
+done
+for j in atalho copia; do CX=$NOVO; confere "fluxo normal com objetivo/$j (não conta)" "$(caso objetivo_na_secao $j)" "ok | $B1N"; done
 CX=$NOVO; confere "desligado (kill) atalho" "$(caso desligado atalho)" "aponta_outro | $B1N"
-CX=$NOVO; confere "nome sem data: não mexe" "$(caso nome_sem_data atalho)" "aponta_outro | painel.md"
+CX=$NOVO; confere "nome sem data: não mexe" "$(caso nome_sem_data atalho)" "aponta_outro | antigo-20261021-100000.md"
 # a saida pro usuario (OBJETIVO:/SEM OBJETIVO) nao muda
 diff <(cd "$T" && ls saida-* >/dev/null && cat  /dev/null) /dev/null >/dev/null
 s1=$(HOME=$T/x NORTE_BOX_PASSO=0 bash "$VELHO/bin/nb-bilhete-objetivo" "$(ls "$T"/proj*/norte-out/handoffs/$B1N | head -1)"); s2=$(HOME=$T/x NORTE_BOX_PASSO=0 bash "$NOVO/bin/nb-bilhete-objetivo" "$(ls "$T"/proj*/norte-out/handoffs/$B1N | head -1)")

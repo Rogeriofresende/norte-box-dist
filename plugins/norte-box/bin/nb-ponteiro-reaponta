@@ -6,14 +6,12 @@
 # de novo, mas NAO refez o Passo 3 (ULTIMO.md). Na maquina dele o ULTIMO.md e COPIA: ficou a versao sem
 # objetivo, e quem retomar pelo ULTIMO pega o bilhete errado. Isto passa a ser feito pelo PROGRAMA.
 #
-# REGRA (so mexe quando o bilhete conferido e o mais NOVO que o ponteiro mostra):
-#   atalho -> se aponta pra ele, nada; se aponta pra um bilhete MAIS VELHO (ou quebrado), re-aponta;
-#             se aponta pra um MAIS NOVO (outra janela salvou depois), NAO mexe.
-#   copia  -> descobre de qual bilhete e a copia (conteudo igual, ignorando a linha objetivo:); se nao bate
-#             com nenhum (copia velha de um bilhete editado depois), vale o bilhete mais novo criado ate a
-#             hora em que o ponteiro foi gravado. Mesmo criterio: so recopia se o conferido for o mais novo.
-#   "Mais novo" = data e hora NO NOME do bilhete (o nome nasce com a hora da criacao; editar nao muda).
-#   Nome sem data reconhecivel -> NAO mexe (na duvida, deixa como esta).
+# REGRA: o ULTIMO.md so passa a mostrar o bilhete conferido se ele for o MAIS NOVO da pasta ("mais novo" = data
+#   e hora NO NOME, que nasce na criacao; editar nao muda). Existe outro com data igual ou maior (outra janela
+#   salvou depois, ou empate) -> NAO mexe. Nome sem data reconhecivel -> NAO mexe. Atalho continua atalho,
+#   copia continua copia. A conferencia e feita 2x: antes e no ULTIMO instante antes da troca (2 janelas ao
+#   mesmo tempo). Quando troca, deixa a marca ~/.norte-box/ponteiro-reapontou: o passo "ponteiro" vira
+#   "reapontou" (conta a parte), nao "ok" calado.
 # Troca atomica (arquivo temporario + rename) dentro de uma trava curta (pasta .ULTIMO.lock).
 # LEIS: exit 0 SEMPRE, nunca imprime nada, sem rede. Desligar: NORTE_PONTEIRO_REAPONTA=0.
 set -u
@@ -68,6 +66,43 @@ kb = chave(b)
 if kb is None:
     sys.exit(0)
 
+
+def irmaos():
+    try:
+        nomes = os.listdir(d)
+    except Exception:
+        return None
+    return [os.path.join(d, n) for n in nomes
+            if n.endswith(".md") and n != "ULTIMO.md" and not os.path.islink(os.path.join(d, n))]
+
+
+def e_o_mais_novo():
+    # So o bilhete MAIS NOVO da pasta pode ser o ULTIMO. Outro com data igual ou maior = na duvida, nao mexe.
+    ps = irmaos()
+    if ps is None:
+        return False
+    for p in ps:
+        if os.path.samefile(p, b):
+            continue
+        k = chave(p)
+        if k is not None and k >= kb:
+            return False
+    return True
+
+
+def ja_certo():
+    if os.path.islink(u):
+        alvo = os.path.join(d, os.readlink(u))
+        return os.path.exists(alvo) and os.path.samefile(alvo, b)
+    try:
+        return open(u, "rb").read() == open(b, "rb").read()
+    except Exception:
+        return False
+
+
+if ja_certo() or not e_o_mais_novo():
+    sys.exit(0)
+
 trava = os.path.join(d, ".ULTIMO.lock")
 for _ in range(40):
     try:
@@ -87,44 +122,41 @@ else:
     sys.exit(0)
 
 try:
-    if os.path.islink(u):
-        alvo = os.path.join(d, os.readlink(u))
-        if os.path.exists(alvo) and os.path.samefile(alvo, b):
-            sys.exit(0)
-        if os.path.exists(alvo):
-            ka = chave(alvo)
-            if ka is None or ka > kb:
-                sys.exit(0)
-        tmp = u + ".reaponta.tmp"
-        if os.path.lexists(tmp):
-            os.remove(tmp)
+    atalho = os.path.islink(u)
+    tmp = u + ".reaponta.tmp"
+    if os.path.lexists(tmp):
+        os.remove(tmp)
+    if atalho:
         os.symlink(os.path.basename(b), tmp)
-        os.replace(tmp, u)
     else:
-        atual = sem_objetivo(u)
-        irmaos = [os.path.join(d, n) for n in os.listdir(d)
-                  if n.endswith(".md") and n != "ULTIMO.md" and not os.path.islink(os.path.join(d, n))]
-        de_quem = None
-        for p in irmaos:
-            if atual is not None and sem_objetivo(p) == atual:
-                if os.path.samefile(p, b):
-                    de_quem = b
-                    break
-                de_quem = p
-        if de_quem is None:
-            gravado = os.lstat(u).st_mtime + 2
-            datados = [(chave(p), p) for p in irmaos if chave(p) is not None and chave(p)[0] <= gravado]
-            de_quem = max(datados)[1] if datados else None
-        if de_quem is not None and not os.path.samefile(de_quem, b):
-            kq = chave(de_quem)
-            if kq is None or kq > kb:
-                sys.exit(0)
-        if open(u, "rb").read() == open(b, "rb").read():
-            sys.exit(0)
-        tmp = u + ".reaponta.tmp"
         shutil.copyfile(b, tmp)
-        os.replace(tmp, u)
+    pausa = os.environ.get("NORTE_PONTEIRO_TESTE_PAUSA_S")  # so pro teste da corrida (2 janelas ao mesmo tempo)
+    if pausa:
+        time.sleep(float(pausa))
+    # Confere DE NOVO no ultimo instante: se outra janela criou um bilhete mais novo enquanto isso, desiste.
+    if ja_certo() or not e_o_mais_novo():
+        os.remove(tmp)
+        sys.exit(0)
+    # Copia que so difere pela linha "objetivo:" = o proprio conferente escreveu o objetivo DEPOIS do Passo 3:
+    # o ponteiro ja era deste bilhete -> so atualiza, sem marcar "reapontou" (a IA nao esqueceu nada).
+    so_objetivo = (not atalho) and sem_objetivo(u) is not None and sem_objetivo(u) == sem_objetivo(b)
+    os.replace(tmp, u)
+    if so_objetivo:
+        sys.exit(0)
+    # Conta a parte (o nb-passo le e marca "reapontou" em vez de "ok") — o painel continua vendo o esquecimento.
+    try:
+        sd = os.path.join(os.path.expanduser("~"), ".norte-box")
+        os.makedirs(sd, exist_ok=True)
+        with open(os.path.join(sd, "ponteiro-reapontou"), "w", encoding="utf-8") as f:
+            f.write(b)
+    except Exception:
+        pass
 finally:
+    try:
+        if os.path.lexists(u + ".reaponta.tmp"):
+            os.remove(u + ".reaponta.tmp")
+    except Exception:
+        pass
     try:
         os.rmdir(trava)
     except Exception:
