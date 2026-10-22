@@ -50,6 +50,13 @@ jobs:
               roda depois "$1" "$b" "$2" "${3:-X=1}" "$DEPOIS"
             done
           }
+          echo "== diagnóstico do erro_ler (cenários 3 e 5)"
+          printf 'x\n' > "$T/d.md"
+          echo "-- python direto:"; python -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- python pelo atalho bash:"; "$T/sopy/python" -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- py pelo atalho bash:"; "$T/sopyl/py" -3 -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- py direto:"; /c/Windows/py -3 -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- cygpath:"; cygpath -w "$T/d.md"
           cen "1. tudo instalado"                       "$PATH"
           cen "2. tela cp1252"                          "$PATH" "PYTHONIOENCODING=cp1252"
           cen "3. só 'python' (site oficial, sem Store)" "$T/sopy:$BASE"
