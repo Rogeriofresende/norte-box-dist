@@ -39,13 +39,32 @@ fi
 B="${1:-}"
 [ "${NORTE_BILHETE_OBJETIVO:-1}" = "0" ] && { echo "SEM OBJETIVO (desligado)"; exit 0; }
 [ -n "$B" ] && [ -e "$B" ] || { echo "SEM OBJETIVO (bilhete não encontrado)"; exit 0; }
-command -v python3 >/dev/null 2>&1 || { echo "SEM OBJETIVO (sem python3)"; exit 0; }
+# 0.3.58 (NRT-_998139): quando dá erro, anota o MOTIVO numa lista fechada (sem texto) pro nb-passo juntar ao
+# "falhou": sem_python · python_nao_roda · erro_ler · erro_escrever · erro_mostrar · outro. A saída não muda.
+# Desligar: NORTE_BILHETE_MOTIVO=0.
+_motivo() {
+  [ "${NORTE_BILHETE_MOTIVO:-1}" = "0" ] && return 0
+  { mkdir -p "$HOME/.norte-box" && printf '%s\tmotivo=%s\n' "$B" "$1" > "$HOME/.norte-box/bilhete-motivo"; } 2>/dev/null || true
+}
+command -v python3 >/dev/null 2>&1 || { _motivo sem_python; echo "SEM OBJETIVO (sem python3)"; exit 0; }
+python3 -c 'import sys' >/dev/null 2>&1 || { _motivo python_nao_roda; echo "SEM OBJETIVO (erro)"; exit 0; }
 FONTE="${NORTE_OBJETIVO_FONTE:-$HOME/.claude/scripts/norte-objetivo-do-fio.sh}"
-python3 - "$B" "$FONTE" <<'PY' 2>/dev/null || echo "SEM OBJETIVO (erro)"
+python3 - "$B" "$FONTE" <<'PY' 2>/dev/null
 import os, re, subprocess, sys
 
 path, fonte = os.path.realpath(sys.argv[1]), sys.argv[2]
-texto = open(path, encoding="utf-8").read()
+try:
+    texto = open(path, encoding="utf-8").read()
+except Exception:
+    sys.exit(3)  # erro_ler
+
+
+def diga(s):
+    try:
+        print(s)
+        sys.stdout.flush()
+    except Exception:
+        sys.exit(5)  # erro_mostrar
 m = re.match(r"^---\n(.*?)\n---\n", texto, re.S)
 fm = m.group(1) if m else ""
 
@@ -58,7 +77,7 @@ def limpa(s):
 
 achado = re.search(r"^objetivo:[ \t]*(.*)$", fm, re.M)
 if achado and limpa(achado.group(1)):
-    print("OBJETIVO: " + limpa(achado.group(1)))
+    diga("OBJETIVO: " + limpa(achado.group(1)))
     sys.exit(0)
 
 obj, origem = "", ""
@@ -154,7 +173,7 @@ if not obj:
                 f.write(path + "\t" + forma + "\n")
     except Exception:
         pass
-    print("SEM OBJETIVO")
+    diga("SEM OBJETIVO")
     sys.exit(0)
 
 if m:
@@ -163,11 +182,19 @@ if m:
 else:
     novo = "---\nobjetivo: " + obj + "\n---\n" + texto
 tmp = path + ".obj.tmp"
-with open(tmp, "w", encoding="utf-8") as f:
-    f.write(novo)
-os.replace(tmp, path)
-print("OBJETIVO: " + obj + " (copiado de: " + origem + ")")
+try:
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(novo)
+    os.replace(tmp, path)
+except Exception:
+    sys.exit(4)  # erro_escrever
+diga("OBJETIVO: " + obj + " (copiado de: " + origem + ")")
 PY
+_rc=$?
+if [ "$_rc" != 0 ]; then
+  case "$_rc" in 3) _motivo erro_ler ;; 4) _motivo erro_escrever ;; 5) _motivo erro_mostrar ;; *) _motivo outro ;; esac
+  echo "SEM OBJETIVO (erro)"
+fi
 # 0.3.56 (NRT-_997988): o ponteiro ULTIMO.md da mesma pasta passa a seguir o bilhete conferido (caso Ygor
 # 21/10: a IA corrigiu o objetivo e nao refez o ponteiro). So mexe se o bilhete for o mais novo; calado.
 [ -f "$(dirname "$0")/nb-ponteiro-reaponta" ] && bash "$(dirname "$0")/nb-ponteiro-reaponta" "$B" </dev/null >/dev/null 2>&1

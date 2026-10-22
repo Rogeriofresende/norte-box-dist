@@ -29,6 +29,7 @@ jobs:
         shell: bash
         run: |
           set -u
+          set +e
           CX="$PWD/plugins/norte-box"
           T="$(mktemp -d)"
           mk() { printf -- "$2" > "$T/$1.md"; }
@@ -40,17 +41,22 @@ jobs:
             local f="$T/$2.md"; cp "$T/$2.md" "$T/$2-$1.md"; f="$T/$2-$1.md"
             local s; s="$(env $3 HOME="$T/home-$1" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$CX/bin/nb-bilhete-objetivo" "$f" 2>"$T/err")"
             printf '%-22s %-8s -> %s\n' "$1" "$2" "$s"
-            [ -s "$T/err" ] && sed 's/^/      stderr: /' "$T/err" | head -3
+            if [ -s "$T/err" ]; then sed 's/^/      stderr: /' "$T/err" | head -3; fi
+            if [ -f "$T/home-$1/.norte-box/bilhete-motivo" ]; then printf '      motivo anotado: %s\n' "$(cut -f2 "$T/home-$1/.norte-box/bilhete-motivo")"; rm -f "$T/home-$1/.norte-box/bilhete-motivo"; fi
           }
           mkdir -p "$T/so-python" "$T/stub"
           P="$(command -v python || true)"
           [ -n "$P" ] && printf '#!/bin/bash\nexec "%s" "$@"\n' "$P" > "$T/so-python/python" && chmod +x "$T/so-python/python"
           printf '#!/bin/bash\necho "Python was not found; run without arguments to install from the Microsoft Store" >&2\nexit 9009\n' > "$T/stub/python3"; chmod +x "$T/stub/python3"
           SEMPY="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vi python | grep -vi windowsapps | tr '\n' ':')"
+          LOJA="$(cygpath -u "$LOCALAPPDATA")/Microsoft/WindowsApps"
+          echo "== atalho real da Store (python3.exe em WindowsApps), sozinho:"; "$LOJA/python3.exe" -c 'print(1)' </dev/null; echo "   código de saída: $?"
           for b in simples acento emoji semobj; do
             roda "padrao"              "$b" "X=1"
             roda "console_cp1252"      "$b" "PYTHONIOENCODING=cp1252"
             roda "so_python_sem_3"     "$b" "PATH=$T/so-python:$SEMPY"
             roda "atalho_da_store"     "$b" "PATH=$T/stub:$SEMPY"
             roda "sem_python_nenhum"   "$b" "PATH=$SEMPY"
+            roda "store_real_so"       "$b" "PATH=$LOJA:$SEMPY"
+            roda "python_org+store"    "$b" "PATH=$T/so-python:$LOJA:$SEMPY"
           done
