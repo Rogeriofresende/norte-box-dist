@@ -39,7 +39,7 @@ jobs:
           mk semobj    '# Handoff — x\n\n## Onde estamos\n- [x] a\n'
           roda() { # cenario · arquivo · env extra
             local f="$T/$2.md"; cp "$T/$2.md" "$T/$2-$1.md"; f="$T/$2-$1.md"
-            local s; s="$(env $3 HOME="$T/home-$1" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$CX/bin/nb-bilhete-objetivo" "$f" 2>"$T/err")"
+            local s; s="$(env "$3" HOME="$T/home-$1" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$CX/bin/nb-bilhete-objetivo" "$f" 2>"$T/err")"
             printf '%-22s %-8s -> %s\n' "$1" "$2" "$s"
             if [ -s "$T/err" ]; then sed 's/^/      stderr: /' "$T/err" | head -3; fi
             if [ -f "$T/home-$1/.norte-box/bilhete-motivo" ]; then printf '      motivo anotado: %s\n' "$(cut -f2 "$T/home-$1/.norte-box/bilhete-motivo")"; rm -f "$T/home-$1/.norte-box/bilhete-motivo"; fi
