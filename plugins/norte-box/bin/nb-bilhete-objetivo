@@ -120,6 +120,40 @@ if not obj and fio and os.access(fonte, os.X_OK):
         pass
 
 if not obj:
+    # 0.3.57 (NRT-_998139): anota SÓ O FORMATO do bilhete (lista fechada, zero texto) pro nb-passo juntar
+    # ao "sem_objetivo" — pra saber se o objetivo faltou ou se veio num jeito que o leitor não pega.
+    # A saída continua só "SEM OBJETIVO". Desligar: NORTE_BILHETE_FORMA=0. Falha aqui nunca muda nada.
+    try:
+        if os.environ.get("NORTE_BILHETE_FORMA", "1") != "0":
+            corpo = linhas
+            tit = [l for l in corpo if re.match(r"^\s*#{1,6}\s", l) or re.match(r"^\s*\*\*", l)]
+            if any(TITULO.match(l) or NEGRITO.match(l) for l in corpo):
+                secao = "vazia"
+            elif any(re.search(r"objetiv", l, re.I) for l in tit):
+                secao = "outro_titulo"
+            else:
+                secao = "ausente"
+            obj_topo = "vazia" if re.search(r"^objetivo:", fm, re.M) else "ausente"
+            palavra = "sim" if any(re.search(r"objetiv", l, re.I) for l in corpo if l not in tit) else "nao"
+            baixo = " ".join(l.lower() for l in tit)
+            molde = sum(k in baixo for k in ("onde estamos", "fatos verificados", "proximo passo", "próximo passo", "cuidados"))
+            n = len([l for l in corpo if l.strip()])
+            forma = "|".join([
+                "topo=" + ("sim" if m else "nao"),
+                "obj_topo=" + obj_topo,
+                "secao=" + secao,
+                "palavra=" + palavra,
+                "molde=" + ("sim" if molde >= 3 else "parcial" if molde else "nao"),
+                "tamanho=" + ("curto" if n < 20 else "medio" if n <= 80 else "longo"),
+                "fio=" + ("sim" if fio else "nao"),
+                "fonte=" + ("sim" if os.access(fonte, os.X_OK) else "ilegivel" if os.path.exists(fonte) else "nao"),
+            ])
+            d = os.path.join(os.path.expanduser("~"), ".norte-box")
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, "bilhete-forma"), "w", encoding="utf-8") as f:
+                f.write(path + "\t" + forma + "\n")
+    except Exception:
+        pass
     print("SEM OBJETIVO")
     sys.exit(0)
 
