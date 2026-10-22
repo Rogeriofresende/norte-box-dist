@@ -83,7 +83,17 @@ case "$_passo" in
       *"desligado"*) _res=desligado ;;
       "SEM OBJETIVO") _res=sem_objetivo ;;
       *) _res=falhou ;;
-    esac ;;
+    esac
+    # 0.3.57 (NRT-_998139): junta o FORMATO anotado pelo nb-bilhete-objetivo (só se fresco, ≤2 min) —
+    # passa por lista permitida de letras; qualquer coisa fora dela é descartada. O arquivo é apagado.
+    _forma=""; _mkf="$STATE_DIR/bilhete-forma"
+    if [ "$_res" = sem_objetivo ] && [ -f "$_mkf" ] && [ -n "$(find "$_mkf" -mmin -2 2>/dev/null)" ]; then
+      _forma="$(cut -f2 "$_mkf" 2>/dev/null | head -1)"
+      # tabela FECHADA: as 8 chaves, nesta ordem, cada uma só com os valores abaixo — senão descarta tudo.
+      printf '%s' "$_forma" | grep -Eq '^topo=(sim|nao)\|obj_topo=(ausente|vazia)\|secao=(ausente|vazia|outro_titulo)\|palavra=(sim|nao)\|molde=(sim|parcial|nao)\|tamanho=(curto|medio|longo)\|fio=(sim|nao)\|fonte=(sim|nao|ilegivel)$' || _forma=""
+      [ "${#_forma}" -gt 160 ] && _forma=""
+    fi
+    [ -f "$_mkf" ] && rm -f "$_mkf" 2>/dev/null ;;
   ponteiro)
     # 0.3.54: confere se APONTA pro mesmo bilhete, nao se o texto e igual. Atalho: caminho real.
     # Copia (fallback do cp quando ln -s falha): texto sem a linha objetivo: que o
@@ -146,11 +156,11 @@ case "$_versao" in ''|*[!0-9.]*|[!0-9]*) _versao="" ;; esac
 _line="$(jq -cn \
   --arg invite_id "$_invite_id" --arg ts "$(date -u +%FT%TZ 2>/dev/null || echo unknown)" \
   --arg versao "$_versao" --arg run_id "$_run_id" \
-  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" \
+  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" --arg forma "${_forma:-}" \
   '{invite_id:$invite_id, kind:"passo", ts:$ts,
     versao:(if $versao=="" then null else $versao end),
     run_id:(if $run_id=="" then null else $run_id end),
-    passo:{habilidade:$hab, passo:$passo, resultado:$res}}' 2>/dev/null || true)"
+    passo:({habilidade:$hab, passo:$passo, resultado:$res} + (if $forma=="" then {} else {forma:$forma} end))}' 2>/dev/null || true)"
 [ -z "$_line" ] && exit 0
 mkdir -p "$STATE_DIR" 2>/dev/null || exit 0
 printf '%s\n' "$_line" >> "$QUEUE" 2>/dev/null || exit 0
