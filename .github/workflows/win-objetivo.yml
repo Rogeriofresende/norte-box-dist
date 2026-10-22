@@ -37,7 +37,7 @@ jobs:
           printf '#!/bin/bash\nexec "%s" "$@"\n' "$(command -v python)" > "$T/sopy/python"; chmod +x "$T/sopy/python"
           printf '#!/bin/bash\nexec /c/Windows/py "$@"\n' > "$T/sopyl/py"; chmod +x "$T/sopyl/py"
           roda() { # versão · cenário · bilhete · PATH · env extra
-            local f="$T/$3-$2-$1.md"; cp "$T/$3.md" "$f"; local h="$T/h-$1-$2-$3"
+            local k; k="$(printf '%s' "$2" | cut -c1)"; local f="$T/$3-c$k-$1.md"; cp "$T/$3.md" "$f"; local h="$T/h-$1-c$k-$3"
             local s; s="$(env "PATH=$4" "$5" HOME="$h" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$6" "$f" 2>/dev/null)"
             s="${s% (copiado de:*}"
             local m=""; [ -f "$h/.norte-box/bilhete-motivo" ] && m="  [motivo: $(cut -f2 "$h/.norte-box/bilhete-motivo" | sed 's/motivo=//')]"
@@ -61,6 +61,13 @@ jobs:
           cp "$T/simples.md" "$T/dbg.md"
           echo "-- conserto no cenário 5 com erro visível:"; env "PATH=$T/sopyl:$BASE" HOME="$T/hd" NORTE_BOX_PASSO=0 bash "$T/dbg.sh" "$T/dbg.md" 2>&1 | tail -8
           echo "-- PATH reduzido:"; printf '%s' "$BASE" | tr ':' '\n' | head -30
+          echo; echo "== 8. pasta com acento / aspas / espaço (ex.: C:\\Users\\Luís), tudo instalado"
+          for d in "Luís" "pasta com espaço" "d'aspas" "Área de Trabalho"; do
+            mkdir -p "$T/$d"; cp "$T/simples.md" "$T/$d/b-antes.md"; cp "$T/simples.md" "$T/$d/b-depois.md"
+            a="$(HOME="$T/ha" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$T/antes.sh" "$T/$d/b-antes.md" 2>/dev/null)"
+            b="$(HOME="$T/hb" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$DEPOIS" "$T/$d/b-depois.md" 2>/dev/null)"
+            printf '  %-18s antes: %-40s depois: %s\n' "$d" "${a% (copiado de:*}" "${b% (copiado de:*}"
+          done
           cen "1. tudo instalado"                       "$PATH"
           cen "2. tela cp1252"                          "$PATH" "PYTHONIOENCODING=cp1252"
           cen "3. só 'python' (site oficial, sem Store)" "$T/sopy:$BASE"
