@@ -46,10 +46,26 @@ _motivo() {
   [ "${NORTE_BILHETE_MOTIVO:-1}" = "0" ] && return 0
   { mkdir -p "$HOME/.norte-box" && printf '%s\tmotivo=%s\n' "$B" "$1" > "$HOME/.norte-box/bilhete-motivo"; } 2>/dev/null || true
 }
-command -v python3 >/dev/null 2>&1 || { _motivo sem_python; echo "SEM OBJETIVO (sem python3)"; exit 0; }
-python3 -c 'import sys' >/dev/null 2>&1 || { _motivo python_nao_roda; echo "SEM OBJETIVO (erro)"; exit 0; }
+# 0.3.58 (NRT-_998139): acha um Python 3 que RODE — python3 → python → py -3 (no Windows, o Python do site oficial
+# não cria "python3" e o atalho da Microsoft Store toma o lugar). Só aceita quem roda e é versão 3.
+# E roda em UTF-8: a tela do Windows é cp1252 e quebrava com emoji/seta no objetivo. Desligar: NORTE_ACHA_PYTHON=0.
+_PY=(); _achou_algum=0
+if [ "${NORTE_ACHA_PYTHON:-1}" = "0" ]; then
+  command -v python3 >/dev/null 2>&1 && _achou_algum=1 && python3 -c 'import sys' >/dev/null 2>&1 && _PY=(python3)
+else
+  for _c in "python3" "python" "py -3"; do
+    read -r -a _cmd <<< "$_c"
+    command -v "${_cmd[0]}" >/dev/null 2>&1 || continue
+    _achou_algum=1
+    if "${_cmd[@]}" -c 'import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)' </dev/null >/dev/null 2>&1; then _PY=("${_cmd[@]}"); break; fi
+  done
+fi
+if [ "${#_PY[@]}" = 0 ]; then
+  if [ "$_achou_algum" = 0 ]; then _motivo sem_python; echo "SEM OBJETIVO (sem python3)"; else _motivo python_nao_roda; echo "SEM OBJETIVO (erro)"; fi
+  exit 0
+fi
 FONTE="${NORTE_OBJETIVO_FONTE:-$HOME/.claude/scripts/norte-objetivo-do-fio.sh}"
-python3 - "$B" "$FONTE" <<'PY' 2>/dev/null
+PYTHONUTF8=1 PYTHONIOENCODING=utf-8 "${_PY[@]}" - "$B" "$FONTE" <<'PY' 2>/dev/null
 import os, re, subprocess, sys
 
 path, fonte = os.path.realpath(sys.argv[1]), sys.argv[2]
