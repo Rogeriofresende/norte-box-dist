@@ -57,6 +57,10 @@ jobs:
           echo "-- py pelo atalho bash:"; "$T/sopyl/py" -3 -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
           echo "-- py direto:"; /c/Windows/py -3 -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
           echo "-- cygpath:"; cygpath -w "$T/d.md"
+          sed -e 's/    sys.exit(3)  # erro_ler/    import traceback; traceback.print_exc(); sys.exit(3)/' -e "s/<<'PY' 2>\/dev\/null/<<'PY'/" "$DEPOIS" > "$T/dbg.sh"
+          cp "$T/simples.md" "$T/dbg.md"
+          echo "-- conserto no cenário 5 com erro visível:"; env "PATH=$T/sopyl:$BASE" HOME="$T/hd" NORTE_BOX_PASSO=0 bash "$T/dbg.sh" "$T/dbg.md" 2>&1 | tail -8
+          echo "-- PATH reduzido:"; printf '%s' "$BASE" | tr ':' '\n' | head -30
           cen "1. tudo instalado"                       "$PATH"
           cen "2. tela cp1252"                          "$PATH" "PYTHONIOENCODING=cp1252"
           cen "3. só 'python' (site oficial, sem Store)" "$T/sopy:$BASE"
