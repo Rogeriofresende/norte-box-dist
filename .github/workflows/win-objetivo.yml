@@ -1,0 +1,56 @@
+name: win-objetivo
+
+# Investigação NRT-_998139 (22/10): o passo "salvou bilhete" deu "falhou" em máquinas novas (suspeita: Windows).
+# Roda o conferente do objetivo (bin/nb-bilhete-objetivo) numa máquina Windows real da GitHub, em vários cenários,
+# e IMPRIME o que sai — não publica nada, não lê segredo nenhum. Só roda nesta branch ou à mão.
+
+"on":
+  push:
+    branches: [nrt998139-win-objetivo]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  objetivo-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: O que tem de python nesta máquina
+        shell: bash
+        run: |
+          uname -a || true
+          for c in python3 python py; do printf '%-8s -> ' "$c"; command -v "$c" || echo "(não achou)"; done
+          for c in python3 python py; do printf '%-8s versão: ' "$c"; "$c" --version 2>&1 | head -1 || true; echo " (código $?)"; done
+          ls -la "$LOCALAPPDATA/Microsoft/WindowsApps/" 2>/dev/null | grep -i python || echo "(sem atalhos da Store)"
+          python -c "import sys,locale;print('stdout:',sys.stdout.encoding,'· preferido:',locale.getpreferredencoding())" || true
+      - name: Rodar o conferente em vários cenários
+        shell: bash
+        run: |
+          set -u
+          CX="$PWD/plugins/norte-box"
+          T="$(mktemp -d)"
+          mk() { printf -- "$2" > "$T/$1.md"; }
+          mk simples   '# Handoff — x\n\n## Objetivo (1 frase)\nvender mais\n\n## Onde estamos\n- [x] a\n'
+          mk acento    '# Handoff — ação\n\n## Objetivo (1 frase)\norganizar as petições da semana\n\n## Onde estamos\n- [x] a\n'
+          mk emoji     '# Handoff — x\n\n## 🎯 Objetivo: fechar o relatório → enviar\n\n## Onde estamos\n- [x] a\n'
+          mk semobj    '# Handoff — x\n\n## Onde estamos\n- [x] a\n'
+          roda() { # cenario · arquivo · env extra
+            local f="$T/$2.md"; cp "$T/$2.md" "$T/$2-$1.md"; f="$T/$2-$1.md"
+            local s; s="$(env $3 HOME="$T/home-$1" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$CX/bin/nb-bilhete-objetivo" "$f" 2>"$T/err")"
+            printf '%-22s %-8s -> %s\n' "$1" "$2" "$s"
+            [ -s "$T/err" ] && sed 's/^/      stderr: /' "$T/err" | head -3
+          }
+          mkdir -p "$T/so-python" "$T/stub"
+          P="$(command -v python || true)"
+          [ -n "$P" ] && printf '#!/bin/bash\nexec "%s" "$@"\n' "$P" > "$T/so-python/python" && chmod +x "$T/so-python/python"
+          printf '#!/bin/bash\necho "Python was not found; run without arguments to install from the Microsoft Store" >&2\nexit 9009\n' > "$T/stub/python3"; chmod +x "$T/stub/python3"
+          SEMPY="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vi python | grep -vi windowsapps | tr '\n' ':')"
+          for b in simples acento emoji semobj; do
+            roda "padrao"              "$b" "X=1"
+            roda "console_cp1252"      "$b" "PYTHONIOENCODING=cp1252"
+            roda "so_python_sem_3"     "$b" "PATH=$T/so-python:$SEMPY"
+            roda "atalho_da_store"     "$b" "PATH=$T/stub:$SEMPY"
+            roda "sem_python_nenhum"   "$b" "PATH=$SEMPY"
+          done
