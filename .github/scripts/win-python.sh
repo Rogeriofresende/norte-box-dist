@@ -52,10 +52,11 @@ fx() { # pasta nova com 2 bilhetes do mesmo assunto + ULTIMO copia antiga
   cp "$d/handoffs/assunto-20261022-1000.md" "$d/handoffs/ULTIMO.md"
 }
 caso() { # rotulo · versão(raiz) · índice cenário  → imprime o resultado curto do lugar
-  local rot="$1" V="$2" i="$3" P="${PATHS[$3]}" d="$T/w-$1-$(basename "$(dirname "$V")")-$3" s=""
+  local rot="$1" V="$2" i="$3" P="${PATHS[$3]}" s=""
+  local d="$T/w-$1-$(basename "$(dirname "$V")")-$3"
   rm -rf "$d"; fx "$d"; local H="$d/home"; mkdir -p "$H"
   case "$rot" in
-    retomar-alvo)  s="$(env "PATH=$P" HOME="$H" NORTE_BOX_PASSO=0 bash "$V/bin/nb-retomar-alvo" "$d" 999999999 2>/dev/null | head -1)"; s="${s%% /*}${s:+ $(basename "${s#* }")}" ;;
+    retomar-alvo)  s="$(env "PATH=$P" HOME="$H" NORTE_BOX_PASSO=0 bash "$V/bin/nb-retomar-alvo" "$d" 999999999 2>/dev/null | head -1)"; [ -n "$s" ] && { _r="${s#* }"; _r="${_r//\\//}"; s="${s%% *} ${_r##*/}"; } ;;
     unificar)      cp "$d/handoffs/assunto-20261022-1100.md" "$d/solto.md"; mkdir -p "$d/proj"
                    s="$(env "PATH=$P" HOME="$H" bash "$V/bin/nb-bilhete-unificar" "$d/solto.md" "$d/proj" 2>/dev/null)"; [ -f "$d/proj/handoffs/solto.md" ] && s="moveu pro projeto" || s="não moveu ($s)" ;;
     ponteiro)      env "PATH=$P" HOME="$H" bash "$V/bin/nb-ponteiro-reaponta" "$d/handoffs/assunto-20261022-1100.md"
