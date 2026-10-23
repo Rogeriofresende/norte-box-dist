@@ -5,8 +5,6 @@ name: win-objetivo
 # ANTES (versão publicada na main) × DEPOIS (esta branch). Não publica nada, não lê segredo nenhum.
 
 "on":
-  push:
-    branches: [nrt998139-win-objetivo]
   workflow_dispatch: {}
 
 permissions:

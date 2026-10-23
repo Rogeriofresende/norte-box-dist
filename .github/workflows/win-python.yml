@@ -6,8 +6,6 @@ name: win-python
 
 "on":
   workflow_dispatch: {}
-  push:
-    branches: [nrt998139-win-objetivo]
 
 permissions:
   contents: read
