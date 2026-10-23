@@ -76,8 +76,8 @@ outra janela) + botao de desligar. SO dentro da Norte; FORA da Norte NAO faz nad
 ## Passo 2 — Detecte o staleness (idade + commits desde)
 
 ```bash
-HANDOFF_MTIME=$(python3 -c "import os,sys; print(int(os.path.getmtime(sys.argv[1])))" "$HANDOFF_PATH")
-HANDOFF_DATE=$(python3 -c "import time,sys; print(time.strftime('%Y-%m-%d', time.localtime(int(sys.argv[1]))))" "$HANDOFF_MTIME")
+HANDOFF_MTIME=$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-python" -c "import os,sys; print(int(os.path.getmtime(sys.argv[1])))" "$HANDOFF_PATH")
+HANDOFF_DATE=$(bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-python" -c "import time,sys; print(time.strftime('%Y-%m-%d', time.localtime(int(sys.argv[1]))))" "$HANDOFF_MTIME")
 DAYS_SINCE=$(( ($(date +%s) - HANDOFF_MTIME) / 86400 ))
 COMMITS_SINCE=$(git log --oneline --since="$HANDOFF_DATE" 2>/dev/null | wc -l | tr -d ' ')
 ```

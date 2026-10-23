@@ -11,10 +11,15 @@
 # só devolve o destino. FAIL-OPEN: se não der pra mover (disco/permissão), devolve o caminho original
 # e o bilhete fica onde está (nunca perde o bilhete). LOCAL, sem rede.
 set -u
+# 0.3.58 (NRT-_998309): acha o Python 3 que RODA (bin/nb-python: python3 → python → py -3, UTF-8);
+# sem o nb-python, python3 como antes. Desligar: NORTE_ACHA_PYTHON=0.
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
 SRC="${1:?uso: nb-bilhete-unificar <bilhete> <dir-base>}"
 DIR="${2:?uso: nb-bilhete-unificar <bilhete> <dir-base>}"
 [ -e "$SRC" ] || { echo "ERRO: bilhete não existe: $SRC" >&2; exit 1; }
-_real() { python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1" 2>/dev/null || printf '%s\n' "$1"; }
+_real() { _py -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1" 2>/dev/null || printf '%s\n' "$1"; }
 REAL="$(_real "$SRC")"
 mkdir -p "$DIR/handoffs" 2>/dev/null || { printf '%s\n' "$REAL"; exit 0; }
 HD="$(_real "$DIR/handoffs")"

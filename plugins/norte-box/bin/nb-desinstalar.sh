@@ -34,6 +34,11 @@
 # SAIDA (stdout, humano de padaria): narracao do que removeu. O JUIZ da prova NAO e esta narracao —
 #   e o diff do HOME inteiro (build/provar-desinstalar-test.sh). Aqui so contamos o que fizemos.
 set -u
+# 0.3.58 (NRT-_998309): acha o Python 3 que RODA (bin/nb-python: python3 → python → py -3, UTF-8);
+# sem o nb-python, python3 como antes. Desligar: NORTE_ACHA_PYTHON=0.
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
 
 # --- kill-switch ---
 if [ "${NORTE_DESINSTALAR:-1}" = "0" ]; then
@@ -61,7 +66,7 @@ PLUGIN_CACHE="$CLAUDE_DIR/plugins/cache/norte-box"
 
 # --- parser JSON real: python3 (preferido) OU node. NUNCA sed/grep no JSON. ---
 JSON_ENGINE=""
-if command -v python3 >/dev/null 2>&1; then JSON_ENGINE="python3"
+if _tem_py; then JSON_ENGINE="python3"
 elif command -v node >/dev/null 2>&1; then JSON_ENGINE="node"; fi
 
 # ====================================================================================================
@@ -94,7 +99,7 @@ _limpa_settings() {
   _mode="apply"; [ -n "$DRY" ] && _mode="plan"
 
   if [ "$JSON_ENGINE" = "python3" ]; then
-    python3 - "$_f" "$_mode" <<'PYEOF'
+    _py - "$_f" "$_mode" <<'PYEOF'
 import json, sys, os, time, tempfile
 f, mode = sys.argv[1], sys.argv[2]
 try:
@@ -339,7 +344,7 @@ _sobrou_settings() {
   [ -f "$_f" ] || return 0
   [ -n "$JSON_ENGINE" ] || return 0
   if [ "$JSON_ENGINE" = "python3" ]; then
-    python3 - "$_f" <<'PYEOF'
+    _py - "$_f" <<'PYEOF'
 import json, sys
 f = sys.argv[1]
 try:
@@ -404,7 +409,7 @@ _bak_e_da_norte() {
   [ -f "$_cur" ] || return 0
   [ -n "$JSON_ENGINE" ] || return 0
   if [ "$JSON_ENGINE" = "python3" ]; then
-    python3 - "$_bk" "$_cur" <<'PYEOF'
+    _py - "$_bk" "$_cur" <<'PYEOF'
 import json, sys
 bk, cur = sys.argv[1], sys.argv[2]
 def is_nb(c):

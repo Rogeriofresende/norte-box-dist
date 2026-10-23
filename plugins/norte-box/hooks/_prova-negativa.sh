@@ -107,7 +107,9 @@ _npn_dtipo() {
 _npn_runner() {
   if command -v _norte_provar_runner >/dev/null 2>&1; then _norte_provar_runner "$1"; return 0; fi
   case "${1:-}" in
-    py) command -v python3 >/dev/null 2>&1 && { printf 'python3'; return 0; }; command -v python >/dev/null 2>&1 && { printf 'python'; return 0; }; printf '' ;;
+    py) _nbpy="$(dirname "${BASH_SOURCE[0]}")/../bin/nb-python"   # 0.3.58: o Python que RODA (ver _provar.sh)
+        [ -f "$_nbpy" ] && _nbpy="$(bash "$_nbpy" --onde 2>/dev/null)" && [ -n "$_nbpy" ] && { printf '%s' "$_nbpy"; return 0; }
+        command -v python3 >/dev/null 2>&1 && { printf 'python3'; return 0; }; command -v python >/dev/null 2>&1 && { printf 'python'; return 0; }; printf '' ;;
     js) command -v node >/dev/null 2>&1 && { printf 'node'; return 0; }; printf '' ;;
     sh) command -v bash >/dev/null 2>&1 && { printf 'bash'; return 0; }; printf '' ;;
     *)  printf '' ;;

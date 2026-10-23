@@ -44,7 +44,10 @@ _norte_provar_tipo() {
 # _norte_provar_runner <tipo> — ecoa o binario que roda aquele tipo, se existir no PATH. Vazio se falta.
 _norte_provar_runner() {
   case "${1:-}" in
-    py) command -v python3 2>/dev/null || command -v python 2>/dev/null ;;
+    # 0.3.58 (NRT-_998309): o Python que RODA (bin/nb-python --onde) — no Windows o "python3" pode ser o
+    # atalho da Microsoft Store (existe, mas nao roda). Sem nb-python: o jeito antigo. Desligar: NORTE_ACHA_PYTHON=0.
+    py) { _nbpy="$(dirname "${BASH_SOURCE[0]}")/../bin/nb-python"; [ -f "$_nbpy" ] && bash "$_nbpy" --onde 2>/dev/null; } \
+          || command -v python3 2>/dev/null || command -v python 2>/dev/null ;;
     js) command -v node 2>/dev/null ;;
     sh) command -v bash 2>/dev/null ;;
     *)  : ;;

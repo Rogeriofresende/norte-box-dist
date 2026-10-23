@@ -15,10 +15,15 @@
 # Troca atomica (arquivo temporario + rename) dentro de uma trava curta (pasta .ULTIMO.lock).
 # LEIS: exit 0 SEMPRE, nunca imprime nada, sem rede. Desligar: NORTE_PONTEIRO_REAPONTA=0.
 set -u
+# 0.3.58 (NRT-_998309): acha o Python 3 que RODA (bin/nb-python: python3 → python → py -3, UTF-8);
+# sem o nb-python, python3 como antes. Desligar: NORTE_ACHA_PYTHON=0.
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
 [ "${NORTE_PONTEIRO_REAPONTA:-1}" = "0" ] && exit 0
 [ -n "${1:-}" ] && [ -e "$1" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
-python3 - "$1" <<'PY' >/dev/null 2>&1 || true
+_tem_py || exit 0
+_py - "$1" <<'PY' >/dev/null 2>&1 || true
 import os, re, shutil, sys, time
 
 b = os.path.realpath(sys.argv[1])

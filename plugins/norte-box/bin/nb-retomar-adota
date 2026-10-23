@@ -9,6 +9,11 @@
 #   • fail-open: qualquer passo que falhe → NÃO senta, mantém o número próprio (comportamento de hoje)
 # SÓ dentro da Norte (precisa do registro + do comando nrt). FORA da Norte: fail-open (mantém o número).
 set -uo pipefail
+# 0.3.58 (NRT-_998309): acha o Python 3 que RODA (bin/nb-python: python3 → python → py -3, UTF-8);
+# sem o nb-python, python3 como antes. Desligar: NORTE_ACHA_PYTHON=0.
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
 # 0.3.52 (NRT-_995031): o PROGRAMA marca o passo "sentou_conversa" com a propria saida (nb-passo) —
 # fail-open: a saida e o codigo de saida ficam identicos; se a marcacao falhar, nada muda.
 if [ -z "${_NB_PASSO_DENTRO:-}" ] && [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$(dirname "$0")/nb-passo" ]; then
@@ -35,12 +40,12 @@ case "$FIO" in NRT-_[0-9]*) ;; *) echo "▲ conserto-continuar v2 · [retomar] b
 
 # 2) trava viva: AVISA se a conversa está viva em outra janela (mesma trava do 9/9)
 if [ -f "$HOME/.claude/skills/handon/numeracao-shadow.py" ] && [ -n "$SID" ]; then
-  NRT_REGISTRY_PATH="$REG" python3 "$HOME/.claude/skills/handon/numeracao-shadow.py" "$HANDOFF_PATH" "$SID" interativo 2>/dev/null | grep '^NUMERACAO_AVISO:' && \
+  NRT_REGISTRY_PATH="$REG" _py "$HOME/.claude/skills/handon/numeracao-shadow.py" "$HANDOFF_PATH" "$SID" interativo 2>/dev/null | grep '^NUMERACAO_AVISO:' && \
     echo "▲ conserto-continuar v2 · [retomar] ⚠ reconcilie com o CEO ANTES de sentar (a conversa parece viva em outra janela)."
 fi
 
 # 3) senta — lease EDUCADO (SEM --force): se há dono vivo, FALHA sozinho e mantém o número próprio (não rouba)
-SLUG=$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(d.get('operations',{}).get(sys.argv[2],{}).get('project_slug',''))" "$REG" "$FIO" 2>/dev/null)
+SLUG=$(_py -c "import json,sys;d=json.load(open(sys.argv[1]));print(d.get('operations',{}).get(sys.argv[2],{}).get('project_slug',''))" "$REG" "$FIO" 2>/dev/null)
 if [ -n "$SLUG" ] && [ -n "$SID" ] && [ -x "$HOME/novo-negocio/scripts/nrt" ]; then
   if "$HOME/novo-negocio/scripts/nrt" switch "$FIO" --slug "$SLUG" --runtime claude --session-id "$SID" --lease >/dev/null 2>&1; then
     echo "▲ conserto-continuar v2 · [retomar] ✅ sentei na conversa do bilhete ($FIO). A entrega e o número vão pra ela."

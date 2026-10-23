@@ -48,13 +48,13 @@ próprio arquivo, via `templates/resposta.html`.
 
    ```bash
    TEMPLATE="${CLAUDE_PLUGIN_ROOT}/templates/resposta.html"
-   python3 "${CLAUDE_PLUGIN_ROOT}/skills/vitrine/render_inline.py" \
+   bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-python" "${CLAUDE_PLUGIN_ROOT}/skills/vitrine/render_inline.py" \
      "$TEMPLATE" < /tmp/vitrine-in.md
    ```
 
    Como `render_inline.py` não é versionado (só `SKILL.md` entra no pacote — a allowlist só
    cobre `skills/*/SKILL.md`), **gere o renderizador em tempo de execução** a partir do bloco
-   abaixo: escreva-o em `/tmp/norte-render.py` e chame com `python3 /tmp/norte-render.py "$TEMPLATE"`.
+   abaixo: escreva-o em `/tmp/norte-render.py` e chame com `bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-python" /tmp/norte-render.py "$TEMPLATE"`.
    O script imprime na última linha `OUT=<path absoluto do .html gerado>`.
 
    ```python
@@ -190,7 +190,7 @@ Num repo qualquer, com um markdown de teste:
 
 ```bash
 printf '# Titulo de Teste\n\nUm **paragrafo** com `codigo`.\n\n- item 1\n- item 2\n' \
-  | python3 /tmp/norte-render.py "${CLAUDE_PLUGIN_ROOT}/templates/resposta.html"
+  | bash "${CLAUDE_PLUGIN_ROOT}/bin/nb-python" /tmp/norte-render.py "${CLAUDE_PLUGIN_ROOT}/templates/resposta.html"
 # -> imprime OUT=/.../norte-out/titulo-de-teste.html
 grep -c 'http' ./norte-out/titulo-de-teste.html   # -> 0 (auto-contido, zero rede)
 ```
