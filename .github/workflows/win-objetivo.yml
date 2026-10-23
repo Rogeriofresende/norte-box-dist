@@ -1,0 +1,75 @@
+name: win-objetivo
+
+# Investigação + conserto NRT-_998139 (22/10): o passo "salvou bilhete" deu "falhou" em máquinas Windows.
+# Roda o conferente do objetivo (bin/nb-bilhete-objetivo) numa máquina Windows real da GitHub, em 7 cenários,
+# ANTES (versão publicada na main) × DEPOIS (esta branch). Não publica nada, não lê segredo nenhum.
+
+"on":
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  objetivo-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Antes × depois, 7 cenários × 4 bilhetes
+        shell: bash
+        run: |
+          set +e
+          DEPOIS="$PWD/plugins/norte-box/bin/nb-bilhete-objetivo"
+          T="$(mktemp -d)"
+          git show origin/main:plugins/norte-box/bin/nb-bilhete-objetivo > "$T/antes.sh"
+          mk() { printf -- "$2" > "$T/$1.md"; }
+          mk simples '# Handoff — x\n\n## Objetivo (1 frase)\nvender mais\n\n## Onde estamos\n- [x] a\n'
+          mk acento  '# Handoff — ação\n\n## Objetivo (1 frase)\norganizar as petições da semana\n\n## Onde estamos\n- [x] a\n'
+          mk emoji   '# Handoff — x\n\n## 🎯 Objetivo: fechar o relatório → enviar\n\n## Onde estamos\n- [x] a\n'
+          mk semobj  '# Handoff — x\n\n## Onde estamos\n- [x] a\n'
+          LOJA="$(cygpath -u "$LOCALAPPDATA")/Microsoft/WindowsApps"
+          BASE="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vi -e python -e windowsapps | grep -vix '/c/windows' | tr '\n' ':')"
+          mkdir -p "$T/sopy" "$T/sopyl"
+          printf '#!/bin/bash\nexec "%s" "$@"\n' "$(command -v python)" > "$T/sopy/python"; chmod +x "$T/sopy/python"
+          printf '#!/bin/bash\nexec /c/Windows/py "$@"\n' > "$T/sopyl/py"; chmod +x "$T/sopyl/py"
+          roda() { # versão · cenário · bilhete · PATH · env extra
+            local k; k="$(printf '%s' "$2" | cut -c1)"; local f="$T/$3-c$k-$1.md"; cp "$T/$3.md" "$f"; local h="$T/h-$1-c$k-$3"
+            local s; s="$(env "PATH=$4" "$5" HOME="$h" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$6" "$f" 2>/dev/null)"
+            s="${s% (copiado de:*}"
+            local m=""; [ -f "$h/.norte-box/bilhete-motivo" ] && m="  [motivo: $(cut -f2 "$h/.norte-box/bilhete-motivo" | sed 's/motivo=//')]"
+            printf '  %-7s %-8s %s%s\n' "$1" "$3" "$s" "$m"
+          }
+          cen() { # nome · PATH · env
+            echo; echo "== $1"
+            for b in simples acento emoji semobj; do
+              roda antes  "$1" "$b" "$2" "${3:-X=1}" "$T/antes.sh"
+              roda depois "$1" "$b" "$2" "${3:-X=1}" "$DEPOIS"
+            done
+          }
+          echo "== diagnóstico do erro_ler (cenários 3 e 5)"
+          printf 'x\n' > "$T/d.md"
+          echo "-- python direto:"; python -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- python pelo atalho bash:"; "$T/sopy/python" -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- py pelo atalho bash:"; "$T/sopyl/py" -3 -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- py direto:"; /c/Windows/py -3 -c "import sys,os;print(sys.argv[1], os.path.exists(sys.argv[1]))" "$T/d.md"
+          echo "-- cygpath:"; cygpath -w "$T/d.md"
+          sed -e 's/    sys.exit(3)  # erro_ler/    import traceback; traceback.print_exc(); sys.exit(3)/' -e "s/<<'PY' 2>\/dev\/null/<<'PY'/" "$DEPOIS" > "$T/dbg.sh"
+          cp "$T/simples.md" "$T/dbg.md"
+          echo "-- conserto no cenário 5 com erro visível:"; env "PATH=$T/sopyl:$BASE" HOME="$T/hd" NORTE_BOX_PASSO=0 bash "$T/dbg.sh" "$T/dbg.md" 2>&1 | tail -8
+          echo "-- PATH reduzido:"; printf '%s' "$BASE" | tr ':' '\n' | head -30
+          echo; echo "== 8. pasta com acento / aspas / espaço (ex.: C:\\Users\\Luís), tudo instalado"
+          for d in "Luís" "pasta com espaço" "d'aspas" "Área de Trabalho"; do
+            mkdir -p "$T/$d"; cp "$T/simples.md" "$T/$d/b-antes.md"; cp "$T/simples.md" "$T/$d/b-depois.md"
+            a="$(HOME="$T/ha" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$T/antes.sh" "$T/$d/b-antes.md" 2>/dev/null)"
+            b="$(HOME="$T/hb" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$DEPOIS" "$T/$d/b-depois.md" 2>/dev/null)"
+            printf '  %-18s antes: %-40s depois: %s\n' "$d" "${a% (copiado de:*}" "${b% (copiado de:*}"
+          done
+          cen "1. tudo instalado"                       "$PATH"
+          cen "2. tela cp1252"                          "$PATH" "PYTHONIOENCODING=cp1252"
+          cen "3. só 'python' (site oficial, sem Store)" "$T/sopy:$BASE"
+          cen "4. site oficial + atalho da Store na frente" "$LOJA:$T/sopy:$T/sopyl:$BASE"
+          cen "5. só 'py'"                              "$T/sopyl:$BASE"
+          cen "6. só o atalho da Store (sem Python)"    "$LOJA:$BASE"
+          cen "7. nenhum Python"                        "$BASE"

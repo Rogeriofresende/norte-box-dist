@@ -18,6 +18,11 @@
 # descartada). Mesmos portoes do medidor: modo compartilhavel + consentimento + telemetry.enabled.
 # Desligar: NORTE_BOX_PASSO=0.
 set -u
+# 0.3.58 (NRT-_998309): acha o Python 3 que RODA (bin/nb-python: python3 → python → py -3, UTF-8);
+# sem o nb-python, python3 como antes. Desligar: NORTE_ACHA_PYTHON=0.
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
 {
 [ "${NORTE_BOX_PASSO:-1}" = "0" ] && exit 0
 
@@ -93,7 +98,14 @@ case "$_passo" in
       printf '%s' "$_forma" | grep -Eq '^topo=(sim|nao)\|obj_topo=(ausente|vazia)\|secao=(ausente|vazia|outro_titulo)\|palavra=(sim|nao)\|molde=(sim|parcial|nao)\|tamanho=(curto|medio|longo)\|fio=(sim|nao)\|fonte=(sim|nao|ilegivel)$' || _forma=""
       [ "${#_forma}" -gt 160 ] && _forma=""
     fi
-    [ -f "$_mkf" ] && rm -f "$_mkf" 2>/dev/null ;;
+    [ -f "$_mkf" ] && rm -f "$_mkf" 2>/dev/null
+    # 0.3.58 (NRT-_998139): no "falhou", junta o MOTIVO anotado pelo conferente (lista fechada, fresco ≤2 min).
+    _motivo=""; _mkm="$STATE_DIR/bilhete-motivo"
+    if [ "$_res" = falhou ] && [ -f "$_mkm" ] && [ -n "$(find "$_mkm" -mmin -2 2>/dev/null)" ]; then
+      _motivo="$(cut -f2 "$_mkm" 2>/dev/null | head -1)"; _motivo="${_motivo#motivo=}"
+      case "$_motivo" in sem_python|python_nao_roda|erro_ler|erro_escrever|erro_mostrar|outro) : ;; *) _motivo="" ;; esac
+    fi
+    [ -f "$_mkm" ] && rm -f "$_mkm" 2>/dev/null ;;
   ponteiro)
     # 0.3.54: confere se APONTA pro mesmo bilhete, nao se o texto e igual. Atalho: caminho real.
     # Copia (fallback do cp quando ln -s falha): texto sem a linha objetivo: que o
@@ -102,7 +114,7 @@ case "$_passo" in
       if [ -L "$_ult" ]; then
         if [ "$_ult" -ef "$_bil" ]; then _res=ok; else _res=aponta_outro; fi
       elif cmp -s "$_ult" "$_bil" 2>/dev/null; then _res=ok
-      elif command -v python3 >/dev/null 2>&1 && python3 - "$_ult" "$_bil" <<'PY' 2>/dev/null
+      elif _tem_py && _py - "$_ult" "$_bil" <<'PY' 2>/dev/null
 import re, sys
 def sem_objetivo(p):
     t = open(p, encoding="utf-8").read()
@@ -122,7 +134,7 @@ PY
     # bilhete ha ate 2 min) -> conta a parte como "reapontou", nao "ok" calado (a IA esqueceu o Passo 3).
     _mkp="$STATE_DIR/ponteiro-reapontou"
     if [ "$_res" = ok ] && [ -f "$_mkp" ] && [ -n "$(find "$_mkp" -mmin -2 2>/dev/null)" ]; then
-      _bil_real="$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$_bil" 2>/dev/null)"
+      _bil_real="$(_py -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$_bil" 2>/dev/null)"
       [ "$(cat "$_mkp" 2>/dev/null)" = "$_bil_real" ] && _res=reapontou
     fi
     [ -f "$_mkp" ] && rm -f "$_mkp" 2>/dev/null ;;
@@ -156,11 +168,11 @@ case "$_versao" in ''|*[!0-9.]*|[!0-9]*) _versao="" ;; esac
 _line="$(jq -cn \
   --arg invite_id "$_invite_id" --arg ts "$(date -u +%FT%TZ 2>/dev/null || echo unknown)" \
   --arg versao "$_versao" --arg run_id "$_run_id" \
-  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" --arg forma "${_forma:-}" \
+  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" --arg forma "${_forma:-}" --arg motivo "${_motivo:-}" \
   '{invite_id:$invite_id, kind:"passo", ts:$ts,
     versao:(if $versao=="" then null else $versao end),
     run_id:(if $run_id=="" then null else $run_id end),
-    passo:({habilidade:$hab, passo:$passo, resultado:$res} + (if $forma=="" then {} else {forma:$forma} end))}' 2>/dev/null || true)"
+    passo:({habilidade:$hab, passo:$passo, resultado:$res} + (if $forma=="" then {} else {forma:$forma} end) + (if $motivo=="" then {} else {motivo:$motivo} end))}' 2>/dev/null || true)"
 [ -z "$_line" ] && exit 0
 mkdir -p "$STATE_DIR" 2>/dev/null || exit 0
 printf '%s\n' "$_line" >> "$QUEUE" 2>/dev/null || exit 0

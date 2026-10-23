@@ -83,6 +83,39 @@ h2="$(mktemp -d "$T/fo.XXXX")"; printf '#!/bin/sh\necho x\n' > "$h2/fonte"; chmo
 HOME="$h2" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE="$h2/fonte" bash "$CX/bin/nb-bilhete-objetivo" "$h2/b.md" >/dev/null
 grep -q 'fonte=ilegivel' "$h2/.norte-box/bilhete-forma" && ok "fonte que existe mas não roda = ilegivel" || ko "fonte ilegível não marcada: $(cat "$h2/.norte-box/bilhete-forma" 2>/dev/null)"
 
+echo "== Motivo do erro (0.3.58) — lista fechada, a saída não muda"
+mot() { # nome · esperado · conteúdo · env extra
+  local h; h="$(mktemp -d "$T/m.XXXX")"; printf -- "$3" > "$h/b.md"
+  local s; s="$(env "$4" HOME="$h" NORTE_BOX_PASSO=0 NORTE_OBJETIVO_FONTE=/nao/existe bash "$CX/bin/nb-bilhete-objetivo" "$h/b.md")"
+  local m="—"; [ -f "$h/.norte-box/bilhete-motivo" ] && m="$(cut -f2 "$h/.norte-box/bilhete-motivo")"
+  [ "$m" = "$2" ] && ok "$1 → $m (saída: $s)" || ko "$1 → $m (esperado $2; saída: $s)"
+}
+SEMPY="$(printf '%s' "$PATH" | tr ':' '\n' | grep -v -i -e python -e conda -e homebrew -e '/usr/bin' -e '/usr/local/bin' | tr '\n' ':'):/usr/bin:/bin"
+ST="$(mktemp -d "$T/st.XXXX")"; printf '#!/bin/bash\necho "Python was not found" >&2\nexit 49\n' > "$ST/python3"; chmod +x "$ST/python3"
+command -v python3 >/dev/null 2>&1 && PYR="$(command -v python3)"
+for c in python py; do cp "$ST/python3" "$ST/$c"; done
+BASE="$(mktemp -d "$T/base.XXXX")"; for c in bash env mkdir cut printf cat dirname basename find rm mv cp tr head sed grep jq date; do p="$(command -v "$c" 2>/dev/null)"; [ -n "$p" ] && [ -x "$p" ] && ln -sf "$p" "$BASE/$c"; done
+REAL3="$(command -v python3)"
+SO_PY="$(mktemp -d "$T/sp.XXXX")"; printf '#!/bin/bash\nexec "%s" "$@"\n' "$REAL3" > "$SO_PY/python"; chmod +x "$SO_PY/python"
+STO="$(mktemp -d "$T/sto.XXXX")"; cp "$ST/python3" "$STO/python3"
+mot "só atalhos que não rodam (Store)" "motivo=python_nao_roda" "## Objetivo\nvender\n" "PATH=$ST:$BASE"
+mot "nenhum python"                    "motivo=sem_python"      "## Objetivo\nvender\n" "PATH=$BASE"
+mot "Store no python3 + python ok → acha" "—"                 "## Objetivo\nvender\n" "PATH=$STO:$SO_PY:$BASE"
+mot "emoji com tela ascii → não quebra" "—"                     "## 🎯 Objetivo: fechar → enviar\n" "PYTHONIOENCODING=ascii"
+mot "bilhete normal não anota"     "—"                       "## Objetivo\nvender\n" "X=1"
+mot "bilhete ilegível (bytes ruins)" "motivo=erro_ler"       "## Objetivo\n\xff\xfe\xfa\n" "X=1"
+P2="$(mktemp -d "$T/p2.XXXX")"; mkdir -p "$P2/.norte-box"
+printf 'compartilhavel\n' > "$P2/.norte-box/modo"; printf '{"versao":"5"}' > "$P2/.norte-box/consent.json"
+touch "$P2/.norte-box/telemetry.enabled"; printf '{"invite_id":"teste"}' > "$P2/.norte-box/identity.json"
+printf '/x/b.md\tmotivo=python_nao_roda\n' > "$P2/.norte-box/bilhete-motivo"
+HOME="$P2" CLAUDE_CODE_SESSION_ID=s2 bash "$CX/bin/nb-passo" obrigado bilhete_com_objetivo --saida "SEM OBJETIVO (erro)"
+l="$(tail -1 "$P2/.norte-box/telemetry-queue.jsonl")"
+[ "$(printf '%s' "$l" | jq -r '.passo.resultado + " " + .passo.motivo')" = "falhou python_nao_roda" ] && ok "falhou leva o motivo" || ko "motivo não chegou: $l"
+printf '/x/b.md\tmotivo=SEGREDO\n' > "$P2/.norte-box/bilhete-motivo"
+HOME="$P2" CLAUDE_CODE_SESSION_ID=s2 bash "$CX/bin/nb-passo" obrigado bilhete_com_objetivo --saida "SEM OBJETIVO (erro)"
+l="$(tail -1 "$P2/.norte-box/telemetry-queue.jsonl")"
+printf '%s' "$l" | grep -qi segredo && ko "motivo fora da lista passou: $l" || ok "motivo fora da lista descartado"
+
 echo
 echo "== Resultado: $PASS OK · $FAIL FALHA"
 [ "$FAIL" = 0 ]

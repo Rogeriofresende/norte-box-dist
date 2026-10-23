@@ -15,6 +15,11 @@
 #   CANDIDATO<TAB><path><TAB><slug><TAB><data>       (uma linha por assunto recente, mais novo primeiro)
 # LOCAL, sem rede. Fail-open: sem python3, devolve ALVO do mais novo por mtime (nunca trava a retomada).
 set -u
+# 0.3.58 (NRT-_998309): acha o Python 3 que RODA (bin/nb-python: python3 → python → py -3, UTF-8);
+# sem o nb-python, python3 como antes. Desligar: NORTE_ACHA_PYTHON=0.
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
 # 0.3.52 (NRT-_995031): o PROGRAMA marca o passo "achou_bilhete" com a propria saida (nb-passo) —
 # fail-open: a saida e o codigo de saida ficam identicos; se a marcacao falhar, nada muda.
 if [ -z "${_NB_PASSO_DENTRO:-}" ] && [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$(dirname "$0")/nb-passo" ]; then
@@ -27,8 +32,8 @@ DIR="${1:?uso: nb-retomar-alvo <dir-base> [janela_seg]}"
 JAN="${2:-21600}"   # 6h
 HDIR="$DIR/handoffs"
 
-if command -v python3 >/dev/null 2>&1; then
-python3 - "$HDIR" "$JAN" <<'PY'
+if _tem_py; then
+_py - "$HDIR" "$JAN" <<'PY'
 import os, sys, re, time
 hdir, jan = sys.argv[1], int(sys.argv[2])
 if not os.path.isdir(hdir):

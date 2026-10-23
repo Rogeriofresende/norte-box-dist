@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.58
+- **Nada muda no seu uso.** No Windows, a caixa agora acha o Python que funciona de verdade (antes ela às vezes caía no atalho da Microsoft Store e falhava calada). Com isso, salvar o bilhete, retomar a conversa e o atalho "último bilhete" voltam a funcionar nesses computadores, também com emoji e acento no texto.
+
 ## 0.3.57
 - **Nada muda no seu uso.** Quando o bilhete sai sem objetivo, a caixa anota só como ele saiu (por exemplo, "tem a seção Objetivo, mas vazia"). Nenhuma palavra do seu bilhete vai junto. Isso ajuda a descobrir por que o objetivo às vezes fica de fora.
 

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# nb-python [args...] — roda o 1º Python 3 que FUNCIONA nesta máquina, em UTF-8 (0.3.58 · NRT-_998309).
+#
+# POR QUE: no Windows, o Python do site oficial não cria "python3" e o atalho da Microsoft Store toma o lugar
+# (existe no PATH, mas sai 49 sem rodar nada). E a tela do Windows é cp1252: emoji/seta quebravam o print.
+# Caso real 22/10: Luis, Julia (Advocacia Fontes) e Ana (Supren) — o bilhete e a retomada falhavam calados.
+#
+# ORDEM: python3 → python → py -3. Só aceita quem RODA e é versão 3. No Mac/Linux o python3 vem primeiro,
+# então nada muda lá. Sem guardar caminho em arquivo (acha de novo a cada chamada).
+#
+# USO:
+#   nb-python - arg1 <<'PY' ... PY     -> igual a "python3 - arg1", com saída e código de saída repassados
+#   nb-python --acha                   -> não roda nada: 0 = achou · 1 = nenhum Python · 2 = tem, mas não roda
+#   nb-python --onde                   -> imprime o caminho do Python que roda (vazio + código 1/2 se não há)
+# Sem Python que rode: não imprime nada no stdout e sai 127 (como "comando não encontrado").
+# Desligar (volta ao jeito antigo, python3 puro): NORTE_ACHA_PYTHON=0.
+set -u
+
+if [ "${NORTE_ACHA_PYTHON:-1}" = "0" ]; then
+  case "${1:-}" in
+    --acha) command -v python3 >/dev/null 2>&1; exit $? ;;
+    --onde) command -v python3 2>/dev/null; exit $? ;;
+  esac
+  exec python3 "$@"
+fi
+
+_PY=(); _achou_algum=0
+for _c in "python3" "python" "py -3"; do
+  read -r -a _cmd <<< "$_c"
+  command -v "${_cmd[0]}" >/dev/null 2>&1 || continue
+  _achou_algum=1
+  if "${_cmd[@]}" -c 'import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)' </dev/null >/dev/null 2>&1; then
+    _PY=("${_cmd[@]}"); break
+  fi
+done
+
+if [ "${#_PY[@]}" = 0 ]; then
+  _rc=1; [ "$_achou_algum" = 1 ] && _rc=2
+  case "${1:-}" in --acha|--onde) exit "$_rc" ;; esac
+  echo "nb-python: nenhum Python 3 que rode (motivo: $([ "$_rc" = 1 ] && echo sem_python || echo python_nao_roda))" >&2
+  exit 127
+fi
+
+case "${1:-}" in
+  --acha) exit 0 ;;
+  --onde)
+    _exe="$("${_PY[@]}" -c 'import sys; print(sys.executable)' </dev/null 2>/dev/null)"
+    [ -n "$_exe" ] || exit 2
+    command -v cygpath >/dev/null 2>&1 && _exe="$(cygpath -u "$_exe" 2>/dev/null || printf '%s' "$_exe")"
+    printf '%s\n' "$_exe"; exit 0 ;;
+esac
+
+export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
+exec "${_PY[@]}" "$@"

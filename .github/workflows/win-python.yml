@@ -1,0 +1,22 @@
+name: win-python
+
+# Prova do achador único de Python (0.3.58 · NRT-_998309): numa máquina Windows real da GitHub, o
+# bin/nb-python nos 7 cenários de Python instalado + cada lugar da caixa que chama Python, ANTES (main) ×
+# DEPOIS. Só roda pelo botão manual (Actions → win-python → Run workflow). Não publica nada, não lê segredo.
+
+"on":
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  python-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Achador + cada lugar, antes × depois
+        shell: bash
+        run: bash .github/scripts/win-python.sh
