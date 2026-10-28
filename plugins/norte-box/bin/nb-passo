@@ -142,11 +142,33 @@ PY
     case "$_saida" in INTERNO*) _res=interno ;; SO-BILHETE*) _res=so_bilhete ;; *) _res=falhou ;; esac ;;
   fechou_registro)
     case "$_rc" in 0) _res=ok ;; '') _res=falhou ;; *) _res=falhou ;; esac ;;
+  # 0.3.59 (NRT-_999106): os 4 passos do /fios-soltos, lidos da saida do nb-fios-soltos (contrato fixo).
+  achou_bilhetes)
+    case "$_saida" in VAZIO*) _res=vazio ;; *RESUMO*) _res=ok ;; *) _res=falhou ;; esac ;;
+  leu_molde|listou|nao_gravou)
+    _resumo="$(printf '%s\n' "$_saida" | grep '^RESUMO' | head -1)"
+    case "$_saida" in VAZIO*) _res=nao_se_aplica ;; esac
+    if [ -z "$_res" ] && [ -z "$_resumo" ]; then _res=falhou; fi
+    if [ -z "$_res" ]; then
+      _assuntos="$(printf '%s' "$_resumo" | cut -f3)"; _com="$(printf '%s' "$_resumo" | cut -f4)"; _sem="$(printf '%s' "$_resumo" | cut -f6)"
+      case "$_passo" in
+        leu_molde)
+          if [ "${_sem:-0}" = "0" ]; then _res=ok
+          elif [ "${_sem:-0}" -ge "${_assuntos:-0}" ] 2>/dev/null; then _res=sem_molde
+          else _res=alguns_sem_molde; fi ;;
+        listou)
+          if [ "${_com:-0}" = "0" ]; then _res=nada_aberto
+          elif printf '%s\n' "$_saida" | grep '^ITEM' | awk -F'\t' '$2 !~ /:[0-9]+$/' | grep -q .; then _res=sem_fonte
+          else _res=ok; fi ;;
+        nao_gravou)
+          case "$_saida" in *"GRAVOU nada"*) _res=ok ;; *"GRAVOU mudou"*) _res=mudou ;; *) _res=falhou ;; esac ;;
+      esac
+    fi ;;
   *) exit 0 ;;
 esac
 _saida=""   # descarta o texto: so o rotulo sobrevive
 
-case "$_hab" in obrigado|norte-retomar|continuar) : ;; *) exit 0 ;; esac
+case "$_hab" in obrigado|norte-retomar|continuar|fios-soltos) : ;; *) exit 0 ;; esac
 
 # --- mesmos portoes do medidor (fail-closed no envio, fail-open no trabalho) ---
 if [ -f "$_ROOT/hooks/_modo.sh" ]; then . "$_ROOT/hooks/_modo.sh"

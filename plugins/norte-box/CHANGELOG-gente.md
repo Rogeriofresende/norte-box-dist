@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.59
+- **Comando novo: `/norte:fios-soltos`.** Mostra o que ficou aberto nos seus bilhetes — o que falta, o que você pediu e não foi feito, e o próximo passo de cada assunto — com o arquivo e a linha de onde saiu. Ele só lê: não grava, não fecha e não apaga nada. No fim, sugere o `/norte:retomar` do assunto mais recente.
+
 ## 0.3.58
 - **Nada muda no seu uso.** No Windows, a caixa agora acha o Python que funciona de verdade (antes ela às vezes caía no atalho da Microsoft Store e falhava calada). Com isso, salvar o bilhete, retomar a conversa e o atalho "último bilhete" voltam a funcionar nesses computadores, também com emoji e acento no texto.
 

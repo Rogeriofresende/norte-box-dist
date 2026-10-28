@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# nb-fios-soltos <dir-base> [dias] — lista o que ficou ABERTO nos bilhetes da pessoa. SO LE, nunca grava.
+#
+# Por assunto (o slug do bilhete), so o bilhete MAIS NOVO conta: o que um bilhete novo ja fechou nao
+# volta a aparecer. Do bilhete mais novo sai: os itens "- [ ]" da secao "Onde estamos", o "Proximo passo"
+# e os pedidos ainda pendentes. Cada linha vem com a FONTE (arquivo:linha) pra pessoa conferir.
+#
+# Uso:   nb-fios-soltos "$DIR" [dias]     # $DIR = saida do nb-resolve-outdir; dias padrao 30
+# Saida (contrato, separado por TAB):
+#   VAZIO                                       -> nenhum bilhete na pasta
+#   FIO <slug> <dias> <n_abertos> <retomado:sim|nao> <path>
+#   ITEM <path:linha> <tipo:pendente|conferir|proximo|pedido> <texto>
+#   ANTIGOS <n>                                 -> assuntos parados ha mais de [dias] (nao listados)
+#   RESUMO <bilhetes> <assuntos> <com_aberto> <itens> <sem_molde>
+# LEIS: so leitura (abre os .md em modo leitura; confere no fim que a pasta nao mudou), sem rede,
+# exit 0 sempre que conseguiu ler. Fail-open: sem python, diz FALHOU e nao trava nada.
+# Desligar a marcacao de passos: NORTE_BOX_PASSO=0.
+set -u
+_NBPY="$(dirname "$0")/nb-python"
+_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" "$@"; else python3 "$@"; fi; }
+_tem_py() { if [ -f "$_NBPY" ]; then bash "$_NBPY" --acha; else command -v python3 >/dev/null 2>&1; fi; }
+# o PROGRAMA marca os passos com a propria saida (nb-passo) — a saida e o codigo ficam identicos.
+if [ -z "${_NB_PASSO_DENTRO:-}" ] && [ "${NORTE_BOX_PASSO:-1}" != "0" ] && [ -f "$(dirname "$0")/nb-passo" ]; then
+  _nbp_out="$(_NB_PASSO_DENTRO=1 bash "$0" "$@")"; _nbp_rc=$?
+  [ -n "$_nbp_out" ] && printf '%s\n' "$_nbp_out"
+  for _p in achou_bilhetes leu_molde listou nao_gravou; do
+    ( bash "$(dirname "$0")/nb-passo" fios-soltos "$_p" --saida "$_nbp_out" </dev/null >/dev/null 2>&1 & ) 2>/dev/null || true
+  done
+  exit $_nbp_rc
+fi
+DIR="${1:?uso: nb-fios-soltos <dir-base> [dias]}"
+DIAS="${2:-30}"
+HDIR="$DIR/handoffs"
+
+if ! _tem_py; then echo "FALHOU sem python"; exit 0; fi
+_py - "$HDIR" "$DIAS" <<'PY'
+import os, sys, re, time, hashlib
+
+hdir, dias = sys.argv[1], int(sys.argv[2])
+if not os.path.isdir(hdir):
+    print("VAZIO"); sys.exit(0)
+
+def retrato():
+    h = hashlib.sha256()
+    for f in sorted(os.listdir(hdir)):
+        p = os.path.join(hdir, f)
+        try:
+            st = os.stat(p)
+        except OSError:
+            continue
+        h.update(f"{f}|{st.st_size}|{st.st_mtime_ns}\n".encode())
+    return h.hexdigest()
+
+antes = retrato()
+
+def slug_of(name):
+    base = name[:-3]
+    base = re.sub(r"-\d{8}-\d{4,6}(-\d+)?$", "", base)          # molde da caixa: <slug>-AAAAMMDD-HHMM
+    base = re.sub(r"^\d{4}-\d{2}-\d{2}-\d{4,6}-", "", base)       # molde interno: AAAA-MM-DD-HHMMSS-<slug>
+    return base or name
+
+arquivos = []
+for f in os.listdir(hdir):
+    if not f.endswith(".md") or f.startswith("ULTIMO") or f.startswith("."):
+        continue
+    p = os.path.join(hdir, f)
+    try:
+        arquivos.append((os.path.getmtime(p), p, f))
+    except OSError:
+        continue
+if not arquivos:
+    print("VAZIO"); sys.exit(0)
+
+ja_visto = set()
+try:
+    with open(os.path.join(hdir, ".ja-visto"), encoding="utf-8") as fh:
+        ja_visto = {l.strip() for l in fh if l.strip()}
+except OSError:
+    pass
+
+def assunto_de(p, f):
+    # o slug do world_anchor (cabecalho) junta bilhetes do mesmo assunto com nomes diferentes
+    try:
+        with open(p, encoding="utf-8", errors="replace") as fh:
+            topo = fh.read(4000)
+    except OSError:
+        return slug_of(f)
+    cab = re.match(r"---\n(.*?)\n---", topo, re.S)
+    if cab:
+        mm = re.search(r"^\s+slug:\s*(\S+)", cab.group(1), re.M)
+        if mm:
+            return mm.group(1).strip("'\"")
+    return slug_of(f)
+
+mais_novo = {}
+for m, p, f in arquivos:
+    s = assunto_de(p, f)
+    if s not in mais_novo or m > mais_novo[s][0]:
+        mais_novo[s] = (m, p, f)
+
+SEC = re.compile(r"^#{2,3}\s+(.*)$")
+def secao(titulo):
+    t = titulo.lower()
+    if t.startswith("onde estamos"): return "onde"
+    if t.startswith("proximo passo") or t.startswith("próximo passo"): return "proximo"
+    if t.startswith("pedidos"): return "pedidos"
+    return None
+
+def limpa(x, n=160):
+    x = re.sub(r"\s+", " ", x).strip()
+    return x if len(x) <= n else x[: n - 1] + "…"
+
+agora = time.time()
+saida, antigos, com_aberto, total_itens, sem_molde = [], 0, 0, 0, 0
+for s, (m, p, f) in sorted(mais_novo.items(), key=lambda kv: -kv[1][0]):
+    idade = int((agora - m) // 86400)
+    try:
+        with open(p, encoding="utf-8", errors="replace") as fh:
+            linhas = fh.read().splitlines()
+    except OSError:
+        continue
+    atual, itens, achou_molde = None, [], False
+    for i, l in enumerate(linhas, 1):
+        mm = SEC.match(l)
+        if mm:
+            atual = secao(mm.group(1))
+            achou_molde = achou_molde or atual is not None
+            continue
+        if atual == "onde":
+            c = re.match(r"^\s*-\s*\[\s\]\s*(.+)$", l)
+            if c:
+                txt = c.group(1)
+                if "nao achei no disco" in txt or "não achei no disco" in txt:
+                    itens.append((i, "conferir", limpa(txt.split("—")[0].replace("⚠", ""))))
+                else:
+                    itens.append((i, "pendente", limpa(txt)))
+        elif atual == "proximo" and l.strip() and not any(t == "proximo" for _, t, _ in itens):
+            itens.append((i, "proximo", limpa(l.lstrip("-* "))))
+        elif atual == "pedidos" and re.search(r"pendente|\[\s\]|em andamento|aberto", l, re.I):
+            itens.append((i, "pedido", limpa(l.lstrip("-* "))))
+    if not achou_molde:
+        sem_molde += 1
+        continue
+    if idade > dias:
+        if any(t != "proximo" for _, t, _ in itens):
+            antigos += 1
+        continue
+    abertos = [x for x in itens if x[1] != "proximo"]
+    if not abertos:
+        continue
+    com_aberto += 1
+    total_itens += len(abertos)
+    retomado = "sim" if f in ja_visto else "nao"
+    saida.append(f"FIO\t{s}\t{idade}\t{len(abertos)}\t{retomado}\t{p}")
+    for i, t, txt in itens:
+        saida.append(f"ITEM\t{p}:{i}\t{t}\t{txt}")
+
+for l in saida:
+    print(l)
+if antigos:
+    print(f"ANTIGOS\t{antigos}")
+print(f"RESUMO\t{len(arquivos)}\t{len(mais_novo)}\t{com_aberto}\t{total_itens}\t{sem_molde}")
+print("GRAVOU nada" if retrato() == antes else "GRAVOU mudou")
+PY
+exit 0
