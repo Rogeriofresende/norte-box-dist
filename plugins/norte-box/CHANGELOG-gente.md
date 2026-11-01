@@ -8,6 +8,10 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.60
+- **A trava de senha ficou mais firme.** Antes, se faltasse uma peça no computador (o "jq"), a trava deixava passar uma senha colada sem avisar. Agora ela usa outra peça que você tiver; se não tiver nenhuma, ela segura a mensagem e diz o que instalar.
+- **O `/norte:doctor` confere mais duas coisas:** se o jq e o Python estão funcionando. Se faltar algum, ele mostra o comando pra instalar.
+
 ## 0.3.59
 - **Comando novo: `/norte:fios-soltos`.** Mostra o que ficou aberto nos seus bilhetes — o que falta, o que você pediu e não foi feito, e o próximo passo de cada assunto — com o arquivo e a linha de onde saiu. Ele só lê: não grava, não fecha e não apaga nada. No fim, sugere o `/norte:retomar` do assunto mais recente.
 

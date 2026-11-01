@@ -180,6 +180,27 @@ else
   emit "git" "FALHA" "instale o git"
 fi
 
+# 5b. jq — parser canonico dos freios: o secret-guard usa jq pra ler o prompt. Sem jq ele NAO morre
+# (cai pra python3/node e, se faltarem todos, bloqueia ate instalar o jq) — mas jq e a toolchain
+# esperada da caixa, entao o doctor cobra. Confere EXECUTANDO (nao so procurando o binario).
+if command -v jq >/dev/null 2>&1 && jq --version >/dev/null 2>&1; then
+  emit "jq" "OK" "$(jq --version 2>/dev/null | head -1)"
+else
+  emit "jq" "FALHA" "sem jq o freio de senha usa python3/node (ou bloqueia ate instalar); instale: Windows 'winget install jqlang.jq' | Mac 'brew install jq' | Linux 'sudo apt-get install -y jq'"
+fi
+
+# 5c. Python 3 — bilhete, retomar, desinstalar e outros comandos rodam via nb-python (python3 -> python
+# -> py -3, so aceita quem RODA). Confere pelo MESMO achador que os comandos usam, pra nao acusar falha
+# no Windows onde so existe "py" (o atalho falso da Microsoft Store e descartado por la).
+_NBPY="$ROOT/bin/nb-python"
+if [ -f "$_NBPY" ] && _py_onde="$(bash "$_NBPY" --onde 2>/dev/null)" && [ -n "$_py_onde" ]; then
+  emit "Python 3" "OK" "$(bash "$_NBPY" --version 2>&1 | head -1)"
+elif [ ! -f "$_NBPY" ]; then
+  emit "Python 3" "NAO_VERIFICADO" "nao achei o nb-python da caixa"
+else
+  emit "Python 3" "FALHA" "sem Python 3 que rode (bilhete e retomar param); instale: Windows 'winget install Python.Python.3.12' e abra o terminal de novo | Mac 'brew install python' | Linux 'sudo apt-get install -y python3'"
+fi
+
 # ---------------------------------------------------------------------------
 # ONBOARDING (o que faltava — o doctor so via a CASCA e dizia "OK" com NADA instalado).
 # STATUS extra aqui: PENDENTE = passo do onboarding ainda NAO feito. NAO e OK (nao esta ligado)
