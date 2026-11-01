@@ -29,10 +29,16 @@ _try_jq() {
 }
 # python3: le/escreve em BYTES (sys.stdin.buffer / stdout.buffer) pra nao quebrar com acento/seta/
 # emoji no Windows (pipe em cp1252 + -I ignora PYTHONIOENCODING). Qualquer erro -> sys.exit(1).
+# Python: usa o achador da caixa (bin/nb-python: python3 -> python -> py -3, so aceita quem RODA) — no
+# Windows o "python3" costuma ser o atalho falso da Microsoft Store e o Python real atende por "py".
+# Sem o achador (copia avulsa do hook), cai no python3 puro como antes.
+_NB_PY="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)/../bin/nb-python"
 _try_python3() {
-  command -v python3 >/dev/null 2>&1 || return 1
+  local -a py
+  if [ -f "$_NB_PY" ]; then py=(bash "$_NB_PY")
+  else command -v python3 >/dev/null 2>&1 || return 1; py=(python3); fi
   local out rc
-  out="$(printf '%s' "$RAW" | python3 -I -c 'import sys,json
+  out="$(printf '%s' "$RAW" | "${py[@]}" -I -c 'import sys,json
 try:
  v=json.load(sys.stdin.buffer).get("prompt")
  sys.stdout.buffer.write(v.encode("utf-8") if isinstance(v,str) else b"")
