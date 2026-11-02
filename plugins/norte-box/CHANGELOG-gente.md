@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.61
+- **A trava de senha não se deixa enganar por um Python de mentira.** Se no computador houver um programa com nome de Python que não funciona de verdade, a trava agora percebe e continua segurando a senha.
+
 ## 0.3.60
 - **A trava de senha ficou mais firme.** Antes, se faltasse uma peça no computador (o "jq"), a trava deixava passar uma senha colada sem avisar. Agora ela usa outra peça que você tiver; se não tiver nenhuma, ela segura a mensagem e diz o que instalar.
 - **O `/norte:doctor` confere mais duas coisas:** se o jq e o Python estão funcionando. Se faltar algum, ele mostra o comando pra instalar.
