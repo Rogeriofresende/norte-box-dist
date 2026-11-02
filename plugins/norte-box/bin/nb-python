@@ -29,7 +29,9 @@ for _c in "python3" "python" "py -3"; do
   read -r -a _cmd <<< "$_c"
   command -v "${_cmd[0]}" >/dev/null 2>&1 || continue
   _achou_algum=1
-  if "${_cmd[@]}" -c 'import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)' </dev/null >/dev/null 2>&1; then
+  # So aceita quem IMPRIME a versao (um "py" falso que so sai 0 nao conta — achado da Val, 0.3.61).
+  _v="$("${_cmd[@]}" -c 'import sys; print(sys.version_info[0])' </dev/null 2>/dev/null)"; _v="${_v%$'\r'}"
+  if [ "$_v" = "3" ]; then
     _PY=("${_cmd[@]}"); break
   fi
 done
