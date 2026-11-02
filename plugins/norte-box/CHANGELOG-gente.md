@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.62
+- **Nada muda no seu uso.** A caixa agora anota direito quando a IA termina de responder. Antes, se a resposta demorava um instante pra ser gravada, o "terminou" se perdia. Agora ela espera até uns 3 segundos, sem te atrasar. Se a conversa for fechada no meio, também fica anotado. Nenhuma palavra da resposta vai junto: só "terminou com texto", "sem texto" ou "fechou no meio".
+
 ## 0.3.61
 - **A trava de senha não se deixa enganar por um Python de mentira.** Se no computador houver um programa com nome de Python que não funciona de verdade, a trava agora percebe e continua segurando a senha.
 
