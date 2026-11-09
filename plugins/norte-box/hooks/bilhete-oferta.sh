@@ -32,7 +32,7 @@ VISTO="$DIR/handoffs/.ja-visto"
 
 # 0.3.63-teste (NRT-_999620): anota o que o aviso fez (rotulo fechado + idade em faixa + codigo do bilhete).
 # anota na hora (sincrono): +~150 ms na abertura, mas nao perde a anotacao.
-_marca() { NORTE_BOX_PASSO="${NORTE_BOX_PASSO_AVISO:-1}" bash "$_root/bin/nb-passo" abertura aviso_bilhete --saida "$1" --idade "${2:-}" --cod-de "${3:-}" >/dev/null 2>&1 || true; }
+_marca() { NORTE_BOX_PASSO="${NORTE_BOX_PASSO_AVISO:-${NORTE_BOX_PASSO:-1}}" bash "$_root/bin/nb-passo" abertura aviso_bilhete --saida "$1" --idade "${2:-}" --cod-de "${3:-}" >/dev/null 2>&1 || true; }
 _HORAS="${NORTE_BILHETE_OFERTA_HORAS:-12}"; case "$_HORAS" in ""|*[!0-9]*) _HORAS=12;; esac
 # NORTE_BOX_PASSO=0: abrir a conversa NAO e usar o /norte-retomar — sem isso cada abertura marcava "achou_bilhete" (NRT-_996894)
 _alvo="$(NORTE_BOX_PASSO=0 bash "$_root/bin/nb-retomar-alvo" "$DIR" $((_HORAS * 3600)) 2>/dev/null || true)"

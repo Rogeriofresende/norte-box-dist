@@ -41,3 +41,4 @@ echo "== TEMPERO: mesmo bilhete em 2 computadores"; prep pcA; bil 2026-11-09-100
   echo "   tempero sai na fila? $(grep -c "$(cat $H/.norte-box/bilhete-tempero)" $H/.norte-box/telemetry-queue.jsonl) vezes"
 echo "== SEM shasum (usa a 2a forma)"; mkdir -p $T/semsha; for b in bash jq openssl cut cat date mkdir grep basename dirname find head sed awk rm tr python3 stat touch cp wc od mv env printf readlink ls sort git; do p=$(command -v $b 2>/dev/null) && ln -sf "$p" $T/semsha/$b; done
   prep semsha; bil 2026-11-09-1000-assunto-a.md "Assunto A" 10; ( PATH=$T/semsha; abre >/dev/null ); echo "   anotou: $(fila | tail -1 | jq -c .passo)"
+echo "== DESLIGAR GERAL (NORTE_BOX_PASSO=0, 0.3.64)"; prep geral; bil 2026-11-09-1000-assunto-a.md "Assunto A" 10; ( export NORTE_BOX_PASSO=0; abre >/dev/null ); echo "   linhas na fila: $(fila | wc -l | tr -d ' ')"
