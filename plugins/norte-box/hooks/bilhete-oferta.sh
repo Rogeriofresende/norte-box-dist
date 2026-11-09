@@ -30,6 +30,9 @@ DIR="$(bash "$_root/bin/nb-resolve-outdir" 2>/dev/null)" || exit 0
 [ -d "$DIR/handoffs" ] || exit 0
 VISTO="$DIR/handoffs/.ja-visto"
 
+# 0.3.63-teste (NRT-_999620): anota o que o aviso fez (rotulo fechado + idade em faixa + codigo do bilhete).
+# anota na hora (sincrono): +~150 ms na abertura, mas nao perde a anotacao.
+_marca() { NORTE_BOX_PASSO="${NORTE_BOX_PASSO_AVISO:-1}" bash "$_root/bin/nb-passo" abertura aviso_bilhete --saida "$1" --idade "${2:-}" --cod-de "${3:-}" >/dev/null 2>&1 || true; }
 _HORAS="${NORTE_BILHETE_OFERTA_HORAS:-12}"; case "$_HORAS" in ""|*[!0-9]*) _HORAS=12;; esac
 # NORTE_BOX_PASSO=0: abrir a conversa NAO e usar o /norte-retomar — sem isso cada abertura marcava "achou_bilhete" (NRT-_996894)
 _alvo="$(NORTE_BOX_PASSO=0 bash "$_root/bin/nb-retomar-alvo" "$DIR" $((_HORAS * 3600)) 2>/dev/null || true)"
@@ -38,13 +41,14 @@ case "$_alvo" in
   ALVO\ *)
     _f="${_alvo#ALVO }"
     _b="$(basename "$_f")"
-    grep -qxF "$_b" "$VISTO" 2>/dev/null && exit 0
+    grep -qxF "$_b" "$VISTO" 2>/dev/null && { _marca JA_VISTO "" "$_f"; exit 0; }
     _min=$(( ( $(date +%s) - $(stat -L -f %m "$_f" 2>/dev/null || stat -L -c %Y "$_f" 2>/dev/null || date +%s) ) / 60 ))
-    [ "$_min" -le $((_HORAS * 60)) ] || exit 0   # o helper devolve o mais novo mesmo se velho — aqui corta
+    [ "$_min" -le $((_HORAS * 60)) ] || { _marca VELHO "$_min" "$_f"; exit 0; }   # o helper devolve o mais novo mesmo se velho — aqui corta
     _ass="$(grep -m1 -E '^# ' "$_f" 2>/dev/null | sed -E 's/^# +(Handoff|Session Handoff) *[—:-]* *//')"
     [ -n "$_ass" ] || _ass="${_b%.md}"
     _linha="📌 Tem um bilhete salvo: \"$_ass\" (há ${_min} min). Pra continuar de onde parou, rode /norte:retomar."
     printf '%s\n' "$_b" >> "$VISTO" 2>/dev/null || true
+    _marca OFERECEU "$_min" "$_f"
     ;;
   AMBIGUO*)
     _novos=0
@@ -56,10 +60,11 @@ case "$_alvo" in
     done <<EOF
 $_alvo
 EOF
-    [ "$_novos" -gt 0 ] || exit 0
+    [ "$_novos" -gt 0 ] || { _marca JA_VISTO; exit 0; }
+    _marca VARIOS
     _linha="📌 Tem $_novos bilhete(s) salvo(s) de assuntos diferentes nas últimas ${_HORAS}h. Pra continuar um deles, rode /norte:retomar (ele lista e você escolhe)."
     ;;
-  *) exit 0 ;;
+  *) _marca NENHUM; exit 0 ;;
 esac
 
 _ctx="$(printf '=== 📌 BILHETE ESPERANDO (mostre ao usuario, 1 linha, do jeito que esta) ===\n%s\nNAO retome sozinho: so ofereca. Se a pessoa pedir outra coisa, siga o pedido dela.\n=== fim ===' "$_linha")"

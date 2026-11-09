@@ -8,6 +8,9 @@ Formato (não mude, o motor lê por ele): cada versão é um cabeçalho `## X.Y.
 bullets `-`. O motor mostra SÓ as versões novas pra você (as que saíram desde a última
 vez que você abriu a caixa), uma vez. Depois disso, fica quieto.
 
+## 0.3.63
+- **Nada muda no seu uso.** Quando você abre uma conversa nova e a caixa mostra o aviso "Tem um bilhete salvo", ela agora anota só que mostrou (ou que não tinha bilhete, ou que ele era antigo) e há quanto tempo o bilhete foi salvo, em faixas. Nenhuma palavra do bilhete vai junto: o bilhete vira um código que só o seu computador sabe fazer. Pra não anotar isso, use `NORTE_BOX_PASSO_AVISO=0`.
+
 ## 0.3.62
 - **Nada muda no seu uso.** A caixa agora anota direito quando a IA termina de responder. Antes, se a resposta demorava um instante pra ser gravada, o "terminou" se perdia. Agora ela espera até uns 3 segundos, sem te atrasar. Se a conversa for fechada no meio, também fica anotado. Nenhuma palavra da resposta vai junto: só "terminou com texto", "sem texto" ou "fechou no meio".
 

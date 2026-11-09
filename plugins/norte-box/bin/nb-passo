@@ -35,6 +35,7 @@ _sid="${CLAUDE_CODE_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
 _hash16() {
   if command -v shasum >/dev/null 2>&1; then printf '%s' "$1" | shasum -a 256 2>/dev/null | cut -c1-16
   elif command -v sha256sum >/dev/null 2>&1; then printf '%s' "$1" | sha256sum 2>/dev/null | cut -c1-16
+  elif command -v openssl >/dev/null 2>&1; then printf '%s' "$1" | openssl dgst -sha256 2>/dev/null | sed 's/^.*= *//' | cut -c1-16
   fi
 }
 _run_id=""; [ -n "$_sid" ] && _run_id="$(_hash16 "$_sid")"
@@ -47,11 +48,13 @@ if [ "${1:-}" = "--sou" ]; then
 fi
 
 _hab="${1:-}"; _passo="${2:-}"; shift 2 2>/dev/null || exit 0
-_saida=""; _rc=""; _ult=""; _bil=""
+_saida=""; _rc=""; _ult=""; _bil=""; _idade=""; _codde=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --saida)   _saida="${2:-}"; shift 2 2>/dev/null || shift ;;
     --rc)      _rc="${2:-}"; shift 2 2>/dev/null || shift ;;
+    --idade)   _idade="${2:-}"; shift 2 2>/dev/null || shift ;;
+    --cod-de)  _codde="${2:-}"; shift 2 2>/dev/null || shift ;;
     --confere) _ult="${2:-}"; _bil="${3:-}"; shift 3 2>/dev/null || shift $# ;;
     *) shift ;;
   esac
@@ -164,11 +167,25 @@ PY
           case "$_saida" in *"GRAVOU nada"*) _res=ok ;; *"GRAVOU mudou"*) _res=mudou ;; *) _res=falhou ;; esac ;;
       esac
     fi ;;
+  aviso_bilhete)
+    case "$_saida" in OFERECEU) _res=ofereceu ;; JA_VISTO) _res=ja_visto ;; VELHO) _res=velho ;; VARIOS) _res=varios ;; NENHUM) _res=nenhum ;; *) _res=falhou ;; esac ;;
   *) exit 0 ;;
 esac
+# 0.3.63-teste: idade so em FAIXA (nunca o numero) e codigo = 16 letras do embaralho do NOME do bilhete (sem volta)
+_faixa=""; case "$_idade" in ''|*[!0-9]*) : ;; *) if [ "$_idade" -le 60 ]; then _faixa=ate_1h; elif [ "$_idade" -le 720 ]; then _faixa=1_a_12h; else _faixa=mais_12h; fi ;; esac
+[ "$_passo" = ponteiro ] && [ -z "$_codde" ] && _codde="$_bil"
+# tempero LOCAL (gerado 1x, nunca sai da maquina): sem ele ninguem adivinha o assunto pelo codigo.
+_cod=""
+if [ -n "$_codde" ]; then
+  _sal_f="$STATE_DIR/bilhete-tempero"
+  if [ ! -s "$_sal_f" ]; then mkdir -p "$STATE_DIR" 2>/dev/null; (umask 077; od -An -tx1 -N16 /dev/urandom 2>/dev/null | tr -d ' \n' > "$_sal_f.$$" && mv -n "$_sal_f.$$" "$_sal_f"; rm -f "$_sal_f.$$") 2>/dev/null; fi
+  _sal="$(head -c 64 "$_sal_f" 2>/dev/null)"
+  [ "${#_sal}" -ge 16 ] && _cod="$(_hash16 "norte-bilhete:${_sal}:$(basename "$_codde")")"
+fi
+printf '%s' "$_cod" | grep -Eq '^[0-9a-f]{16}$' || _cod=""
 _saida=""   # descarta o texto: so o rotulo sobrevive
 
-case "$_hab" in obrigado|norte-retomar|continuar|fios-soltos) : ;; *) exit 0 ;; esac
+case "$_hab" in obrigado|norte-retomar|continuar|fios-soltos|abertura) : ;; *) exit 0 ;; esac
 
 # --- mesmos portoes do medidor (fail-closed no envio, fail-open no trabalho) ---
 if [ -f "$_ROOT/hooks/_modo.sh" ]; then . "$_ROOT/hooks/_modo.sh"
@@ -190,11 +207,11 @@ case "$_versao" in ''|*[!0-9.]*|[!0-9]*) _versao="" ;; esac
 _line="$(jq -cn \
   --arg invite_id "$_invite_id" --arg ts "$(date -u +%FT%TZ 2>/dev/null || echo unknown)" \
   --arg versao "$_versao" --arg run_id "$_run_id" \
-  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" --arg forma "${_forma:-}" --arg motivo "${_motivo:-}" \
+  --arg hab "$_hab" --arg passo "$_passo" --arg res "$_res" --arg forma "${_forma:-}" --arg motivo "${_motivo:-}" --arg faixa "$_faixa" --arg cod "$_cod" \
   '{invite_id:$invite_id, kind:"passo", ts:$ts,
     versao:(if $versao=="" then null else $versao end),
     run_id:(if $run_id=="" then null else $run_id end),
-    passo:({habilidade:$hab, passo:$passo, resultado:$res} + (if $forma=="" then {} else {forma:$forma} end) + (if $motivo=="" then {} else {motivo:$motivo} end))}' 2>/dev/null || true)"
+    passo:({habilidade:$hab, passo:$passo, resultado:$res} + (if $forma=="" then {} else {forma:$forma} end) + (if $motivo=="" then {} else {motivo:$motivo} end) + (if $faixa=="" then {} else {idade:$faixa} end) + (if $cod=="" then {} else {bilhete:$cod} end))}' 2>/dev/null || true)"
 [ -z "$_line" ] && exit 0
 mkdir -p "$STATE_DIR" 2>/dev/null || exit 0
 printf '%s\n' "$_line" >> "$QUEUE" 2>/dev/null || exit 0
